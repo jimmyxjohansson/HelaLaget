@@ -18,7 +18,7 @@ interface AttendanceRow {
   percent: number | null
 }
 
-const ATTENDANCE_STATUSES = ['Aktiv', 'Provspelare', 'Gästspelare', 'Vilande', 'Slutat'] as const
+const ATTENDANCE_STATUSES = ['Aktiv', 'Aktiv, ej matchklar', 'Provspelare', 'Gästspelare', 'Vilande', 'Slutat'] as const
 const ATTENDANCE_PERIODS = [
   { label: '1 mån', months: 1 },
   { label: '2 mån', months: 2 },
@@ -36,7 +36,7 @@ export function AttendanceStatsButton() {
   const [statsOpen, setStatsOpen] = useState(false)
   const [statsDate1, setStatsDate1] = useState('')
   const [statsDate2, setStatsDate2] = useState('')
-  const [statsStatuses, setStatsStatuses] = useState<Set<string>>(new Set(['Aktiv']))
+  const [statsStatuses, setStatsStatuses] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar']))
   const [statsPeriod, setStatsPeriod] = useState(2)
   const [statsSort, setStatsSort] = useState<{ key: StatsSortKey; dir: 'asc' | 'desc' } | null>(null)
   const [detailPlayer, setDetailPlayer] = useState<{ id: number; name: string } | null>(null)

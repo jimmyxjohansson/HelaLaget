@@ -118,7 +118,7 @@ export default function TrainingDetail() {
   const [addSearch, setAddSearch] = useState('')
   const [addSelected, setAddSelected] = useState<Set<number>>(new Set())
   const [addingBulk, setAddingBulk] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['Aktiv']))
+  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar']))
   const { data: availableData, trigger: triggerAvailable } = useGetAvailablePlayers()
   const { trigger: triggerAddBulk } = useAddParticipants()
   const { trigger: triggerRemove, loading: removing } = useRemoveParticipant()
@@ -344,7 +344,7 @@ export default function TrainingDetail() {
 
   function openAddSheet() {
     setAddSearch('')
-    setStatusFilter(new Set(['Aktiv']))
+    setStatusFilter(new Set(['Aktiv', 'Aktiv, ej matchklar']))
     setAddSelected(new Set())
     setAddOpen(true)
     if (id) triggerAvailable({ trainingId: Number(id) })
@@ -929,7 +929,7 @@ export default function TrainingDetail() {
           </SheetHeader>
           <div className="px-4 py-2 border-b border-border">
             <div className="flex gap-2 flex-wrap">
-              {(['Aktiv', 'Gästspelare', 'Vilande', 'Slutat'] as const).map(s => {
+              {(['Aktiv', 'Aktiv, ej matchklar', 'Gästspelare', 'Vilande', 'Slutat'] as const).map(s => {
                 const on = statusFilter.has(s)
                 return (
                   <button

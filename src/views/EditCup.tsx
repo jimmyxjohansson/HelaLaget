@@ -12,7 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../lib/shadcn/select'
 
-const MATCHPLAYERS = ['5 v 5', '7 v 7', '8 v 8', '9 v 9', '11 v 11']
+const MATCHPLAYERS = ['3 v 3', '5 v 5', '7 v 7', '8 v 8', '9 v 9', '11 v 11']
 const DIFFICULTIES = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D', 'X']
 const LOCATIONS = ['Inomhus', 'Utomhus']
 const STATUSES = ['Ny', 'Förslag', 'Kallad', 'Avslutad']

@@ -24,7 +24,7 @@ import { countryFlag } from '../utils/countryFlag'
 const TYPES = ['Serie', 'Cup', 'Träning']
 const HOMEAWAY = ['Hemma', 'Borta']
 const LOCATIONS = ['Inomhus', 'Utomhus']
-const MATCHPLAYERS = ['5 v 5', '7 v 7', '8 v 8', '9 v 9', '11 v 11']
+const MATCHPLAYERS = ['3 v 3', '5 v 5', '7 v 7', '8 v 8', '9 v 9', '11 v 11']
 const DIFFICULTIES = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D', 'X']
 
 interface MatchData {

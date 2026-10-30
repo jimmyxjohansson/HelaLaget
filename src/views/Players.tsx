@@ -62,6 +62,7 @@ function rankIndex(rank: string | null) {
 
 const STATUS_FILTERS = [
   { value: 'Aktiv', label: 'Aktiv' },
+  { value: 'Aktiv, ej matchklar', label: 'Ej matchklar' },
   { value: 'Vilande', label: 'Vilande' },
   { value: 'Gästspelare', label: 'Gästspelare' },
   { value: 'Slutat', label: 'Slutat' },
@@ -78,6 +79,7 @@ const TIME_FILTERS = [
 
 const STATUS_BADGE: Record<string, string> = {
   Aktiv: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+  'Aktiv, ej matchklar': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
   Vilande: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400',
   Gästspelare: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
   Slutat: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400',
@@ -89,7 +91,7 @@ export default function Players() {
   const [search, setSearch] = useState('')
   const [sort, setSort] = usePersistentState('players.sort', 'rank')
   const [sortDir, setSortDir] = usePersistentState<SortDir>('players.sortDir', 'asc')
-  const [statusFilter, setStatusFilter] = usePersistentState<string[]>('players.statusFilter', ['Aktiv'])
+  const [statusFilter, setStatusFilter] = usePersistentState<string[]>('players.statusFilter', ['Aktiv', 'Aktiv, ej matchklar'])
 
   function toggleStatus(value: string) {
     setStatusFilter(prev =>

@@ -11,12 +11,13 @@ import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../lib/shadcn/select'
 
-const STATUS_OPTIONS = ['Aktiv', 'Vilande', 'Gästspelare', 'Slutat']
+const STATUS_OPTIONS = ['Aktiv', 'Aktiv, ej matchklar', 'Vilande', 'Gästspelare', 'Slutat']
 const RANK_OPTIONS = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D']
 const FOOT_OPTIONS = ['Höger', 'Vänster', 'Båda']
 
 const STATUS_BADGE: Record<string, string> = {
   Aktiv: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+  'Aktiv, ej matchklar': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
   Vilande: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400',
   Gästspelare: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
   Slutat: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400',

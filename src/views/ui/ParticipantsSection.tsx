@@ -69,7 +69,7 @@ const STATUS_CONFIG: Record<string, { label: string; hex: string; icon: typeof C
 }
 
 const STATUS_ORDER = ['Förslag', 'Inbjuden', 'Kommer', 'Nekat', 'Ej svarat', 'Reserv']
-const PLAYER_STATUS_FILTERS = ['Aktiv', 'Gästspelare', 'Vilande', 'Slutat'] as const
+const PLAYER_STATUS_FILTERS = ['Aktiv', 'Aktiv, ej matchklar', 'Gästspelare', 'Vilande', 'Slutat'] as const
 
 interface Props {
   participants: ParticipantRow[]
@@ -141,7 +141,7 @@ export default function ParticipantsSection({
   const [addOpen, setAddOpen] = useState(false)
   const [addSearch, setAddSearch] = useState('')
   const [addSelected, setAddSelected] = useState<Set<number>>(new Set())
-  const [playerStatusFilter, setPlayerStatusFilter] = useState<Set<string>>(new Set(['Aktiv']))
+  const [playerStatusFilter, setPlayerStatusFilter] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar']))
 
   const [reasonOpen, setReasonOpen] = useState(false)
   const [reasonTarget, setReasonTarget] = useState<{ id: number; name: string } | null>(null)
