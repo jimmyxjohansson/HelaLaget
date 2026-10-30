@@ -3,10 +3,14 @@ import type { User } from '@/server/types'
 
 type Params = {
   limit?: number
+  /** Valfritt intervall (ISO). Utan intervall: de senaste efter datum, som tidigare. */
+  from?: string | null
+  to?: string | null
 }
 
 export default async function getTrainings(req: { params: Params; user: User }) {
   const limit = req.params.limit ?? 50
+  const { from = null, to = null } = req.params
   const result = await db.query<{
     id: number
     type: string
@@ -45,10 +49,12 @@ export default async function getTrainings(req: { params: Params; user: User }) 
       COUNT(CASE WHEN pt.leader IS NOT NULL AND pt.status::text IN ('Ej närvarande','Anmäld, kom ej','Annan aktivitet')               THEN 1 END) AS l_ej
     FROM trainings t
     LEFT JOIN participantstrainings pt ON pt.training = t.id
+    WHERE ($2::timestamptz IS NULL OR t.date >= $2::timestamptz)
+      AND ($3::timestamptz IS NULL OR t.date < $3::timestamptz)
     GROUP BY t.id
     ORDER BY t.date DESC
     LIMIT $1`,
-    [limit]
+    [limit, from, to]
   )
   return result.data
 }

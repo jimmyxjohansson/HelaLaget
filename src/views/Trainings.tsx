@@ -20,6 +20,11 @@ import { Button } from '../lib/shadcn/button'
 import { Input } from '../lib/shadcn/input'
 import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
+import { wallDayIso } from '../utils/dateWindow'
+
+// Senaste året bakåt och ett halvår framåt (importen från Svenskalag kan
+// lägga in träningar långt fram, som annars tränger undan de närmaste).
+const TRAINING_WINDOW = () => ({ limit: 1000, from: wallDayIso(-365), to: wallDayIso(183) })
 
 interface Training {
   id: number
@@ -109,7 +114,7 @@ export default function Trainings() {
         await createTraining({ type: 'Träning', date, indooroutdoor: 'Utomhus' })
       }
       setWeekDialogOpen(false)
-      await trigger({ limit: 200 }, { skipCache: true })
+      await trigger(TRAINING_WINDOW(), { skipCache: true })
     } finally {
       setCreatingWeek(false)
     }
@@ -145,11 +150,11 @@ export default function Trainings() {
       svenskalag: editSvenskalag,
     })
     setEditOpen(false)
-    await trigger({ limit: 200 }, { skipCache: true })
+    await trigger(TRAINING_WINDOW(), { skipCache: true })
   }
 
   useEffect(() => {
-    trigger({ limit: 200 })
+    trigger(TRAINING_WINDOW())
   }, [])
 
   const trainings = data as unknown as Training[] | undefined

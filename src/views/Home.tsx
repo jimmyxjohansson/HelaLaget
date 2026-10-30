@@ -8,6 +8,7 @@ import { useGetUpcomingBirthdays } from '../hooks/backend/players'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
 import { MapPin, ChevronRight, Home as HomeIcon, Plane, Cake } from 'lucide-react'
 import { ownTeamName } from '../utils/constants'
+import { wallDayIso } from '../utils/dateWindow'
 
 function matchTypeColor(type: string): string {
   if (type === 'Serie') return '#2563eb'
@@ -101,7 +102,8 @@ export default function Home() {
   const typedTrainings = trainings as unknown as Training[] | undefined
 
   useEffect(() => {
-    triggerTrainings({ limit: 50 })
+    // Bara intervallet som visas, så att importerade träningar långt fram inte tränger undan veckans
+    triggerTrainings({ limit: 200, from: wallDayIso(0), to: wallDayIso(8) })
     triggerMatches({ limit: 10 })
     triggerBirthdays({ days: 14 })
   }, [])
