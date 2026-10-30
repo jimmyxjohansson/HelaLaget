@@ -1,5 +1,6 @@
 import { db } from '@/server/db'
-import type { User } from '@/server/types'
+import { notifyGoal } from '@/server/notifications/match'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   /** When set, updates the existing event row. */
@@ -15,8 +16,9 @@ type Params = {
   type?: string | null
 }
 
-export default async function saveMatchEvent(req: { params: Params; user: User }) {
+export default async function saveMatchEvent(req: { params: Params; user: User; squad?: SquadAccess }) {
   const p = req.params
+  let newId: number | null = null
 
   const goal = p.kind === 'our_goal' ? (p.goalPlayer ?? null) : null
   const assist = p.kind === 'our_goal' ? (p.assistPlayer ?? null) : null
@@ -35,11 +37,12 @@ export default async function saveMatchEvent(req: { params: Params; user: User }
       [goal, assist, save, p.minute, type, p.id, p.matchId],
     )
   } else {
-    await db.query(
+    const { data } = await db.query<{ id: number }>(
       `INSERT INTO matchgoalsassists (match, goal, assist, save, minute, type, ourgoal, theirgoal)
-       VALUES ($1, $2, $3, $4, $5, $6, 0, 0)`,
+       VALUES ($1, $2, $3, $4, $5, $6, 0, 0) RETURNING id`,
       [p.matchId, goal, assist, save, p.minute, type],
     )
+    newId = data[0]?.id ?? null
   }
 
   // Recompute running ourgoal / theirgoal for every event in this match.
@@ -70,6 +73,11 @@ export default async function saveMatchEvent(req: { params: Params; user: User }
       WHERE id = $3`,
     [p.matchId, p.matchId, p.matchId],
   )
+
+  // Notis till dem som följer laget (bara nya mål; ändringar skickar ingen ny notis)
+  if (newId && p.kind !== 'save' && req.squad) {
+    notifyGoal({ squadId: req.squad.squadId, matchId: p.matchId, userId: req.user.id, eventId: newId })
+  }
 
   return { success: true }
 }

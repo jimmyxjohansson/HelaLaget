@@ -13,6 +13,7 @@ import type getMatches from '../../server/functions/matches/getMatches'
 import type getMatchesVsOpponent from '../../server/functions/matches/getMatchesVsOpponent'
 import type getTeamsAndLeagues from '../../server/functions/matches/getTeamsAndLeagues'
 import type getUpcomingMatches from '../../server/functions/matches/getUpcomingMatches'
+import type notifyMatchClock from '../../server/functions/matches/notifyMatchClock'
 import type removeParticipant from '../../server/functions/matches/removeParticipant'
 import type removeParticipants from '../../server/functions/matches/removeParticipants'
 import type saveMatchEvent from '../../server/functions/matches/saveMatchEvent'
@@ -83,6 +84,11 @@ export const useGetUpcomingMatches = createBackendHook<
   Parameters<typeof getUpcomingMatches>[0]['params'],
   Awaited<ReturnType<typeof getUpcomingMatches>>
 >('matches/getUpcomingMatches')
+
+export const useNotifyMatchClock = createBackendHook<
+  Parameters<typeof notifyMatchClock>[0]['params'],
+  Awaited<ReturnType<typeof notifyMatchClock>>
+>('matches/notifyMatchClock')
 
 export const useRemoveParticipant = createBackendHook<
   Parameters<typeof removeParticipant>[0]['params'],

@@ -9,6 +9,7 @@ import {
   useDeleteMatchEvent,
   useUpdateMatchGoalkeeper,
   useFinishMatch,
+  useNotifyMatchClock,
 } from '../hooks/backend/matches'
 import { Combobox } from '../components/Combobox'
 import { Button } from '../lib/shadcn/button'
@@ -137,6 +138,7 @@ export default function MatchTimeline() {
   const { loading: deleting, trigger: deleteEvent } = useDeleteMatchEvent()
   const { loading: savingGk, trigger: saveGoalkeeper } = useUpdateMatchGoalkeeper()
   const { loading: finishing, trigger: finishMatch } = useFinishMatch()
+  const { trigger: notifyClock } = useNotifyMatchClock()
 
   const [form, setForm] = useState<EventForm | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -230,6 +232,8 @@ export default function MatchTimeline() {
     const offset = period === 1 ? 0 : playtime! * (period - 1)
     setTimer({ startedAt: Date.now(), offsetMinutes: offset, periodStartMinutes: offset, period })
     setNow(Date.now())
+    // Notis om avspark / periodstart till dem som följer laget. Fel här stoppar inte klockan.
+    if (matchId) notifyClock({ matchId, event: 'start', period }).catch(() => {})
   }
 
   function startFromMinute() {
@@ -242,6 +246,8 @@ export default function MatchTimeline() {
   }
 
   function stopTimer() {
+    // Paus eller slutsignal beroende på perioden (servern räknar ut vilket)
+    if (timer && matchId) notifyClock({ matchId, event: 'stop', period: timer.period }).catch(() => {})
     setTimer(null)
   }
 

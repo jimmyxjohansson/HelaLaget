@@ -40,6 +40,7 @@ import matches_getMatches from './functions/matches/getMatches'
 import matches_getMatchesVsOpponent from './functions/matches/getMatchesVsOpponent'
 import matches_getTeamsAndLeagues from './functions/matches/getTeamsAndLeagues'
 import matches_getUpcomingMatches from './functions/matches/getUpcomingMatches'
+import matches_notifyMatchClock from './functions/matches/notifyMatchClock'
 import matches_removeParticipant from './functions/matches/removeParticipant'
 import matches_removeParticipants from './functions/matches/removeParticipants'
 import matches_saveMatchEvent from './functions/matches/saveMatchEvent'
@@ -57,6 +58,11 @@ import members_regenerateJoinCode from './functions/members/regenerateJoinCode'
 import members_removeMember from './functions/members/removeMember'
 import members_updateMember from './functions/members/updateMember'
 import members_updateSquadSettings from './functions/members/updateSquadSettings'
+import notifications_getPushStatus from './functions/notifications/getPushStatus'
+import notifications_sendTestPush from './functions/notifications/sendTestPush'
+import notifications_setPushSquad from './functions/notifications/setPushSquad'
+import notifications_subscribePush from './functions/notifications/subscribePush'
+import notifications_unsubscribePush from './functions/notifications/unsubscribePush'
 import organizations_addOrganizationAdmin from './functions/organizations/addOrganizationAdmin'
 import organizations_addSquadAdmin from './functions/organizations/addSquadAdmin'
 import organizations_createOrganization from './functions/organizations/createOrganization'
@@ -146,6 +152,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'matches/getMatchesVsOpponent': { handler: matches_getMatchesVsOpponent, access: 'viewer' },
   'matches/getTeamsAndLeagues': { handler: matches_getTeamsAndLeagues, access: 'viewer' },
   'matches/getUpcomingMatches': { handler: matches_getUpcomingMatches, access: 'viewer' },
+  'matches/notifyMatchClock': { handler: matches_notifyMatchClock, access: 'leader' },
   'matches/removeParticipant': { handler: matches_removeParticipant, access: 'leader' },
   'matches/removeParticipants': { handler: matches_removeParticipants, access: 'leader' },
   'matches/saveMatchEvent': { handler: matches_saveMatchEvent, access: 'leader' },
@@ -163,6 +170,11 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'members/removeMember': { handler: members_removeMember, access: 'admin' },
   'members/updateMember': { handler: members_updateMember, access: 'admin' },
   'members/updateSquadSettings': { handler: members_updateSquadSettings, access: 'admin' },
+  'notifications/getPushStatus': { handler: notifications_getPushStatus, access: 'user' },
+  'notifications/sendTestPush': { handler: notifications_sendTestPush, access: 'user' },
+  'notifications/setPushSquad': { handler: notifications_setPushSquad, access: 'user' },
+  'notifications/subscribePush': { handler: notifications_subscribePush, access: 'user' },
+  'notifications/unsubscribePush': { handler: notifications_unsubscribePush, access: 'user' },
   'organizations/addOrganizationAdmin': { handler: organizations_addOrganizationAdmin, access: 'superadmin' },
   'organizations/addSquadAdmin': { handler: organizations_addSquadAdmin, access: 'user' },
   'organizations/createOrganization': { handler: organizations_createOrganization, access: 'superadmin' },

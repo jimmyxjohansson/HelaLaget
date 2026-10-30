@@ -8,6 +8,8 @@ till Next.js med Supabase (databas, inloggning och bildlagring) och Vercel (host
 
 **Import från Svenskalag:** se [docs/SVENSKALAG.md](docs/SVENSKALAG.md).
 
+**Notiser från matcher:** se [docs/NOTISER.md](docs/NOTISER.md).
+
 **Ska appen flyttas från Retool?** Följ [docs/MIGRERING.md](docs/MIGRERING.md).
 
 ## Teknik

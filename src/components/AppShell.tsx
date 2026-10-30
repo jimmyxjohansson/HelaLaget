@@ -7,12 +7,13 @@ import MobileShell from './MobileShell'
 import { callBackend } from '../hooks/backend/_core'
 import { getMe, hexToRgbChannels, setMe, type Me } from '../lib/squad-store'
 import { readSquadCookie, setSquadCookie } from '../lib/squad-cookie'
+import { registerServiceWorker } from '../lib/push'
 import { Button } from '../lib/shadcn/button'
 
 const subscribe = () => () => {}
 
 /** Sidor som fungerar utan valt lag. */
-const ACCOUNT_PAGES = ['/lag', '/foreningar', '/join']
+const ACCOUNT_PAGES = ['/lag', '/foreningar', '/join', '/notiser']
 
 /**
  * Laddar inloggad användare och valt lag innan vyerna visas, sätter lagets
@@ -31,7 +32,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!mounted) return
     let cancelled = false
-    callBackend<Me>('account/getMe', { squadId: readSquadCookie() })
+    registerServiceWorker()
+    // Länkar från notiser anger laget (?lag=<id>), så att matchen öppnas i rätt lag.
+    const fromLink = Number(new URLSearchParams(window.location.search).get('lag')) || null
+    callBackend<Me>('account/getMe', { squadId: fromLink ?? readSquadCookie() })
       .then((me) => {
         if (cancelled) return
         setMe(me)
