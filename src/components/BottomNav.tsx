@@ -41,18 +41,20 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
   const pathname = usePathname() ?? '/'
   const squad = currentSquad()
   const extraLinks = accountLinks()
+  // Första fliken heter som laget (t.ex. P-13) i stället för Hem
+  const homeTabs = tabs.map((t) => (t.to === '/' && squad ? { ...t, label: squad.squadName } : t))
   const adminActive = [...adminTabs, ...extraLinks].some(t => pathname.startsWith(t.to))
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border max-w-[430px] mx-auto pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch">
-        {tabs.map(({ to, icon: Icon, label }) => (
+        {homeTabs.map(({ to, icon: Icon, label }) => (
           <Link
             key={to}
             href={to}
             className={
             cn(
-              'flex flex-col items-center justify-center flex-1 py-2 gap-0.5 text-xs font-medium transition-colors',
+              'flex flex-col items-center justify-center flex-1 min-w-0 py-2 gap-0.5 text-xs font-medium transition-colors',
               isActivePath(pathname, to)
                 ? 'text-primary'
                 : 'text-muted-foreground hover:text-foreground'
@@ -60,7 +62,7 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
             }
           >
             <Icon className="w-5 h-5" />
-            <span>{label}</span>
+            <span className="max-w-full truncate px-1">{label}</span>
           </Link>
         ))}
 

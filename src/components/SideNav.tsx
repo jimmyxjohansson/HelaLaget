@@ -34,6 +34,8 @@ export default function SideNav({ theme, onToggleTheme }: Props) {
   const pathname = usePathname() ?? '/'
   const squad = currentSquad()
   const extraLinks = accountLinks()
+  // Första fliken heter som laget (t.ex. P-13) i stället för Hem
+  const homeTabs = tabs.map((t) => (t.to === '/' && squad ? { ...t, label: squad.squadName } : t))
   const adminActive = [...adminTabs, ...extraLinks].some(t => pathname.startsWith(t.to))
   const [adminOpen, setAdminOpen] = useState(adminActive)
 
@@ -51,7 +53,7 @@ export default function SideNav({ theme, onToggleTheme }: Props) {
         )}
       </div>
       <div className="flex flex-col gap-1 px-3 flex-1">
-        {tabs.map(({ to, icon: Icon, label }) => (
+        {homeTabs.map(({ to, icon: Icon, label }) => (
           <Link
             key={to}
             href={to}
