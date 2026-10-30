@@ -40,10 +40,10 @@ import matches_getMatches from './functions/matches/getMatches'
 import matches_getMatchesVsOpponent from './functions/matches/getMatchesVsOpponent'
 import matches_getTeamsAndLeagues from './functions/matches/getTeamsAndLeagues'
 import matches_getUpcomingMatches from './functions/matches/getUpcomingMatches'
-import matches_notifyMatchClock from './functions/matches/notifyMatchClock'
 import matches_removeParticipant from './functions/matches/removeParticipant'
 import matches_removeParticipants from './functions/matches/removeParticipants'
 import matches_saveMatchEvent from './functions/matches/saveMatchEvent'
+import matches_setMatchClock from './functions/matches/setMatchClock'
 import matches_syncParticipantsFromCup from './functions/matches/syncParticipantsFromCup'
 import matches_updateMatch from './functions/matches/updateMatch'
 import matches_updateMatchFogisRegistered from './functions/matches/updateMatchFogisRegistered'
@@ -152,10 +152,10 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'matches/getMatchesVsOpponent': { handler: matches_getMatchesVsOpponent, access: 'viewer' },
   'matches/getTeamsAndLeagues': { handler: matches_getTeamsAndLeagues, access: 'viewer' },
   'matches/getUpcomingMatches': { handler: matches_getUpcomingMatches, access: 'viewer' },
-  'matches/notifyMatchClock': { handler: matches_notifyMatchClock, access: 'leader' },
   'matches/removeParticipant': { handler: matches_removeParticipant, access: 'leader' },
   'matches/removeParticipants': { handler: matches_removeParticipants, access: 'leader' },
   'matches/saveMatchEvent': { handler: matches_saveMatchEvent, access: 'leader' },
+  'matches/setMatchClock': { handler: matches_setMatchClock, access: 'leader' },
   'matches/syncParticipantsFromCup': { handler: matches_syncParticipantsFromCup, access: 'leader' },
   'matches/updateMatch': { handler: matches_updateMatch, access: 'leader' },
   'matches/updateMatchFogisRegistered': { handler: matches_updateMatchFogisRegistered, access: 'leader' },

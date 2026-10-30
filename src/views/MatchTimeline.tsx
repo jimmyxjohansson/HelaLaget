@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, Fragment, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, Fragment, type ReactNode } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Trash2, Save, X, Play, Square, Clock, Hand, Check, Loader2, Flag } from 'lucide-react'
 import {
@@ -9,7 +9,7 @@ import {
   useDeleteMatchEvent,
   useUpdateMatchGoalkeeper,
   useFinishMatch,
-  useNotifyMatchClock,
+  useSetMatchClock,
 } from '../hooks/backend/matches'
 import { Combobox } from '../components/Combobox'
 import { Button } from '../lib/shadcn/button'
@@ -34,6 +34,13 @@ interface MatchData {
   opponent: string | null
   opponent_img: string | null
   goalkeeper: number | null
+  /** Matchklockan (verklig tid då den startades), NULL när den står */
+  clock_started_at?: string | null
+  clock_period?: number | null
+  clock_offset_minutes?: number | null
+  clock_period_start_minutes?: number | null
+  /** Serverns klocka, för att rätta telefonens klocka */
+  server_now?: string
   ourgoals: number
   theirgoals: number
   status: string | null
@@ -138,7 +145,7 @@ export default function MatchTimeline() {
   const { loading: deleting, trigger: deleteEvent } = useDeleteMatchEvent()
   const { loading: savingGk, trigger: saveGoalkeeper } = useUpdateMatchGoalkeeper()
   const { loading: finishing, trigger: finishMatch } = useFinishMatch()
-  const { trigger: notifyClock } = useNotifyMatchClock()
+  const { trigger: saveClock } = useSetMatchClock()
 
   const [form, setForm] = useState<EventForm | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -174,6 +181,27 @@ export default function MatchTimeline() {
   const match = result?.match
   const participants = result?.participants ?? []
   const events = result?.events ?? []
+
+  // Klockan sparas på matchen: fortsätt där den var när sidan öppnas. Bara vid
+  // första laddningen, så att senare omladdningar inte skriver över ett knapptryck.
+  const clockRestoredFor = useRef<number | null>(null)
+  useEffect(() => {
+    if (!match || clockRestoredFor.current === match.id) return
+    clockRestoredFor.current = match.id
+    if (!match.clock_started_at || !match.clock_period) return
+    const started = Date.parse(match.clock_started_at)
+    const serverNow = match.server_now ? Date.parse(match.server_now) : Date.now()
+    // En klocka som glömts igång i mer än sex timmar räknas som stoppad
+    if (Number.isNaN(started) || serverNow - started > 6 * 60 * 60 * 1000) return
+    const skew = serverNow - Date.now()
+    setTimer({
+      startedAt: started - skew,
+      offsetMinutes: match.clock_offset_minutes ?? 0,
+      periodStartMinutes: match.clock_period_start_minutes ?? 0,
+      period: Math.min(3, Math.max(1, match.clock_period)) as 1 | 2 | 3,
+    })
+    setNow(Date.now())
+  }, [match])
 
   // Sync goalkeeper select with the loaded match
   useEffect(() => {
@@ -232,8 +260,8 @@ export default function MatchTimeline() {
     const offset = period === 1 ? 0 : playtime! * (period - 1)
     setTimer({ startedAt: Date.now(), offsetMinutes: offset, periodStartMinutes: offset, period })
     setNow(Date.now())
-    // Notis om avspark / periodstart till dem som följer laget. Fel här stoppar inte klockan.
-    if (matchId) notifyClock({ matchId, event: 'start', period }).catch(() => {})
+    // Sparas på matchen och ger notis om avspark / periodstart. Fel här stoppar inte klockan.
+    if (matchId) saveClock({ matchId, event: 'start', period, offsetMinutes: offset, periodStartMinutes: offset }).catch(() => {})
   }
 
   function startFromMinute() {
@@ -243,11 +271,12 @@ export default function MatchTimeline() {
     const periodStartMinutes = playtime ? playtime * (period - 1) : 0
     setTimer({ startedAt: Date.now(), offsetMinutes: minute, periodStartMinutes, period })
     setNow(Date.now())
+    if (matchId) saveClock({ matchId, event: 'resume', period, offsetMinutes: minute, periodStartMinutes }).catch(() => {})
   }
 
   function stopTimer() {
     // Paus eller slutsignal beroende på perioden (servern räknar ut vilket)
-    if (timer && matchId) notifyClock({ matchId, event: 'stop', period: timer.period }).catch(() => {})
+    if (timer && matchId) saveClock({ matchId, event: 'stop', period: timer.period }).catch(() => {})
     setTimer(null)
   }
 

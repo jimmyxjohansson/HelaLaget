@@ -60,7 +60,7 @@ notiser inte är inställda och inga notiser skickas.
 - `public/sw.js` är en service worker som bara visar notiser (den cachar inget).
 - `notifications/*` sparar enhetens prenumeration (`push_subscriptions`) och
   vilka lag användaren följer (`push_squads`).
-- `matches/saveMatchEvent`, `deleteMatchEvent` och `notifyMatchClock` (anropas av
+- `matches/saveMatchEvent`, `deleteMatchEvent` och `setMatchClock` (anropas av
   tidslinjens klocka) lägger notisen i kö med Next.js `after()`. Den skickas
   med paketet `web-push` efter att svaret gått iväg, så registreringen blir
   inte långsammare. `match_notifications` håller reda på vad som redan skickats.

@@ -38,12 +38,18 @@ export default async function getMatch(req: { params: Params; user: User }) {
     goalkeeper: number | null
     vs: number | null
     league: number | null
+    clock_started_at: string | null
+    clock_period: number | null
+    clock_offset_minutes: number | null
+    clock_period_start_minutes: number | null
+    server_now: string
   }>(
     `SELECT
       m.id, m.matchtype, m.date, m.homeaway, m.ourgoals, m.theirgoals,
       m.matchplayers, m.indooroutdoor, m.outcome, m.status, m.location,
       m.notes, m.teamname, m.cup, m.cupphase, m.difficulty, m.playtime, m.periods,
       m.fogislink, m.fogisno, m.fogisregistered, m.svenskalag, m.vs, m.league, m.goalkeeper,
+      m.clock_started_at, m.clock_period, m.clock_offset_minutes, m.clock_period_start_minutes, now() AS server_now,
       t.team AS opponent,
       t.imgurl AS opponent_img,
       l.name AS league_name,

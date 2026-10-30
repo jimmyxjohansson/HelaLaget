@@ -25,7 +25,9 @@ export default async function finishMatch(req: { params: Params; user: User }) {
     ourgoals > theirgoals ? 'Vinst' : theirgoals > ourgoals ? 'Förlust' : 'Oavgjort'
 
   await db.query(
-    `UPDATE matches SET status = 'Avslutad', outcome = $1 WHERE id = $2`,
+    `UPDATE matches SET status = 'Avslutad', outcome = $1,
+       clock_started_at = NULL, clock_period = NULL, clock_offset_minutes = NULL, clock_period_start_minutes = NULL
+     WHERE id = $2`,
     [outcome, id]
   )
 
