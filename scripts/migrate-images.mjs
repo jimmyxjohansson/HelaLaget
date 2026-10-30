@@ -12,6 +12,7 @@
 // Skriptet går att köra flera gånger: redan flyttade bilder hoppas över.
 import { createHash } from 'node:crypto'
 import pg from 'pg'
+import { createClient } from '@supabase/supabase-js'
 
 const apply = process.argv.includes('--apply')
 const env = process.env
@@ -47,21 +48,31 @@ async function download(url) {
   return { bytes: new Uint8Array(await res.arrayBuffer()), type }
 }
 
+let storage = null
+
+/** Supabase-klient med service role/secret-nyckeln (fungerar med både sb_secret_ och äldre eyJ-nycklar). */
+function storageClient() {
+  if (!storage) {
+    storage = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } }).storage
+  }
+  return storage
+}
+
+/** Kontrollera att bucketen finns och att nyckeln ger åtkomst, innan något flyttas. */
+async function checkBucket() {
+  const { data, error } = await storageClient().getBucket(BUCKET)
+  if (error || !data) {
+    const hint = /not found/i.test(error?.message ?? '')
+      ? `Bucketen "${BUCKET}" finns inte. Kör supabase/setup.sql i Supabase → SQL Editor.`
+      : 'Kontrollera SUPABASE_SERVICE_ROLE_KEY (Project Settings → API Keys → Secret key) och NEXT_PUBLIC_SUPABASE_URL i .env.local.'
+    throw new Error(`Kommer inte åt Supabase Storage: ${error?.message ?? 'okänt fel'}. ${hint}`)
+  }
+}
+
 async function upload(path, bytes, type) {
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
-    method: 'POST',
-    headers: {
-      apikey: SERVICE_KEY,
-      // Äldre service_role-nycklar är JWT:er och skickas även som Bearer-token.
-      // Nya sb_secret_-nycklar räcker i apikey-headern.
-      ...(SERVICE_KEY.startsWith('eyJ') ? { Authorization: `Bearer ${SERVICE_KEY}` } : {}),
-      'Content-Type': type,
-      'x-upsert': 'true',
-    },
-    body: bytes,
-  })
-  if (!res.ok) throw new Error(`uppladdning gav HTTP ${res.status}: ${await res.text()}`)
-  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`
+  const { error } = await storageClient().from(BUCKET).upload(path, bytes, { contentType: type, upsert: true })
+  if (error) throw new Error(`uppladdning misslyckades: ${error.message}`)
+  return storageClient().from(BUCKET).getPublicUrl(path).data.publicUrl
 }
 
 /** Samma Retool-länk ger alltid samma filnamn, så omkörningar skriver över i stället för att duplicera. */
@@ -84,6 +95,7 @@ async function main() {
   })
   await client.connect()
 
+  if (apply) await checkBucket()
   console.log(apply ? 'Flyttar bilder …\n' : 'TORRKÖRNING – inget ändras. Kör med --apply för att flytta.\n')
   const failures = []
   let moved = 0
