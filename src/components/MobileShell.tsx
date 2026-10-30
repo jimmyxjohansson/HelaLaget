@@ -19,7 +19,7 @@ export default function MobileShell({ children }: Props) {
 
       {/* Content column */}
       <div className="relative w-full max-w-[430px] md:max-w-[1080px] bg-background flex flex-col min-h-screen shadow-lg md:shadow-none md:border-x md:border-border">
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        <main className="flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
           {children}
         </main>
         {/* Bottom navigation for mobile only */}

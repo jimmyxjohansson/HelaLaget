@@ -41,7 +41,7 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
   const adminActive = adminTabs.some(t => pathname.startsWith(t.to))
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border max-w-[430px] mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border max-w-[430px] mx-auto pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch">
         {tabs.map(({ to, icon: Icon, label }) => (
           <Link

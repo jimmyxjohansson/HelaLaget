@@ -8,11 +8,23 @@ export const metadata: Metadata = {
   title: 'Skabersjö IF',
   description: 'Träningar, matcher och cuper för laget',
   robots: { index: false, follow: false },
+  applicationName: 'P13',
+  appleWebApp: {
+    capable: true,
+    title: 'P13',
+    statusBarStyle: 'default',
+  },
+  icons: {
+    icon: [{ url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' }],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  formatDetection: { telephone: false },
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#fafafa' },
     { media: '(prefers-color-scheme: dark)', color: '#18181b' },
