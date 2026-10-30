@@ -16,9 +16,24 @@ import { createClient } from '@supabase/supabase-js'
 
 const apply = process.argv.includes('--apply')
 const env = process.env
-const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '')
-const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY
-const BUCKET = env.NEXT_PUBLIC_STORAGE_BUCKET || 'images'
+// Värden från .env.local kan ha med citattecken, mellanslag eller radbrytningar
+// (t.ex. efter `vercel env pull`). Städa dem innan de används.
+const clean = (v) => (v ?? '').replace(/\\n/g, '').trim().replace(/^["']|["']$/g, '').trim()
+
+/** Bara https://<projekt>.supabase.co – utan sökväg som /rest/v1 eller avslutande snedstreck. */
+function supabaseOrigin(raw) {
+  const v = clean(raw)
+  if (!v) return ''
+  try {
+    return new URL(v).origin
+  } catch {
+    return v.replace(/\/+$/, '')
+  }
+}
+
+const SUPABASE_URL = supabaseOrigin(env.NEXT_PUBLIC_SUPABASE_URL)
+const SERVICE_KEY = clean(env.SUPABASE_SERVICE_ROLE_KEY)
+const BUCKET = clean(env.NEXT_PUBLIC_STORAGE_BUCKET) || 'images'
 const OWN_LOGO = env.NEXT_PUBLIC_OWN_TEAM_LOGO_URL ||
   'https://skabersjoifp13.retool.com/api/file/1b186491-0085-4624-810b-a243328c9160'
 
@@ -65,7 +80,11 @@ async function checkBucket() {
     const hint = /not found/i.test(error?.message ?? '')
       ? `Bucketen "${BUCKET}" finns inte. Kör supabase/setup.sql i Supabase → SQL Editor.`
       : 'Kontrollera SUPABASE_SERVICE_ROLE_KEY (Project Settings → API Keys → Secret key) och NEXT_PUBLIC_SUPABASE_URL i .env.local.'
-    throw new Error(`Kommer inte åt Supabase Storage: ${error?.message ?? 'okänt fel'}. ${hint}`)
+    const keyKind = SERVICE_KEY.startsWith('sb_secret_') ? 'sb_secret_…' : SERVICE_KEY.startsWith('eyJ') ? 'äldre JWT (eyJ…)' : SERVICE_KEY.startsWith('sb_publishable_') ? 'PUBLISHABLE – fel nyckel!' : 'okänd typ'
+    throw new Error(
+      `Kommer inte åt Supabase Storage: ${error?.message ?? 'okänt fel'}.\n` +
+        `  Supabase-adress: ${SUPABASE_URL}\n  Bucket: "${BUCKET}"\n  Nyckel: ${keyKind}, ${SERVICE_KEY.length} tecken\n${hint}`,
+    )
   }
 }
 
