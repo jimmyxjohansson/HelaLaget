@@ -63,6 +63,7 @@ export default function SquadSettings() {
     logoUrl: '',
     planningUrl: '',
     trainingAppUrl: '',
+    svenskalagIcalUrl: '',
   })
   const [savedSettings, setSavedSettings] = useState(false)
   const [newLeader, setNewLeader] = useState({ firstname: '', lastname: '' })
@@ -81,6 +82,7 @@ export default function SquadSettings() {
             logoUrl: s.logoUrl ?? '',
             planningUrl: s.planningUrl ?? '',
             trainingAppUrl: s.trainingAppUrl ?? '',
+            svenskalagIcalUrl: s.svenskalagIcalUrl ?? '',
           })
       })
       .catch(() => {})
@@ -321,6 +323,19 @@ export default function SquadSettings() {
               placeholder="https://…#trainingid={id}"
               onChange={(e) => setForm({ ...form, trainingAppUrl: e.target.value })}
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sq-svl">Svenskalag-kalender (valfritt)</Label>
+            <Input
+              id="sq-svl"
+              value={form.svenskalagIcalUrl}
+              placeholder="webcal://… eller https://…svenskalag.se…"
+              onChange={(e) => setForm({ ...form, svenskalagIcalUrl: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              I Svenskalag: lagets kalender → Prenumerera → kopiera länken. Träningar och matcher hämtas då automatiskt
+              (Admin → Svenskalag).
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={saveSettings.loading}>

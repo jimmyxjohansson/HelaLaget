@@ -84,3 +84,28 @@ export const adminDb = {
     return { data: result.rows as T[] }
   },
 }
+
+export type Query = <T = Record<string, unknown>>(text: string, params?: unknown[]) => Promise<{ data: T[] }>
+
+/**
+ * Kör `fn` i en transaktion UTAN RLS (som tabellägaren). Samma förbehåll som
+ * adminDb: anroparen ansvarar för behörighet och för att filtrera på rätt lag.
+ */
+export async function withAdminTransaction<T>(fn: (query: Query) => Promise<T>): Promise<T> {
+  const client = await pool().connect()
+  const query: Query = async (text, params = []) => {
+    const result = await client.query(text, params)
+    return { data: result.rows }
+  }
+  try {
+    await client.query('BEGIN')
+    const result = await fn(query)
+    await client.query('COMMIT')
+    return result
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {})
+    throw e
+  } finally {
+    client.release()
+  }
+}

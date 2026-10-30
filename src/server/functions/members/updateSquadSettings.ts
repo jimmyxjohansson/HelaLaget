@@ -1,5 +1,6 @@
 import { adminDb } from '@/server/db'
 import { AccessError } from '@/server/access'
+import { normalizeFeedUrl } from '@/server/svenskalag/sync'
 import type { SquadAccess, User } from '@/server/types'
 
 export const access = 'admin'
@@ -11,6 +12,8 @@ type Params = {
   logoUrl?: string | null
   planningUrl?: string | null
   trainingAppUrl?: string | null
+  /** Lagets kalenderlänk från Svenskalag (webcal:// eller https://). */
+  svenskalagIcalUrl?: string | null
 }
 
 const COLOR = /^#[0-9a-fA-F]{6}$/
@@ -26,9 +29,17 @@ export default async function updateSquadSettings(req: { params: Params; user: U
   if (![p.logoUrl, p.planningUrl, p.trainingAppUrl].every(URL_OR_EMPTY)) {
     throw new AccessError('Länkar måste börja med https://', 400)
   }
+  let feedUrl: string | null = null
+  if (p.svenskalagIcalUrl?.trim()) {
+    try {
+      feedUrl = normalizeFeedUrl(p.svenskalagIcalUrl)
+    } catch (e) {
+      throw new AccessError((e as Error).message, 400)
+    }
+  }
   await adminDb.query(
     `UPDATE squads SET name = $2, primary_color = $3, accent_color = $4,
-       logo_url = $5, planning_url = $6, training_app_url = $7
+       logo_url = $5, planning_url = $6, training_app_url = $7, svenskalag_ical_url = $8
      WHERE id = $1`,
     [
       req.squad!.squadId,
@@ -38,6 +49,7 @@ export default async function updateSquadSettings(req: { params: Params; user: U
       p.logoUrl || null,
       p.planningUrl || null,
       p.trainingAppUrl || null,
+      feedUrl,
     ],
   )
   return { ok: true }

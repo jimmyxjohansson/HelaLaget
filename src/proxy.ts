@@ -7,6 +7,9 @@ import { createServerClient } from '@supabase/ssr'
  * besökare till /login. API-routes svarar 401 i stället för att omdirigera.
  */
 export async function proxy(request: NextRequest) {
+  // Den dagliga körningen från Vercel Cron har ingen inloggning; routen kräver CRON_SECRET.
+  if (request.nextUrl.pathname.startsWith('/api/cron/')) return NextResponse.next()
+
   let response = NextResponse.next({ request })
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL

@@ -6,6 +6,8 @@ till Next.js med Supabase (databas, inloggning och bildlagring) och Vercel (host
 
 **Flera lag, roller och säkerhet:** se [docs/FLERA-LAG.md](docs/FLERA-LAG.md).
 
+**Import från Svenskalag:** se [docs/SVENSKALAG.md](docs/SVENSKALAG.md).
+
 **Ska appen flyttas från Retool?** Följ [docs/MIGRERING.md](docs/MIGRERING.md).
 
 ## Teknik
