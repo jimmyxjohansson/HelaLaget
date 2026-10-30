@@ -36,6 +36,11 @@ export async function callBackend<R>(name: string, params: unknown): Promise<R> 
   }
 
   const body = await res.json().catch(() => null)
+  // Inte med i något lag (längre): till sidan där man väljer eller går med i lag.
+  if (res.status === 409 && body?.code === 'NO_SQUAD' && !window.location.pathname.startsWith('/lag')) {
+    window.location.href = '/lag'
+    throw new BackendError(body.error, 409)
+  }
   if (!res.ok) {
     const message = body && typeof body.error === 'string' ? body.error : `Något gick fel (${res.status}).`
     throw new BackendError(message, res.status)

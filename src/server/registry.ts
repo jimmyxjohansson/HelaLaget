@@ -1,8 +1,11 @@
 // GENERERAD FIL – ändra inte för hand. Kör `npm run generate`.
 
 import 'server-only'
-import type { BackendRequest } from './types'
+import type { Access, BackendRequest } from './types'
+import account_getMe from './functions/account/getMe'
+import account_requestJoin from './functions/account/requestJoin'
 import cups_addCupParticipants from './functions/cups/addCupParticipants'
+import cups_createCup from './functions/cups/createCup'
 import cups_getCup from './functions/cups/getCup'
 import cups_getCupAttendees from './functions/cups/getCupAttendees'
 import cups_getCupParticipants from './functions/cups/getCupParticipants'
@@ -12,6 +15,9 @@ import cups_updateCup from './functions/cups/updateCup'
 import cups_updateCupParticipantReason from './functions/cups/updateCupParticipantReason'
 import cups_updateCupParticipantsStatus from './functions/cups/updateCupParticipantsStatus'
 import drills_getDrills from './functions/drills/getDrills'
+import leaders_createLeader from './functions/leaders/createLeader'
+import leaders_getLeaders from './functions/leaders/getLeaders'
+import leaders_updateLeader from './functions/leaders/updateLeader'
 import leagues_createLeague from './functions/leagues/createLeague'
 import leagues_deleteLeague from './functions/leagues/deleteLeague'
 import leagues_deleteStanding from './functions/leagues/deleteStanding'
@@ -41,9 +47,25 @@ import matches_updateMatchGoalkeeper from './functions/matches/updateMatchGoalke
 import matches_updateParticipant from './functions/matches/updateParticipant'
 import matches_updateParticipantReason from './functions/matches/updateParticipantReason'
 import matches_updateParticipantsStatus from './functions/matches/updateParticipantsStatus'
+import members_decideMember from './functions/members/decideMember'
+import members_getMembers from './functions/members/getMembers'
+import members_getSquadSettings from './functions/members/getSquadSettings'
+import members_regenerateJoinCode from './functions/members/regenerateJoinCode'
+import members_removeMember from './functions/members/removeMember'
+import members_updateMember from './functions/members/updateMember'
+import members_updateSquadSettings from './functions/members/updateSquadSettings'
+import organizations_addOrganizationAdmin from './functions/organizations/addOrganizationAdmin'
+import organizations_addSquadAdmin from './functions/organizations/addSquadAdmin'
+import organizations_createOrganization from './functions/organizations/createOrganization'
+import organizations_createSquad from './functions/organizations/createSquad'
+import organizations_getOrganizations from './functions/organizations/getOrganizations'
+import players_addPlayersToSquad from './functions/players/addPlayersToSquad'
+import players_createPlayer from './functions/players/createPlayer'
+import players_getOrganizationPlayers from './functions/players/getOrganizationPlayers'
 import players_getPlayer from './functions/players/getPlayer'
 import players_getPlayers from './functions/players/getPlayers'
 import players_getUpcomingBirthdays from './functions/players/getUpcomingBirthdays'
+import players_removePlayerFromSquad from './functions/players/removePlayerFromSquad'
 import players_updatePlayer from './functions/players/updatePlayer'
 import teams_createTeam from './functions/teams/createTeam'
 import teams_deleteTeam from './functions/teams/deleteTeam'
@@ -78,77 +100,99 @@ import trainings_updateTraining from './functions/trainings/updateTraining'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type BackendFunction = (req: BackendRequest<any>) => Promise<unknown>
 
-export const functions: Record<string, BackendFunction> = {
-  'cups/addCupParticipants': cups_addCupParticipants,
-  'cups/getCup': cups_getCup,
-  'cups/getCupAttendees': cups_getCupAttendees,
-  'cups/getCupParticipants': cups_getCupParticipants,
-  'cups/getCups': cups_getCups,
-  'cups/removeCupParticipants': cups_removeCupParticipants,
-  'cups/updateCup': cups_updateCup,
-  'cups/updateCupParticipantReason': cups_updateCupParticipantReason,
-  'cups/updateCupParticipantsStatus': cups_updateCupParticipantsStatus,
-  'drills/getDrills': drills_getDrills,
-  'leagues/createLeague': leagues_createLeague,
-  'leagues/deleteLeague': leagues_deleteLeague,
-  'leagues/deleteStanding': leagues_deleteStanding,
-  'leagues/getLeagueMatches': leagues_getLeagueMatches,
-  'leagues/getLeagues': leagues_getLeagues,
-  'leagues/updateLeague': leagues_updateLeague,
-  'leagues/upsertStanding': leagues_upsertStanding,
-  'matches/addMatchParticipants': matches_addMatchParticipants,
-  'matches/addParticipant': matches_addParticipant,
-  'matches/createMatch': matches_createMatch,
-  'matches/createTeam': matches_createTeam,
-  'matches/deleteMatch': matches_deleteMatch,
-  'matches/deleteMatchEvent': matches_deleteMatchEvent,
-  'matches/finishMatch': matches_finishMatch,
-  'matches/getMatch': matches_getMatch,
-  'matches/getMatches': matches_getMatches,
-  'matches/getMatchesVsOpponent': matches_getMatchesVsOpponent,
-  'matches/getTeamsAndLeagues': matches_getTeamsAndLeagues,
-  'matches/getUpcomingMatches': matches_getUpcomingMatches,
-  'matches/removeParticipant': matches_removeParticipant,
-  'matches/removeParticipants': matches_removeParticipants,
-  'matches/saveMatchEvent': matches_saveMatchEvent,
-  'matches/syncParticipantsFromCup': matches_syncParticipantsFromCup,
-  'matches/updateMatch': matches_updateMatch,
-  'matches/updateMatchFogisRegistered': matches_updateMatchFogisRegistered,
-  'matches/updateMatchGoalkeeper': matches_updateMatchGoalkeeper,
-  'matches/updateParticipant': matches_updateParticipant,
-  'matches/updateParticipantReason': matches_updateParticipantReason,
-  'matches/updateParticipantsStatus': matches_updateParticipantsStatus,
-  'players/getPlayer': players_getPlayer,
-  'players/getPlayers': players_getPlayers,
-  'players/getUpcomingBirthdays': players_getUpcomingBirthdays,
-  'players/updatePlayer': players_updatePlayer,
-  'teams/createTeam': teams_createTeam,
-  'teams/deleteTeam': teams_deleteTeam,
-  'teams/getTeams': teams_getTeams,
-  'teams/updateTeam': teams_updateTeam,
-  'trainings/addLeader': trainings_addLeader,
-  'trainings/addLeaders': trainings_addLeaders,
-  'trainings/addParticipant': trainings_addParticipant,
-  'trainings/addParticipants': trainings_addParticipants,
-  'trainings/copyTraining': trainings_copyTraining,
-  'trainings/createTraining': trainings_createTraining,
-  'trainings/deleteTraining': trainings_deleteTraining,
-  'trainings/getAvailableLeaders': trainings_getAvailableLeaders,
-  'trainings/getAvailablePlayers': trainings_getAvailablePlayers,
-  'trainings/getPlayerTrainings': trainings_getPlayerTrainings,
-  'trainings/getStats': trainings_getStats,
-  'trainings/getTrainingAttendance': trainings_getTrainingAttendance,
-  'trainings/getTrainingDetail': trainings_getTrainingDetail,
-  'trainings/getTrainingGroups': trainings_getTrainingGroups,
-  'trainings/getTrainings': trainings_getTrainings,
-  'trainings/markAsReported': trainings_markAsReported,
-  'trainings/removeLeader': trainings_removeLeader,
-  'trainings/removeParticipant': trainings_removeParticipant,
-  'trainings/updateAttendanceStatus': trainings_updateAttendanceStatus,
-  'trainings/updateGroupRank': trainings_updateGroupRank,
-  'trainings/updateLeaderReason': trainings_updateLeaderReason,
-  'trainings/updateLeaderStatus': trainings_updateLeaderStatus,
-  'trainings/updateParticipantGroups': trainings_updateParticipantGroups,
-  'trainings/updateParticipantReason': trainings_updateParticipantReason,
-  'trainings/updateTraining': trainings_updateTraining,
+export const functions: Record<string, { handler: BackendFunction; access: Access }> = {
+  'account/getMe': { handler: account_getMe, access: 'user' },
+  'account/requestJoin': { handler: account_requestJoin, access: 'user' },
+  'cups/addCupParticipants': { handler: cups_addCupParticipants, access: 'leader' },
+  'cups/createCup': { handler: cups_createCup, access: 'leader' },
+  'cups/getCup': { handler: cups_getCup, access: 'viewer' },
+  'cups/getCupAttendees': { handler: cups_getCupAttendees, access: 'viewer' },
+  'cups/getCupParticipants': { handler: cups_getCupParticipants, access: 'viewer' },
+  'cups/getCups': { handler: cups_getCups, access: 'viewer' },
+  'cups/removeCupParticipants': { handler: cups_removeCupParticipants, access: 'leader' },
+  'cups/updateCup': { handler: cups_updateCup, access: 'leader' },
+  'cups/updateCupParticipantReason': { handler: cups_updateCupParticipantReason, access: 'leader' },
+  'cups/updateCupParticipantsStatus': { handler: cups_updateCupParticipantsStatus, access: 'leader' },
+  'drills/getDrills': { handler: drills_getDrills, access: 'viewer' },
+  'leaders/createLeader': { handler: leaders_createLeader, access: 'leader' },
+  'leaders/getLeaders': { handler: leaders_getLeaders, access: 'viewer' },
+  'leaders/updateLeader': { handler: leaders_updateLeader, access: 'leader' },
+  'leagues/createLeague': { handler: leagues_createLeague, access: 'leader' },
+  'leagues/deleteLeague': { handler: leagues_deleteLeague, access: 'leader' },
+  'leagues/deleteStanding': { handler: leagues_deleteStanding, access: 'leader' },
+  'leagues/getLeagueMatches': { handler: leagues_getLeagueMatches, access: 'viewer' },
+  'leagues/getLeagues': { handler: leagues_getLeagues, access: 'viewer' },
+  'leagues/updateLeague': { handler: leagues_updateLeague, access: 'leader' },
+  'leagues/upsertStanding': { handler: leagues_upsertStanding, access: 'leader' },
+  'matches/addMatchParticipants': { handler: matches_addMatchParticipants, access: 'leader' },
+  'matches/addParticipant': { handler: matches_addParticipant, access: 'leader' },
+  'matches/createMatch': { handler: matches_createMatch, access: 'leader' },
+  'matches/createTeam': { handler: matches_createTeam, access: 'leader' },
+  'matches/deleteMatch': { handler: matches_deleteMatch, access: 'leader' },
+  'matches/deleteMatchEvent': { handler: matches_deleteMatchEvent, access: 'leader' },
+  'matches/finishMatch': { handler: matches_finishMatch, access: 'leader' },
+  'matches/getMatch': { handler: matches_getMatch, access: 'viewer' },
+  'matches/getMatches': { handler: matches_getMatches, access: 'viewer' },
+  'matches/getMatchesVsOpponent': { handler: matches_getMatchesVsOpponent, access: 'viewer' },
+  'matches/getTeamsAndLeagues': { handler: matches_getTeamsAndLeagues, access: 'viewer' },
+  'matches/getUpcomingMatches': { handler: matches_getUpcomingMatches, access: 'viewer' },
+  'matches/removeParticipant': { handler: matches_removeParticipant, access: 'leader' },
+  'matches/removeParticipants': { handler: matches_removeParticipants, access: 'leader' },
+  'matches/saveMatchEvent': { handler: matches_saveMatchEvent, access: 'leader' },
+  'matches/syncParticipantsFromCup': { handler: matches_syncParticipantsFromCup, access: 'leader' },
+  'matches/updateMatch': { handler: matches_updateMatch, access: 'leader' },
+  'matches/updateMatchFogisRegistered': { handler: matches_updateMatchFogisRegistered, access: 'leader' },
+  'matches/updateMatchGoalkeeper': { handler: matches_updateMatchGoalkeeper, access: 'leader' },
+  'matches/updateParticipant': { handler: matches_updateParticipant, access: 'leader' },
+  'matches/updateParticipantReason': { handler: matches_updateParticipantReason, access: 'leader' },
+  'matches/updateParticipantsStatus': { handler: matches_updateParticipantsStatus, access: 'leader' },
+  'members/decideMember': { handler: members_decideMember, access: 'admin' },
+  'members/getMembers': { handler: members_getMembers, access: 'admin' },
+  'members/getSquadSettings': { handler: members_getSquadSettings, access: 'admin' },
+  'members/regenerateJoinCode': { handler: members_regenerateJoinCode, access: 'admin' },
+  'members/removeMember': { handler: members_removeMember, access: 'admin' },
+  'members/updateMember': { handler: members_updateMember, access: 'admin' },
+  'members/updateSquadSettings': { handler: members_updateSquadSettings, access: 'admin' },
+  'organizations/addOrganizationAdmin': { handler: organizations_addOrganizationAdmin, access: 'superadmin' },
+  'organizations/addSquadAdmin': { handler: organizations_addSquadAdmin, access: 'user' },
+  'organizations/createOrganization': { handler: organizations_createOrganization, access: 'superadmin' },
+  'organizations/createSquad': { handler: organizations_createSquad, access: 'user' },
+  'organizations/getOrganizations': { handler: organizations_getOrganizations, access: 'user' },
+  'players/addPlayersToSquad': { handler: players_addPlayersToSquad, access: 'leader' },
+  'players/createPlayer': { handler: players_createPlayer, access: 'leader' },
+  'players/getOrganizationPlayers': { handler: players_getOrganizationPlayers, access: 'leader' },
+  'players/getPlayer': { handler: players_getPlayer, access: 'viewer' },
+  'players/getPlayers': { handler: players_getPlayers, access: 'viewer' },
+  'players/getUpcomingBirthdays': { handler: players_getUpcomingBirthdays, access: 'viewer' },
+  'players/removePlayerFromSquad': { handler: players_removePlayerFromSquad, access: 'leader' },
+  'players/updatePlayer': { handler: players_updatePlayer, access: 'leader' },
+  'teams/createTeam': { handler: teams_createTeam, access: 'leader' },
+  'teams/deleteTeam': { handler: teams_deleteTeam, access: 'leader' },
+  'teams/getTeams': { handler: teams_getTeams, access: 'viewer' },
+  'teams/updateTeam': { handler: teams_updateTeam, access: 'leader' },
+  'trainings/addLeader': { handler: trainings_addLeader, access: 'leader' },
+  'trainings/addLeaders': { handler: trainings_addLeaders, access: 'leader' },
+  'trainings/addParticipant': { handler: trainings_addParticipant, access: 'leader' },
+  'trainings/addParticipants': { handler: trainings_addParticipants, access: 'leader' },
+  'trainings/copyTraining': { handler: trainings_copyTraining, access: 'leader' },
+  'trainings/createTraining': { handler: trainings_createTraining, access: 'leader' },
+  'trainings/deleteTraining': { handler: trainings_deleteTraining, access: 'leader' },
+  'trainings/getAvailableLeaders': { handler: trainings_getAvailableLeaders, access: 'viewer' },
+  'trainings/getAvailablePlayers': { handler: trainings_getAvailablePlayers, access: 'viewer' },
+  'trainings/getPlayerTrainings': { handler: trainings_getPlayerTrainings, access: 'viewer' },
+  'trainings/getStats': { handler: trainings_getStats, access: 'viewer' },
+  'trainings/getTrainingAttendance': { handler: trainings_getTrainingAttendance, access: 'viewer' },
+  'trainings/getTrainingDetail': { handler: trainings_getTrainingDetail, access: 'viewer' },
+  'trainings/getTrainingGroups': { handler: trainings_getTrainingGroups, access: 'viewer' },
+  'trainings/getTrainings': { handler: trainings_getTrainings, access: 'viewer' },
+  'trainings/markAsReported': { handler: trainings_markAsReported, access: 'leader' },
+  'trainings/removeLeader': { handler: trainings_removeLeader, access: 'leader' },
+  'trainings/removeParticipant': { handler: trainings_removeParticipant, access: 'leader' },
+  'trainings/updateAttendanceStatus': { handler: trainings_updateAttendanceStatus, access: 'leader' },
+  'trainings/updateGroupRank': { handler: trainings_updateGroupRank, access: 'leader' },
+  'trainings/updateLeaderReason': { handler: trainings_updateLeaderReason, access: 'leader' },
+  'trainings/updateLeaderStatus': { handler: trainings_updateLeaderStatus, access: 'leader' },
+  'trainings/updateParticipantGroups': { handler: trainings_updateParticipantGroups, access: 'leader' },
+  'trainings/updateParticipantReason': { handler: trainings_updateParticipantReason, access: 'leader' },
+  'trainings/updateTraining': { handler: trainings_updateTraining, access: 'leader' },
 }

@@ -7,6 +7,7 @@ import { useGetUpcomingMatches } from '../hooks/backend/matches'
 import { useGetUpcomingBirthdays } from '../hooks/backend/players'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
 import { MapPin, ChevronRight, Home as HomeIcon, Plane, Cake } from 'lucide-react'
+import { ownTeamName } from '../utils/constants'
 
 function matchTypeColor(type: string): string {
   if (type === 'Serie') return '#2563eb'
@@ -121,10 +122,10 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-0">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-3" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[#FFCF08]/70 text-sm font-medium uppercase tracking-widest">Skabersjö IF</p>
+            <p className="text-team-accent/70 text-sm font-medium uppercase tracking-widest">{ownTeamName()}</p>
             <h1 className="text-2xl font-bold mt-0.5">P-13</h1>
           </div>
         </div>

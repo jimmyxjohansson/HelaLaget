@@ -157,7 +157,7 @@ export default function MatchForm({ open, onClose, onCreated }: Props) {
           <div className="flex flex-col gap-1.5">
             <Label>Lagnamn</Label>
             <Input
-              placeholder="t.ex. Skabersjö IF:Svart"
+              placeholder="t.ex. Svart"
               value={teamname}
               onChange={e => setTeamname(e.target.value)}
             />

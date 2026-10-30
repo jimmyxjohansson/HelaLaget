@@ -4,7 +4,7 @@
 // Lägg till en ny backend-funktion genom att skapa en fil där (default-export
 // `async function namn(req: { params: Params; user: User })`) och kör sedan:
 //   npm run generate
-import { readdirSync, writeFileSync, mkdirSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -29,6 +29,16 @@ const clientOnly = {
 }
 
 const cap = (s) => s[0].toUpperCase() + s.slice(1)
+const ACCESS = ['viewer', 'leader', 'admin', 'user', 'superadmin']
+
+/** Behörighet: `export const access = '...'` i filen, annars get* → viewer, övriga → leader. */
+function accessFor(mod, fn) {
+  const src = readFileSync(join(fnDir, mod, `${fn}.ts`), 'utf8')
+  const m = src.match(/export const access(?:\s*:\s*Access)?\s*=\s*'(\w+)'/)
+  const access = m ? m[1] : fn.startsWith('get') ? 'viewer' : 'leader'
+  if (!ACCESS.includes(access)) throw new Error(`${mod}/${fn}: okänd access '${access}'`)
+  return access
+}
 const header = '// GENERERAD FIL – ändra inte för hand. Kör `npm run generate`.\n'
 
 const modules = readdirSync(fnDir).filter((d) => statSync(join(fnDir, d)).isDirectory()).sort()
@@ -58,7 +68,7 @@ for (const mod of modules) {
   for (const fn of fns) {
     const id = `${mod}_${fn}`
     registryImports.push(`import ${id} from './functions/${mod}/${fn}'`)
-    registryEntries.push(`  '${mod}/${fn}': ${id},`)
+    registryEntries.push(`  '${mod}/${fn}': { handler: ${id}, access: '${accessFor(mod, fn)}' },`)
     lines.push(
       `export const use${cap(fn)} = createBackendHook<`,
       `  Parameters<typeof ${fn}>[0]['params'],`,
@@ -78,13 +88,13 @@ writeFileSync(
   [
     header,
     "import 'server-only'",
-    "import type { BackendRequest } from './types'",
+    "import type { Access, BackendRequest } from './types'",
     ...registryImports,
     '',
     '// eslint-disable-next-line @typescript-eslint/no-explicit-any',
     'type BackendFunction = (req: BackendRequest<any>) => Promise<unknown>',
     '',
-    'export const functions: Record<string, BackendFunction> = {',
+    'export const functions: Record<string, { handler: BackendFunction; access: Access }> = {',
     ...registryEntries,
     '}',
     '',

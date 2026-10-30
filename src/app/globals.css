@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 :root {
+  /* Lagets färger som RGB-kanaler; skrivs över av SquadProvider */
+  --team-primary: 16 106 55;
+  --team-accent: 255 207 8;
   --background: 0 0.0% 98.0%;
   --foreground: 240 5.9% 10.0%;
   --card: 0 0.0% 100.0%;

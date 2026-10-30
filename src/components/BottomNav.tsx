@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation'
 import { Home, CalendarDays, Users, Sun, Moon, Trophy, Medal, Shield, Settings, ListOrdered, CalendarRange, LogOut } from 'lucide-react'
 import { cn } from '../lib/shadcn/utils'
 import { isActivePath, signOut } from '../lib/navigation'
+import { currentSquad } from '../lib/squad-store'
+import { accountLinks } from './accountLinks'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -34,11 +36,12 @@ const adminTabs = [
   { to: '/teams', icon: Shield, label: 'Lag' },
 ]
 
-const PLANERING_URL = 'https://skabersjoifp13.retool.com/apps/d82e8f9c-c1cf-11ee-a364-47bcb6eb07b0/Planering?_embed=true'
 
 export default function BottomNav({ theme, onToggleTheme }: Props) {
   const pathname = usePathname() ?? '/'
-  const adminActive = adminTabs.some(t => pathname.startsWith(t.to))
+  const squad = currentSquad()
+  const extraLinks = accountLinks()
+  const adminActive = [...adminTabs, ...extraLinks].some(t => pathname.startsWith(t.to))
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border max-w-[430px] mx-auto pb-[env(safe-area-inset-bottom)]">
@@ -75,11 +78,15 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="end" className="w-44 mb-1">
-            <DropdownMenuLabel>Admin</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              {squad ? `${squad.organizationName} ${squad.squadName}` : 'Admin'}
+              {squad?.role === 'viewer' && <span className="block text-xs font-normal text-muted-foreground">Läsbehörighet</span>}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {squad?.planningUrl && (
             <DropdownMenuItem asChild>
               <a
-                href={PLANERING_URL}
+                href={squad.planningUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 cursor-pointer"
@@ -88,7 +95,17 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
                 <span>Planering</span>
               </a>
             </DropdownMenuItem>
+            )}
             {adminTabs.map(({ to, icon: Icon, label }) => (
+              <DropdownMenuItem key={to} asChild>
+                <Link href={to} className="flex items-center gap-2 cursor-pointer">
+                  <Icon className="w-4 h-4" />
+                  <span>{label}</span>
+                </Link>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            {extraLinks.map(({ to, icon: Icon, label }) => (
               <DropdownMenuItem key={to} asChild>
                 <Link href={to} className="flex items-center gap-2 cursor-pointer">
                   <Icon className="w-4 h-4" />

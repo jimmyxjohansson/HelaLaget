@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -9,8 +10,8 @@ import { Input } from '@/lib/shadcn/input'
 import { Label } from '@/lib/shadcn/label'
 
 /**
- * Inloggning med e-post och lösenord. Konton skapas av en administratör i
- * Supabase (Authentication → Users → Add user); det går inte att registrera sig här.
+ * Inloggning med e-post och lösenord. Nya användare skapar konto på /registrera
+ * och ansöker sedan om att gå med i ett lag.
  */
 export default function LoginForm() {
   const searchParams = useSearchParams()
@@ -69,6 +70,15 @@ export default function LoginForm() {
         {busy && <Loader2 className="animate-spin" />}
         Logga in
       </Button>
+      <p className="text-sm text-muted-foreground">
+        Ny här?{' '}
+        <Link
+          href={`/registrera?next=${encodeURIComponent(safeNext(searchParams.get('next')))}`}
+          className="underline underline-offset-4"
+        >
+          Skapa konto
+        </Link>
+      </p>
       <p className="text-xs text-muted-foreground">Glömt lösenordet? Kontakta en administratör.</p>
     </form>
   )

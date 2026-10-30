@@ -195,11 +195,11 @@ export default function Trainings() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-3" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Träningar</h1>
-            <p className="text-[#FFCF08]/70 text-sm">{filtered.length} pass</p>
+            <p className="text-team-accent/70 text-sm">{filtered.length} pass</p>
           </div>
           <div className="flex items-center gap-3">
             <AttendanceStatsButton />
@@ -435,7 +435,7 @@ export default function Trainings() {
             <Button
               onClick={handleSaveEdit}
               disabled={!editDate || savingEdit}
-              style={{ backgroundColor: '#106A37', color: '#FFCF08' }}
+              style={{ backgroundColor: 'rgb(var(--team-primary))', color: 'rgb(var(--team-accent))' }}
             >
               {savingEdit ? 'Sparar…' : 'Spara'}
             </Button>

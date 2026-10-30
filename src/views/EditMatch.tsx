@@ -202,17 +202,17 @@ export default function EditMatch() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-4" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-4" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between mb-2">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1 text-[#FFCF08]/80 hover:text-[#FFCF08] transition-colors"
+            className="flex items-center gap-1 text-team-accent/80 hover:text-team-accent transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm">Tillbaka</span>
           </button>
         </div>
-        <h1 className="text-lg font-bold text-[#FFCF08]">Redigera match</h1>
+        <h1 className="text-lg font-bold text-team-accent">Redigera match</h1>
       </div>
 
       {/* Body */}
@@ -260,7 +260,7 @@ export default function EditMatch() {
                 <Input
                   value={form.teamname}
                   onChange={e => set('teamname', e.target.value)}
-                  placeholder="t.ex. Skabersjö IF:Svart"
+                  placeholder="t.ex. Svart"
                 />
               </Field>
 
@@ -475,7 +475,7 @@ export default function EditMatch() {
               onClick={handleSave}
               disabled={saving}
               className="w-full"
-              style={{ backgroundColor: '#106A37', color: '#FFCF08' }}
+              style={{ backgroundColor: 'rgb(var(--team-primary))', color: 'rgb(var(--team-accent))' }}
             >
               <Save className="w-4 h-4 mr-2" />
               {saving ? 'Sparar…' : 'Spara match'}

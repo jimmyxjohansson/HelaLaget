@@ -108,11 +108,11 @@ export default function Drills() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-3" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Övningar</h1>
-            <p className="text-[#FFCF08]/70 text-sm">{filtered.length} övningar</p>
+            <p className="text-team-accent/70 text-sm">{filtered.length} övningar</p>
           </div>
         </div>
       </div>

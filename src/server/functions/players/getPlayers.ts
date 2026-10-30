@@ -37,6 +37,7 @@ export default async function getPlayers(req: { params: Params; user: User }) {
     LEFT JOIN trainings t ON t.id = pt.training
       AND t.type::text = 'Träning'
       AND ($1::int = 0 OR t.date >= NOW() - make_interval(months => $2::int))
+    WHERE EXISTS (SELECT 1 FROM squad_players sp WHERE sp.player_id = p.id AND sp.squad_id = app.squad_id())
     GROUP BY p.id
     ORDER BY p.shortname`,
     [months, months]

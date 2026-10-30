@@ -53,6 +53,11 @@ const config: Config = {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
+        // Lagets färger (ställs in per lag, se SquadProvider)
+        team: {
+          DEFAULT: 'rgb(var(--team-primary) / <alpha-value>)',
+          accent: 'rgb(var(--team-accent) / <alpha-value>)',
+        },
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',

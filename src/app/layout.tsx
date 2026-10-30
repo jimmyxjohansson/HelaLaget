@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'Skabersjö IF',
+  title: 'Hela Laget',
   description: 'Träningar, matcher och cuper för laget',
   robots: { index: false, follow: false },
   applicationName: 'Hela Laget',

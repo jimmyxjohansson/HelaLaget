@@ -22,7 +22,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '../lib/shadcn/alert-dialog'
-import { OWN_TEAM_LOGO_URL } from '../utils/constants'
+import { ownTeamLogoUrl, ownTeamName } from '../utils/constants'
 
 interface MatchData {
   id: number
@@ -400,11 +400,11 @@ export default function MatchTimeline() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-4" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-4" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between mb-2">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1 text-[#FFCF08]/80 hover:text-[#FFCF08] transition-colors"
+            className="flex items-center gap-1 text-team-accent/80 hover:text-team-accent transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm">Tillbaka</span>
@@ -412,15 +412,15 @@ export default function MatchTimeline() {
           <button
             onClick={() => setFinishOpen(true)}
             disabled={finishing || match?.status === 'Avslutad'}
-            className="flex items-center gap-1.5 rounded-lg bg-[#FFCF08] px-3 py-1.5 text-sm font-semibold text-[#106A37] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 rounded-lg bg-team-accent px-3 py-1.5 text-sm font-semibold text-team transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {finishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
             {match?.status === 'Avslutad' ? 'Avslutad' : 'Avsluta match'}
           </button>
         </div>
-        <h1 className="text-lg font-bold text-[#FFCF08]">Tidslinje</h1>
+        <h1 className="text-lg font-bold text-team-accent">Tidslinje</h1>
         {match?.opponent && (
-          <p className="text-xs text-[#FFCF08]/70">vs {match.opponent}</p>
+          <p className="text-xs text-team-accent/70">vs {match.opponent}</p>
         )}
       </div>
 
@@ -468,7 +468,7 @@ export default function MatchTimeline() {
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full transition-[width] duration-500 ease-linear"
-                  style={{ width: `${periodProgressPct}%`, backgroundColor: '#106A37' }}
+                  style={{ width: `${periodProgressPct}%`, backgroundColor: 'rgb(var(--team-primary))' }}
                 />
               </div>
             </div>
@@ -544,8 +544,8 @@ export default function MatchTimeline() {
               aria-label="Nytt vårt mål"
             >
               <img
-                src={OWN_TEAM_LOGO_URL}
-                alt="Skabersjö IF"
+                src={ownTeamLogoUrl()}
+                alt={ownTeamName()}
                 className="w-6 h-6 object-contain"
               />
             </button>
@@ -688,7 +688,7 @@ export default function MatchTimeline() {
                 onClick={handleSave}
                 disabled={saving}
                 className="flex-1"
-                style={{ backgroundColor: '#106A37', color: '#FFCF08' }}
+                style={{ backgroundColor: 'rgb(var(--team-primary))', color: 'rgb(var(--team-accent))' }}
               >
                 <Save className="w-4 h-4 mr-2" />
                 {saving ? 'Sparar…' : form.id ? 'Spara' : 'Lägg till'}
@@ -789,8 +789,8 @@ export default function MatchTimeline() {
                               : <span className="text-[12px] font-bold text-muted-foreground">{(match?.opponent ?? '?')[0]}</span>
                           ) : (
                             <img
-                              src={OWN_TEAM_LOGO_URL}
-                              alt="Skabersjö IF"
+                              src={ownTeamLogoUrl()}
+                              alt={ownTeamName()}
                               className="w-full h-full object-contain"
                             />
                           )}

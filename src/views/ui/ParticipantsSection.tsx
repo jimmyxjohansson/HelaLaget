@@ -669,7 +669,7 @@ export default function ParticipantsSection({
             <Button
               onClick={saveReason}
               disabled={savingReason}
-              style={{ backgroundColor: '#106A37', color: '#FFCF08' }}
+              style={{ backgroundColor: 'rgb(var(--team-primary))', color: 'rgb(var(--team-accent))' }}
             >
               {savingReason ? 'Sparar…' : 'Spara'}
             </Button>

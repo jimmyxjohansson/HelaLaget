@@ -6,6 +6,8 @@ import { useGetPlayers } from '../hooks/backend/players'
 import { usePersistentState } from '../hooks/usePersistentState'
 import { Search, User, Trophy, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react'
 import { rankStyle } from '../utils/rankColors'
+import PlayerActions from '../components/PlayerActions'
+import { canEdit } from '../lib/squad-store'
 
 interface Player {
   id: number
@@ -154,12 +156,13 @@ export default function Players() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-3" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Spelare</h1>
-            <p className="text-[#FFCF08]/70 text-sm">{filtered.length} spelare</p>
+            <p className="text-team-accent/70 text-sm">{filtered.length} spelare</p>
           </div>
+          {canEdit() && <PlayerActions onChanged={() => trigger({ months: timeFilter })} />}
         </div>
       </div>
 

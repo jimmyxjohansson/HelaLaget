@@ -146,11 +146,11 @@ export default function Teams() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-3" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Lag</h1>
-            <p className="text-[#FFCF08]/70 text-sm">{filtered.length} lag</p>
+            <p className="text-team-accent/70 text-sm">{filtered.length} lag</p>
           </div>
           <button
               onClick={openNew}
@@ -576,7 +576,7 @@ function TeamDialog({
           <Button
             onClick={handleSave}
             disabled={saving || uploading}
-            style={{ backgroundColor: '#106A37', color: '#FFCF08' }}
+            style={{ backgroundColor: 'rgb(var(--team-primary))', color: 'rgb(var(--team-accent))' }}
           >
             {saving ? 'Sparar...' : 'Spara'}
           </Button>

@@ -51,7 +51,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const { pathname, search } = request.nextUrl
-  const isPublic = pathname === '/login'
+  const isPublic = pathname === '/login' || pathname === '/registrera'
 
   if (!user && !isPublic) {
     if (pathname.startsWith('/api/')) {

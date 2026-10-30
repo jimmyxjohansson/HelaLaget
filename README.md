@@ -1,8 +1,10 @@
-# Skabersjö IF P13
+# Hela Laget
 
-Lagappen för träningar, matcher, cuper, serier och spelare. Den byggdes ursprungligen
-i Retool och är flyttad till Next.js med Supabase (databas, inloggning och
-bildlagring) och Vercel (hosting).
+Lagappen för träningar, matcher, cuper, serier och spelare, för flera föreningar
+och lag. Den byggdes ursprungligen i Retool för Skabersjö IF P13 och är flyttad
+till Next.js med Supabase (databas, inloggning och bildlagring) och Vercel (hosting).
+
+**Flera lag, roller och säkerhet:** se [docs/FLERA-LAG.md](docs/FLERA-LAG.md).
 
 **Ska appen flyttas från Retool?** Följ [docs/MIGRERING.md](docs/MIGRERING.md).
 
@@ -54,10 +56,11 @@ useEffect(() => { trigger({ months: 3 }) }, [])
 ```
 
 `trigger(params)` skickar `POST /api/players/getPlayers` med parametrarna som JSON.
-API-routen kontrollerar att användaren är inloggad och kör
-`src/server/functions/players/getPlayers.ts` på servern, som gör sin SQL-fråga mot
-Supabase. Databasen nås bara från servern; webbläsaren ser aldrig
-anslutningsuppgifterna.
+API-routen kontrollerar att användaren är inloggad, hittar valt lag (cookien
+`hl_squad`) och användarens roll där, och kör
+`src/server/functions/players/getPlayers.ts` i lagkontext: en transaktion som
+databasrollen `app_user`, där RLS-reglerna bara släpper igenom lagets data.
+Databasen nås bara från servern; webbläsaren ser aldrig anslutningsuppgifterna.
 
 ### Lägga till en backend-funktion
 
@@ -81,6 +84,11 @@ anslutningsuppgifterna.
 2. Kör `npm run generate`. Då skapas kroken `useGetSomething` i
    `src/hooks/backend/<modul>.ts` och funktionen registreras i API:t.
 
+**Behörighet:** funktioner som börjar på `get` kräver minst läsbehörighet i
+laget, övriga kräver ledare. Annat anges i filen med
+`export const access = 'admin' | 'user' | 'superadmin'` (se `src/server/types.ts`).
+Läsrollen får automatiskt känsliga fält borttagna ur svaren (`src/server/redact.ts`).
+
 ### Bilduppladdning
 
 `useUploadPlayerImage` och `useUploadTeamLogo` laddar upp direkt från webbläsaren
@@ -89,14 +97,16 @@ till Supabase Storage (bucket `images`) och returnerar en publik URL, som sparas
 
 ## Inloggning
 
-E-post och lösenord via Supabase Auth. Det går inte att registrera sig själv:
-nya ledare läggs till i Supabase under *Authentication → Users → Add user*.
-`src/proxy.ts` skickar utloggade besökare till `/login`.
+E-post och lösenord via Supabase Auth. Nya användare skapar konto på
+`/registrera` och ansöker om att gå med i ett lag med lagets kod eller
+inbjudningslänk (`/join/<kod>`). `src/proxy.ts` skickar utloggade besökare
+till `/login`.
 
 ## Skillnader mot Retool-versionen
 
-- Inloggning är tillagd (Retool skötte den tidigare), och "Logga ut" finns i menyn.
+- Inloggning, registrering, flera lag och roller är tillagda.
+- Nya spelare, cuper och ledare kan skapas i appen (fanns i separata Retool-appar).
 - Spelarbilder och lagloggor lagras i Supabase Storage.
 - `views/Drills.tsx` (övningsbank) fanns i Retool-exporten men hade ingen route.
   Den finns kvar och kan kopplas in genom att skapa `src/app/(app)/drills/page.tsx`.
-- Planering och Träning är fortfarande separata Retool-appar som appen länkar till.
+- Länkarna till planerings- och träningsapparna ställs in per lag (*Admin → Medlemmar*).

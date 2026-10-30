@@ -151,18 +151,18 @@ const { id } = useParams<{ id: string }>()
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-4" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-4" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
   <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => router.push('/cups')}
-            className="flex items-center gap-1 text-[#FFCF08]/80 hover:text-[#FFCF08] transition-colors"
+            className="flex items-center gap-1 text-team-accent/80 hover:text-team-accent transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm">Cuper</span>
           </button>
           <button
             onClick={() => router.push(`/cups/${cup.id}/edit`)}
-            className="flex items-center gap-1 text-[#FFCF08]/80 hover:text-[#FFCF08] transition-colors"
+            className="flex items-center gap-1 text-team-accent/80 hover:text-team-accent transition-colors"
           >
             <Pencil className="w-4 h-4" />
             <span className="text-sm">Redigera</span>
@@ -170,8 +170,8 @@ const { id } = useParams<{ id: string }>()
         </div>
 
         <div className="flex items-start gap-3">
-          <div className="w-11 h-11 rounded-full bg-[#FFCF08]/15 flex items-center justify-center flex-shrink-0">
-            <Trophy className="w-6 h-6 text-[#FFCF08]" />
+          <div className="w-11 h-11 rounded-full bg-team-accent/15 flex items-center justify-center flex-shrink-0">
+            <Trophy className="w-6 h-6 text-team-accent" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -182,7 +182,7 @@ const { id } = useParams<{ id: string }>()
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 flex-wrap mt-1 text-[#FFCF08]/80 text-xs">
+            <div className="flex items-center gap-2 flex-wrap mt-1 text-team-accent/80 text-xs">
               {cup.startdate && (
                 <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" />{formatDateRange(cup.startdate, cup.enddate)}</span>
               )}
@@ -198,18 +198,18 @@ const { id } = useParams<{ id: string }>()
           <div className="flex items-center gap-3 mt-3">
             <div className="flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">{wins}</span>
-              <span className="text-xs text-[#FFCF08]/80">V</span>
+              <span className="text-xs text-team-accent/80">V</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center text-white text-[10px] font-bold">{draws}</span>
-			  <span className="text-xs text-[#FFCF08]/80">O</span>
+			  <span className="text-xs text-team-accent/80">O</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px] font-bold">{losses}</span>
-              <span className="text-xs text-[#FFCF08]/80">F</span>
+              <span className="text-xs text-team-accent/80">F</span>
             </div>
-            <div className="ml-2 text-sm font-bold text-[#FFCF08]">{goalsFor}–{goalsAgainst}</div>
-            <span className="text-xs text-[#FFCF08]/70">mål</span>
+            <div className="ml-2 text-sm font-bold text-team-accent">{goalsFor}–{goalsAgainst}</div>
+            <span className="text-xs text-team-accent/70">mål</span>
           </div>
         )}
       </div>

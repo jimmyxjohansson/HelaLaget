@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../lib/shadcn/shee
 import { AttendanceStatsButton } from '../components/AttendanceStatsButton'
 import { VisualCheckbox } from '../components/VisualCheckbox'
 import TrainingForm from './ui/TrainingForm'
+import { currentSquad } from '../lib/squad-store'
 
 interface Attendee {
   player_id: number
@@ -463,25 +464,27 @@ export default function TrainingDetail() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-3" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-[#FFCF08]/80 text-sm"
+            className="flex items-center gap-1.5 text-team-accent/80 text-sm"
           >
             <ArrowLeft className="w-4 h-4" /> Tillbaka
           </button>
           {training && (
             <div className="flex items-center gap-2">
               <AttendanceStatsButton />
+              {currentSquad()?.trainingAppUrl && (
               <button
-                onClick={() => window.open(`https://skabersjoifp13.retool.com/apps/516eee86-af47-11f0-94ff-b74fb342d0cb/Tr%C3%A4ning?_embed=true#trainingid=${id}`, '_blank', 'noopener,noreferrer')}
+                onClick={() => window.open(currentSquad()!.trainingAppUrl!.replace('{id}', String(id)), '_blank', 'noopener,noreferrer')}
                 className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
-                aria-label="Öppna i Retool-app"
-                title="Öppna i Retool-app"
+                aria-label="Öppna i träningsappen"
+                title="Öppna i träningsappen"
               >
                 <ExternalLink className="w-5 h-5" />
               </button>
+              )}
               <button
                 onClick={() => router.push(`/trainings/${id}/groups`)}
                 className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
@@ -551,15 +554,15 @@ export default function TrainingDetail() {
               <span className="text-xs font-semibold text-white px-2 py-0.5 rounded-full" style={{ backgroundColor: trainingTypeColor(training.type) }}>
                 {training.type}
               </span>
-              <span className="text-xs text-[#FFCF08]/70 flex items-center gap-1">
+              <span className="text-xs text-team-accent/70 flex items-center gap-1">
                 <MapPin className="w-3 h-3" />
                 {training.indooroutdoor}
               </span>
             </div>
             <h1 className="text-xl font-bold capitalize">{formatDate(training.date)}</h1>
-            <p className="text-[#FFCF08]/70 text-sm">{formatTime(training.date)}</p>
+            <p className="text-team-accent/70 text-sm">{formatTime(training.date)}</p>
             {training.notes && (
-              <p className="text-[#FFCF08]/60 text-xs mt-1 italic">{training.notes}</p>
+              <p className="text-team-accent/60 text-xs mt-1 italic">{training.notes}</p>
             )}
           </>
         )}
@@ -1216,7 +1219,7 @@ export default function TrainingDetail() {
             <Button
               onClick={handleCopy}
               disabled={!copyDatePart || !copyTimePart || copying}
-              style={{ backgroundColor: '#106A37', color: '#FFCF08' }}
+              style={{ backgroundColor: 'rgb(var(--team-primary))', color: 'rgb(var(--team-accent))' }}
             >
               {copying ? 'Kopierar…' : 'Kopiera'}
             </Button>
@@ -1385,7 +1388,7 @@ export default function TrainingDetail() {
             <Button
               onClick={saveReason}
               disabled={savingReason}
-              style={{ backgroundColor: '#106A37', color: '#FFCF08' }}
+              style={{ backgroundColor: 'rgb(var(--team-primary))', color: 'rgb(var(--team-accent))' }}
             >
               {savingReason ? 'Sparar…' : 'Spara'}
             </Button>

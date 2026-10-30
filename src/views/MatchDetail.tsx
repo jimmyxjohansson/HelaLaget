@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../lib/shadcn/alert-dialog'
-import { OWN_TEAM_LOGO_URL } from '../utils/constants'
+import { ownTeamLogoUrl, ownTeamName } from '../utils/constants'
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -249,11 +249,11 @@ export default function MatchDetail() {
     <div className="flex flex-col min-h-full">
 
       {/* ── Green hero header ─────────────────────────────────────── */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-4" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-4" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1 text-[#FFCF08]/80 hover:text-[#FFCF08] transition-colors"
+            className="flex items-center gap-1 text-team-accent/80 hover:text-team-accent transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm">Tillbaka</span>
@@ -264,7 +264,7 @@ export default function MatchDetail() {
               disabled={loading}
               aria-label="Uppdatera"
               title="Uppdatera"
-              className="flex items-center justify-center w-8 h-8 rounded-full text-[#FFCF08]/80 hover:text-[#FFCF08] hover:bg-white/10 transition-colors disabled:opacity-50"
+              className="flex items-center justify-center w-8 h-8 rounded-full text-team-accent/80 hover:text-team-accent hover:bg-white/10 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -272,7 +272,7 @@ export default function MatchDetail() {
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Meny"
-                className="flex items-center justify-center w-8 h-8 rounded-full text-[#FFCF08]/80 hover:text-[#FFCF08] hover:bg-white/10 transition-colors"
+                className="flex items-center justify-center w-8 h-8 rounded-full text-team-accent/80 hover:text-team-accent hover:bg-white/10 transition-colors"
               >
                 <MoreVertical className="w-5 h-5" />
               </button>
@@ -337,12 +337,12 @@ export default function MatchDetail() {
                 {match.matchtype}
               </span>
               {teamSuffix && (
-                <span className="text-xs font-semibold text-[#FFCF08]/80 bg-white/10 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold text-team-accent/80 bg-white/10 px-2 py-0.5 rounded-full">
                   {teamSuffix}
                 </span>
               )}
               {match.league_name && (
-                <span className="text-xs text-[#FFCF08]/70 truncate">{match.league_name}</span>
+                <span className="text-xs text-team-accent/70 truncate">{match.league_name}</span>
               )}
             </div>
 
@@ -351,16 +351,16 @@ export default function MatchDetail() {
               <div className="flex flex-col items-center gap-1 flex-1">
                 <div className="w-14 h-14 rounded-full bg-white/10 overflow-hidden flex items-center justify-center">
                   <img
-                    src={OWN_TEAM_LOGO_URL}
-                    alt="Skabersjö IF"
+                    src={ownTeamLogoUrl()}
+                    alt={ownTeamName()}
                     className="w-12 h-12 object-contain"
                   />
 				   </div>
-                <span className="text-xs text-[#FFCF08]/80 font-medium text-center leading-tight">Skabersjö IF</span>
+                <span className="text-xs text-team-accent/80 font-medium text-center leading-tight">{ownTeamName()}</span>
               </div>
 
               <div className="flex flex-col items-center gap-0.5">
-                <div className={`text-3xl font-black tabular-nums ${isPlayed ? 'text-[#FFCF08]' : 'text-[#FFCF08]/60'}`}>
+                <div className={`text-3xl font-black tabular-nums ${isPlayed ? 'text-team-accent' : 'text-team-accent/60'}`}>
                   {match.ourgoals ?? 0} – {match.theirgoals ?? 0}
                 </div>
                 {isPlayed && outcome && (
@@ -391,17 +391,17 @@ export default function MatchDetail() {
                   {match.opponent_img ? (
                     <img src={match.opponent_img} alt={match.opponent ?? ''} className="w-12 h-12 object-contain" />
                   ) : (
-                    <span className="text-2xl font-bold text-[#FFCF08]">{(match.opponent ?? '?')[0]}</span>
+                    <span className="text-2xl font-bold text-team-accent">{(match.opponent ?? '?')[0]}</span>
                   )}
                 </button>
-                <span className="text-xs text-[#FFCF08]/80 font-medium text-center leading-tight">{match.opponent ?? '–'}</span>
+                <span className="text-xs text-team-accent/80 font-medium text-center leading-tight">{match.opponent ?? '–'}</span>
               </div>
             </div>
 
             {/* Date / time / location */}
-            <div className="flex items-center gap-3 text-xs text-[#FFCF08]/70 flex-wrap">
+            <div className="flex items-center gap-3 text-xs text-team-accent/70 flex-wrap">
               <span className="capitalize">{dateStr}</span>
-              <span className="font-semibold text-[#FFCF08]">{timeStr}</span>
+              <span className="font-semibold text-team-accent">{timeStr}</span>
               {match.location && match.location !== '-' && match.location !== '' && (
                 <span className="flex items-center gap-0.5">
                   <MapPin className="w-3 h-3" />{match.location}
@@ -424,7 +424,7 @@ export default function MatchDetail() {
           >
             {tab.label}
             {activeTab === tab.key && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t" style={{ backgroundColor: '#106A37' }} />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t" style={{ backgroundColor: 'rgb(var(--team-primary))' }} />
             )}
           </button>
         ))}
@@ -622,8 +622,8 @@ export default function MatchDetail() {
                                   : <span className="text-[12px] font-bold text-muted-foreground">{(match.opponent ?? '?')[0]}</span>
                               ) : (
                                 <img
-                                  src={OWN_TEAM_LOGO_URL}
-                                  alt="Skabersjö IF"
+                                  src={ownTeamLogoUrl()}
+                                  alt={ownTeamName()}
                                   className="w-full h-full object-contain"
                                 />
                               )}

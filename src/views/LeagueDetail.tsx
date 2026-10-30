@@ -238,10 +238,10 @@ export default function LeagueDetail() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-4" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-4" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <button
           onClick={() => router.push('/serier')}
-          className="flex items-center gap-1 text-[#FFCF08]/80 hover:text-[#FFCF08] transition-colors mb-3"
+          className="flex items-center gap-1 text-team-accent/80 hover:text-team-accent transition-colors mb-3"
         >
           <ArrowLeft className="w-5 h-5" />
           <span className="text-sm">Tillbaka</span>
@@ -257,7 +257,7 @@ export default function LeagueDetail() {
                   className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                   style={league.status === 'Aktiv'
                     ? { backgroundColor: '#2563eb', color: '#fff' }
-                    : { backgroundColor: 'rgba(255,255,255,0.2)', color: '#FFCF08' }}
+                    : { backgroundColor: 'rgba(255,255,255,0.2)', color: 'rgb(var(--team-accent))' }}
                 >
                   {league.status === 'Aktiv' ? 'Pågående' : 'Avslutad'}
                 </span>
@@ -267,21 +267,21 @@ export default function LeagueDetail() {
               <div className="flex items-center gap-3 mt-3">
                 <div className="flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">{wins}</span>
-                  <span className="text-xs text-[#FFCF08]/80">V</span>
+                  <span className="text-xs text-team-accent/80">V</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center text-white text-[10px] font-bold">{draws}</span>
-                  <span className="text-xs text-[#FFCF08]/80">O</span>
+                  <span className="text-xs text-team-accent/80">O</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px] font-bold">{losses}</span>
-                  <span className="text-xs text-[#FFCF08]/80">F</span>
+                  <span className="text-xs text-team-accent/80">F</span>
                 </div>
-                <div className="ml-2 text-sm font-bold text-[#FFCF08]">{goalsFor}–{goalsAgainst}</div>
-                <span className="text-xs text-[#FFCF08]/70">mål</span>
+                <div className="ml-2 text-sm font-bold text-team-accent">{goalsFor}–{goalsAgainst}</div>
+                <span className="text-xs text-team-accent/70">mål</span>
               </div>
             )}
-            <p className="text-[#FFCF08]/70 text-sm mt-2">{matches.length} matcher</p>
+            <p className="text-team-accent/70 text-sm mt-2">{matches.length} matcher</p>
           </>
         )}
       </div>
@@ -298,7 +298,7 @@ export default function LeagueDetail() {
           >
             {label}
             {tab === key && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t" style={{ backgroundColor: '#106A37' }} />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t" style={{ backgroundColor: 'rgb(var(--team-primary))' }} />
             )}
           </button>
         ))}
@@ -707,7 +707,7 @@ function StandingDialog({
           <Button
             onClick={handleSave}
             disabled={saving || !team}
-            style={{ backgroundColor: '#106A37', color: '#FFCF08' }}
+            style={{ backgroundColor: 'rgb(var(--team-primary))', color: 'rgb(var(--team-accent))' }}
           >
             {saving ? 'Sparar…' : 'Spara'}
           </Button>

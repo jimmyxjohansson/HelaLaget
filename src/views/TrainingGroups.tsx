@@ -219,11 +219,11 @@ export default function TrainingGroups() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-4" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-4" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-[#FFCF08]/80 text-sm hover:text-[#FFCF08] transition-colors"
+            className="flex items-center gap-1.5 text-team-accent/80 text-sm hover:text-team-accent transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Tillbaka
           </button>
@@ -245,7 +245,7 @@ export default function TrainingGroups() {
               >
                 {training.type}
               </span>
-              <span className="text-xs text-[#FFCF08]/70">
+              <span className="text-xs text-team-accent/70">
                 {formatDate(training.date)} · {formatTime(training.date)}
               </span>
             </div>

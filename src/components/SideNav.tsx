@@ -6,8 +6,9 @@ import { useState } from 'react'
 import { Home, CalendarDays, Users, Sun, Moon, Trophy, Medal, Shield, Settings, ChevronDown, ListOrdered, CalendarRange, LogOut } from 'lucide-react'
 import { cn } from '../lib/shadcn/utils'
 import { isActivePath, signOut } from '../lib/navigation'
+import { currentSquad } from '../lib/squad-store'
+import { accountLinks } from './accountLinks'
 
-const PLANERING_URL = 'https://skabersjoifp13.retool.com/apps/d82e8f9c-c1cf-11ee-a364-47bcb6eb07b0/Planering?_embed=true'
 
 type Theme = 'light' | 'dark'
 
@@ -31,13 +32,23 @@ const adminTabs = [
 
 export default function SideNav({ theme, onToggleTheme }: Props) {
   const pathname = usePathname() ?? '/'
-  const adminActive = adminTabs.some(t => pathname.startsWith(t.to))
+  const squad = currentSquad()
+  const extraLinks = accountLinks()
+  const adminActive = [...adminTabs, ...extraLinks].some(t => pathname.startsWith(t.to))
   const [adminOpen, setAdminOpen] = useState(adminActive)
 
   return (
     <nav className="hidden md:flex flex-col w-60 flex-shrink-0 bg-background border-r border-border sticky top-0 h-screen">
       <div className="px-5 py-6">
-        <h1 className="text-lg font-bold text-foreground">Skabersjö IF</h1>
+        {squad ? (
+          <Link href="/lag" className="block group" title="Byt lag">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{squad.organizationName}</p>
+            <h1 className="text-lg font-bold text-foreground group-hover:underline underline-offset-4">{squad.squadName}</h1>
+            {squad.role === 'viewer' && <p className="text-xs text-muted-foreground">Läsbehörighet</p>}
+          </Link>
+        ) : (
+          <h1 className="text-lg font-bold text-foreground">Hela Laget</h1>
+        )}
       </div>
       <div className="flex flex-col gap-1 px-3 flex-1">
         {tabs.map(({ to, icon: Icon, label }) => (
@@ -75,8 +86,9 @@ export default function SideNav({ theme, onToggleTheme }: Props) {
 
         {adminOpen && (
           <div className="flex flex-col gap-1 pl-4">
+            {squad?.planningUrl && (
             <a
-              href={PLANERING_URL}
+              href={squad.planningUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -84,6 +96,7 @@ export default function SideNav({ theme, onToggleTheme }: Props) {
               <CalendarRange className="w-4 h-4" />
               <span>Planering</span>
             </a>
+            )}
             {adminTabs.map(({ to, icon: Icon, label }) => (
               <Link
                 key={to}
@@ -103,6 +116,22 @@ export default function SideNav({ theme, onToggleTheme }: Props) {
             ))}
           </div>
         )}
+
+        <div className="mt-4 pt-4 border-t border-border flex flex-col gap-1">
+          {extraLinks.map(({ to, icon: Icon, label }) => (
+            <Link
+              key={to}
+              href={to}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                pathname === to ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{label}</span>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Theme toggle */}

@@ -182,11 +182,11 @@ export default function PlayerDetail() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-3" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1 text-[#FFCF08]/80 hover:text-[#FFCF08] transition-colors"
+            className="flex items-center gap-1 text-team-accent/80 hover:text-team-accent transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm">Tillbaka</span>

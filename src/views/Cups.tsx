@@ -6,6 +6,8 @@ import { useGetCups } from '../hooks/backend/cups'
 import { usePersistentState } from '../hooks/usePersistentState'
 import { Search, MapPin, ChevronRight, Calendar, Trophy } from 'lucide-react'
 import { rankStyle } from '../utils/rankColors'
+import NewCupButton from '../components/NewCupButton'
+import { canEdit } from '../lib/squad-store'
 
 interface Cup {
   id: number
@@ -89,12 +91,13 @@ export default function Cups() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-3" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Cuper</h1>
-            <p className="text-[#FFCF08]/70 text-sm">{finished.length} spelade</p>
+            <p className="text-team-accent/70 text-sm">{finished.length} spelade</p>
           </div>
+          {canEdit() && <NewCupButton />}
         </div>
       </div>
 

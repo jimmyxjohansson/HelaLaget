@@ -17,7 +17,8 @@ export default async function getAvailablePlayers(req: { params: Params; user: U
   }>(
     `SELECT p.id, p.shortname, p.number, p.comment, p.status::text AS status
      FROM players p
-     WHERE p.id NOT IN (
+     WHERE EXISTS (SELECT 1 FROM squad_players sp WHERE sp.player_id = p.id AND sp.squad_id = app.squad_id())
+       AND p.id NOT IN (
          SELECT COALESCE(player, -1)
          FROM participantstrainings
          WHERE training = $1

@@ -138,11 +138,11 @@ export default function Matches() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="text-[#FFCF08] px-4 pt-6 pb-3" style={{ backgroundColor: '#106A37' }}>
+      <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Matcher</h1>
-            <p className="text-[#FFCF08]/70 text-sm">{played.length} spelade</p>
+            <p className="text-team-accent/70 text-sm">{played.length} spelade</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -160,18 +160,18 @@ export default function Matches() {
           <div className="flex items-center gap-3 mt-3">
             <div className="flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">{wins}</span>
-              <span className="text-xs text-[#FFCF08]/80">V</span>
+              <span className="text-xs text-team-accent/80">V</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center text-white text-[10px] font-bold">{draws}</span>
-              <span className="text-xs text-[#FFCF08]/80">O</span>
+              <span className="text-xs text-team-accent/80">O</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px] font-bold">{losses}</span>
-              <span className="text-xs text-[#FFCF08]/80">F</span>
+              <span className="text-xs text-team-accent/80">F</span>
             </div>
-            <div className="ml-2 text-sm font-bold text-[#FFCF08]">{goalsFor}–{goalsAgainst}</div>
-            <span className="text-xs text-[#FFCF08]/70">mål</span>
+            <div className="ml-2 text-sm font-bold text-team-accent">{goalsFor}–{goalsAgainst}</div>
+            <span className="text-xs text-team-accent/70">mål</span>
           </div>
         )}
       </div>

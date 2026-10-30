@@ -1,0 +1,44 @@
+import { adminDb } from '@/server/db'
+import { AccessError } from '@/server/access'
+import type { SquadAccess, User } from '@/server/types'
+
+export const access = 'admin'
+
+type Params = {
+  name: string
+  primaryColor: string
+  accentColor: string
+  logoUrl?: string | null
+  planningUrl?: string | null
+  trainingAppUrl?: string | null
+}
+
+const COLOR = /^#[0-9a-fA-F]{6}$/
+const URL_OR_EMPTY = (v: string | null | undefined) => !v || /^https:\/\//.test(v)
+
+/** Lagets namn, färger, logga och länkar till externa appar. */
+export default async function updateSquadSettings(req: { params: Params; user: User; squad?: SquadAccess }) {
+  const p = req.params
+  if (!p.name?.trim()) throw new AccessError('Laget måste ha ett namn.', 400)
+  if (!COLOR.test(p.primaryColor) || !COLOR.test(p.accentColor)) {
+    throw new AccessError('Färgerna anges som #RRGGBB.', 400)
+  }
+  if (![p.logoUrl, p.planningUrl, p.trainingAppUrl].every(URL_OR_EMPTY)) {
+    throw new AccessError('Länkar måste börja med https://', 400)
+  }
+  await adminDb.query(
+    `UPDATE squads SET name = $2, primary_color = $3, accent_color = $4,
+       logo_url = $5, planning_url = $6, training_app_url = $7
+     WHERE id = $1`,
+    [
+      req.squad!.squadId,
+      p.name.trim(),
+      p.primaryColor,
+      p.accentColor,
+      p.logoUrl || null,
+      p.planningUrl || null,
+      p.trainingAppUrl || null,
+    ],
+  )
+  return { ok: true }
+}
