@@ -8,10 +8,10 @@ export const metadata: Metadata = {
   title: 'Skabersjö IF',
   description: 'Träningar, matcher och cuper för laget',
   robots: { index: false, follow: false },
-  applicationName: 'P13',
+  applicationName: 'Hela Laget',
   appleWebApp: {
     capable: true,
-    title: 'P13',
+    title: 'Hela Laget',
     statusBarStyle: 'default',
   },
   icons: {

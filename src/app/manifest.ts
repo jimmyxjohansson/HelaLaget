@@ -4,8 +4,8 @@ import type { MetadataRoute } from 'next'
 // iPhone: Dela → "Lägg till på hemskärmen") och öppnas i helskärm.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Skabersjö IF P13',
-    short_name: 'P13',
+    name: 'Hela Laget',
+    short_name: 'Hela Laget',
     description: 'Träningar, matcher och cuper för laget',
     lang: 'sv',
     start_url: '/',
