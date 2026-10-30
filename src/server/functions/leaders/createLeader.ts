@@ -12,5 +12,6 @@ export default async function createLeader(req: { params: Params; user: User }) 
     'INSERT INTO leaders (firstname, lastname, shortname, active) VALUES ($1, $2, $3, true) RETURNING id',
     [firstname, lastname, shortname],
   )
+  await db.query('INSERT INTO squad_leaders (squad_id, leader_id) VALUES (app.squad_id(), $1)', [data[0].id])
   return { id: data[0].id }
 }

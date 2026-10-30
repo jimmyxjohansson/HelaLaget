@@ -15,8 +15,11 @@ import cups_updateCup from './functions/cups/updateCup'
 import cups_updateCupParticipantReason from './functions/cups/updateCupParticipantReason'
 import cups_updateCupParticipantsStatus from './functions/cups/updateCupParticipantsStatus'
 import drills_getDrills from './functions/drills/getDrills'
+import leaders_addLeadersToSquad from './functions/leaders/addLeadersToSquad'
 import leaders_createLeader from './functions/leaders/createLeader'
 import leaders_getLeaders from './functions/leaders/getLeaders'
+import leaders_getOrganizationLeaders from './functions/leaders/getOrganizationLeaders'
+import leaders_removeLeaderFromSquad from './functions/leaders/removeLeaderFromSquad'
 import leaders_updateLeader from './functions/leaders/updateLeader'
 import leagues_createLeague from './functions/leagues/createLeague'
 import leagues_deleteLeague from './functions/leagues/deleteLeague'
@@ -118,8 +121,11 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'cups/updateCupParticipantReason': { handler: cups_updateCupParticipantReason, access: 'leader' },
   'cups/updateCupParticipantsStatus': { handler: cups_updateCupParticipantsStatus, access: 'leader' },
   'drills/getDrills': { handler: drills_getDrills, access: 'viewer' },
+  'leaders/addLeadersToSquad': { handler: leaders_addLeadersToSquad, access: 'leader' },
   'leaders/createLeader': { handler: leaders_createLeader, access: 'leader' },
   'leaders/getLeaders': { handler: leaders_getLeaders, access: 'viewer' },
+  'leaders/getOrganizationLeaders': { handler: leaders_getOrganizationLeaders, access: 'leader' },
+  'leaders/removeLeaderFromSquad': { handler: leaders_removeLeaderFromSquad, access: 'leader' },
   'leaders/updateLeader': { handler: leaders_updateLeader, access: 'leader' },
   'leagues/createLeague': { handler: leagues_createLeague, access: 'leader' },
   'leagues/deleteLeague': { handler: leagues_deleteLeague, access: 'leader' },

@@ -15,6 +15,7 @@ export default async function getAvailableLeaders(req: { params: Params; user: U
     `SELECT l.id, l.shortname
      FROM leaders l
      WHERE l.active = true
+       AND EXISTS (SELECT 1 FROM squad_leaders sl WHERE sl.leader_id = l.id AND sl.squad_id = app.squad_id())
        AND l.id NOT IN (
          SELECT COALESCE(leader, -1)
          FROM participantstrainings

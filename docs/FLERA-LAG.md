@@ -10,6 +10,7 @@ admin godkänner.
 |---|---|
 | **Förening** | T.ex. Skabersjö IF. Spelare, motståndarlag, ledare och övningar hör till föreningen och delas mellan dess lag. |
 | **Lag** | T.ex. P13. Träningar, matcher, cuper, serier och försäljningar hör till ett lag. Varje lag har egna färger, logga och länkar. |
+| **Ledare i lag** | Ledare hör till föreningen men varje lag har en egen ledarlista (*Admin → Medlemmar → Ledare*). En ledare kan vara med i flera lag. |
 | **Spelare i lag** | En spelare kan vara med i flera av föreningens lag (lån mellan åldersgrupper), via *Spelare → Från föreningen*. |
 | **Roller per lag** | **Admin** godkänner medlemmar och ändrar lagets inställningar. **Ledare** registrerar som tidigare. **Läsbehörighet** (t.ex. föräldrar) ser schema, resultat och närvaro, men inte födelsedatum, frånvaroorsaker, anteckningar eller rank, och kan inte ändra något. |
 | **Föreningsadmin** | Har adminbehörighet i föreningens alla lag och kan skapa nya lag. |

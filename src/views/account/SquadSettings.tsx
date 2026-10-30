@@ -11,7 +11,14 @@ import {
   useUpdateMember,
   useUpdateSquadSettings,
 } from '../../hooks/backend/members'
-import { useCreateLeader, useGetLeaders, useUpdateLeader } from '../../hooks/backend/leaders'
+import {
+  useAddLeadersToSquad,
+  useCreateLeader,
+  useGetLeaders,
+  useGetOrganizationLeaders,
+  useRemoveLeaderFromSquad,
+  useUpdateLeader,
+} from '../../hooks/backend/leaders'
 import { currentSquad } from '../../lib/squad-store'
 import { Button } from '../../lib/shadcn/button'
 import { Input } from '../../lib/shadcn/input'
@@ -52,6 +59,9 @@ export default function SquadSettings() {
   const saveSettings = useUpdateSquadSettings()
   const createLeader = useCreateLeader()
   const updateLeader = useUpdateLeader()
+  const orgLeaders = useGetOrganizationLeaders()
+  const addLeaders = useAddLeadersToSquad()
+  const removeLeader = useRemoveLeaderFromSquad()
 
   const [error, setError] = useState<string | null>(null)
   const [approveRole, setApproveRole] = useState<Record<string, Role>>({})
@@ -67,10 +77,12 @@ export default function SquadSettings() {
   })
   const [savedSettings, setSavedSettings] = useState(false)
   const [newLeader, setNewLeader] = useState({ firstname: '', lastname: '' })
+  const [pickLeader, setPickLeader] = useState('')
+  const reloadLeaders = () => Promise.all([leaders.trigger(), orgLeaders.trigger()])
 
   useEffect(() => {
     members.trigger().catch(() => {})
-    leaders.trigger().catch(() => {})
+    reloadLeaders().catch(() => {})
     settings
       .trigger()
       .then((s) => {
@@ -349,7 +361,8 @@ export default function SquadSettings() {
 
       <Section title="Ledare">
         <p className="text-sm text-muted-foreground mb-3">
-          Ledare som kan registreras som närvarande på träningar och matcher. Delas med föreningens andra lag.
+          Lagets ledare, som kan registreras som närvarande på träningar och matcher. En ledare kan vara med i
+          flera av föreningens lag. Inaktivera gäller i alla lag; Ta bort gäller bara det här laget.
         </p>
         <ul className="flex flex-col divide-y divide-border mb-3">
           {(leaders.data ?? []).map((l) => (
@@ -376,6 +389,19 @@ export default function SquadSettings() {
               >
                 {l.active ? 'Inaktivera' : 'Aktivera'}
               </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label={`Ta bort ${l.shortname ?? l.firstname} från laget`}
+                title="Ta bort från laget"
+                onClick={() => {
+                  if (confirmAction(`Ta bort ${[l.firstname, l.lastname].filter(Boolean).join(' ') || l.shortname} från lagets ledare? Historiken finns kvar.`)) {
+                    run(() => removeLeader.trigger({ leaderId: l.id }), reloadLeaders)
+                  }
+                }}
+              >
+                <Trash2 />
+              </Button>
             </li>
           ))}
         </ul>
@@ -387,7 +413,7 @@ export default function SquadSettings() {
               () => createLeader.trigger(newLeader),
               async () => {
                 setNewLeader({ firstname: '', lastname: '' })
-                await leaders.trigger()
+                await reloadLeaders()
               },
             )
           }}
@@ -403,9 +429,41 @@ export default function SquadSettings() {
             onChange={(e) => setNewLeader({ ...newLeader, lastname: e.target.value })}
           />
           <Button type="submit" variant="outline" disabled={!newLeader.firstname.trim() || createLeader.loading}>
-            <Plus /> Lägg till
+            <Plus /> Ny ledare
           </Button>
         </form>
+        {(orgLeaders.data ?? []).length > 0 && (
+          <div className="flex gap-2 mt-3">
+            <Select value={pickLeader} onValueChange={setPickLeader}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Ledare från föreningens andra lag" />
+              </SelectTrigger>
+              <SelectContent>
+                {(orgLeaders.data ?? []).map((l) => (
+                  <SelectItem key={l.id} value={String(l.id)}>
+                    {[l.firstname, l.lastname].filter(Boolean).join(' ') || l.shortname}
+                    {l.squads ? ` (${l.squads})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              disabled={!pickLeader || addLeaders.loading}
+              onClick={() =>
+                run(
+                  () => addLeaders.trigger({ leaderIds: [Number(pickLeader)] }),
+                  async () => {
+                    setPickLeader('')
+                    await reloadLeaders()
+                  },
+                )
+              }
+            >
+              <Plus /> Lägg till
+            </Button>
+          </div>
+        )}
       </Section>
     </div>
   )
