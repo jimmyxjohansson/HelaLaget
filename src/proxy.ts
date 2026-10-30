@@ -9,9 +9,24 @@ import { createServerClient } from '@supabase/ssr'
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseKey) {
+    const missing = [
+      !supabaseUrl && 'NEXT_PUBLIC_SUPABASE_URL',
+      !supabaseKey && 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    ].filter(Boolean)
+    return new NextResponse(
+      `Appen är inte konfigurerad: miljövariabeln ${missing.join(' och ')} saknas.\n\n` +
+        'Lägg in den i Vercel under Settings → Environment Variables och gör sedan en ny deploy ' +
+        '(Deployments → … → Redeploy). NEXT_PUBLIC_-variabler läses in när appen byggs.',
+      { status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' } },
+    )
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {
@@ -26,9 +41,14 @@ export async function proxy(request: NextRequest) {
     },
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch (e) {
+    // Går Supabase inte att nå (fel URL eller nyckel) behandlas besökaren som utloggad.
+    console.error('[proxy] kunde inte kontrollera inloggningen', e)
+  }
 
   const { pathname, search } = request.nextUrl
   const isPublic = pathname === '/login'
