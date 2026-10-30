@@ -1,0 +1,596 @@
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { ArrowDown, ArrowLeft, ArrowRightLeft, ArrowUp, ChevronDown, List, Loader2, Users, Wand2, X } from 'lucide-react'
+import { useGetTrainingGroups, useUpdateGroupRank, useUpdateParticipantGroups } from '../hooks/backend/trainings'
+import { Button } from '../lib/shadcn/button'
+import { Checkbox } from '../lib/shadcn/checkbox'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '../lib/shadcn/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../lib/shadcn/dropdown-menu'
+import { Tabs, TabsList, TabsTrigger } from '../lib/shadcn/tabs'
+import { trainingTypeColor } from '../utils/trainingTypeColor'
+import { rankStyle } from '../utils/rankColors'
+import { cn } from '../lib/shadcn/utils'
+
+const RANK_OPTIONS = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D', 'X'] as const
+
+const RANK_ORDER: Record<string, number> = {
+  A: 0, AB: 1, B: 2, BC: 3, C: 4, CD: 5, D: 6, X: 7,
+}
+
+type SortBy = 'name' | 'rank'
+type SortDir = 'asc' | 'desc'
+
+interface Participant {
+  player_id: number
+  firstname: string
+  lastname: string
+  shortname: string
+  number: number | null
+  img: string | null
+  rank: string | null
+  status: string
+  group_name: string | null
+  grouprank: string | null
+}
+
+interface TrainingInfo {
+  id: number
+  type: string
+  date: string
+  indooroutdoor: string
+}
+
+interface GroupsData {
+  training: TrainingInfo | null
+  participants: Participant[]
+}
+
+const GROUPS = ['Grupp 1', 'Grupp 2', 'Grupp 3', 'Grupp 4', 'Grupp 5'] as const
+const UNASSIGNED_KEY = '__unassigned__'
+
+const GROUP_DEFAULT_RANK: Record<string, string> = {
+  'Grupp 1': 'A',
+  'Grupp 2': 'B',
+  'Grupp 3': 'C',
+  'Grupp 4': 'X',
+  'Grupp 5': 'X',
+}
+
+const VISIBLE_STATUSES = new Set(['Närvarande', 'Kallad', 'Anmäld'])
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('sv-SE', {
+    weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
+  })
+}
+
+function formatTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString('sv-SE', {
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC',
+  })
+}
+
+export default function TrainingGroups() {
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
+  const { data, loading, trigger } = useGetTrainingGroups()
+  const { trigger: triggerUpdate, loading: saving } = useUpdateParticipantGroups()
+  const { trigger: triggerGroupRank, loading: savingRank } = useUpdateGroupRank()
+
+  const [activeTab, setActiveTab] = useState<string>('all')
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [sortBy, setSortBy] = useState<SortBy>('name')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [overviewOpen, setOverviewOpen] = useState(false)
+
+  useEffect(() => {
+    if (id) trigger({ trainingId: Number(id) })
+  }, [id])
+
+  const result = data as unknown as GroupsData | undefined
+  const training = result?.training ?? null
+  const participants = (result?.participants ?? []).filter(p => VISIBLE_STATUSES.has(p.status))
+
+  // Bucket participants by group
+  const buckets = useMemo(() => {
+    const map: Record<string, Participant[]> = { [UNASSIGNED_KEY]: [] }
+    GROUPS.forEach(g => { map[g] = [] })
+    for (const p of participants) {
+      const key = p.group_name && GROUPS.includes(p.group_name as typeof GROUPS[number])
+        ? p.group_name
+        : UNASSIGNED_KEY
+      const arr = map[key]
+      if (arr) arr.push(p)
+    }
+    const dirMul = sortDir === 'asc' ? 1 : -1
+    const cmp = (a: Participant, b: Participant) => {
+      if (sortBy === 'rank') {
+        const ra = a.rank ? RANK_ORDER[a.rank.toUpperCase()] ?? 99 : 99
+        const rb = b.rank ? RANK_ORDER[b.rank.toUpperCase()] ?? 99 : 99
+        if (ra !== rb) return (ra - rb) * dirMul
+        return a.firstname.localeCompare(b.firstname, 'sv')
+      }
+      return a.firstname.localeCompare(b.firstname, 'sv') * dirMul
+    }
+    for (const key of Object.keys(map)) {
+      map[key]?.sort(cmp)
+    }
+    return map
+  }, [participants, sortBy, sortDir])
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {}
+    GROUPS.forEach(g => { c[g] = buckets[g]?.length ?? 0 })
+    c[UNASSIGNED_KEY] = buckets[UNASSIGNED_KEY]?.length ?? 0
+    return c
+  }, [buckets])
+
+  function toggleSort(by: SortBy) {
+    if (sortBy === by) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortBy(by)
+      setSortDir('asc')
+    }
+  }
+
+  function toggleSelect(playerId: number) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(playerId)) next.delete(playerId)
+      else next.add(playerId)
+      return next
+    })
+  }
+
+  function clearSelection() {
+    setSelected(new Set())
+  }
+
+  async function moveSelectedTo(group: string | null) {
+    if (!id || selected.size === 0) return
+    const playerIds = Array.from(selected)
+    const grouprank = group ? GROUP_DEFAULT_RANK[group] ?? null : null
+    await triggerUpdate({ trainingId: Number(id), playerIds, group, grouprank })
+    clearSelection()
+    trigger({ trainingId: Number(id) }, { skipCache: true })
+  }
+
+  async function moveOneTo(playerId: number, group: string | null) {
+    if (!id) return
+    const grouprank = group ? GROUP_DEFAULT_RANK[group] ?? null : null
+    await triggerUpdate({ trainingId: Number(id), playerIds: [playerId], group, grouprank })
+    trigger({ trainingId: Number(id) }, { skipCache: true })
+  }
+
+  async function setGroupRank(group: string, rank: string | null) {
+    if (!id) return
+    await triggerGroupRank({ trainingId: Number(id), group, rank })
+    trigger({ trainingId: Number(id) }, { skipCache: true })
+  }
+
+  async function autoAssignByRank() {
+    if (!id) return
+    const g1: number[] = []
+    const g2: number[] = []
+    const g3: number[] = []
+    for (const p of participants) {
+      if (p.group_name) continue
+      const r = p.rank?.toUpperCase() ?? ''
+      if (r === 'A' || r === 'AB') g1.push(p.player_id)
+      else if (r === 'B' || r === 'BC') g2.push(p.player_id)
+      else if (r === 'C' || r === 'CD' || r === 'D') g3.push(p.player_id)
+    }
+    if (!g1.length && !g2.length && !g3.length) return
+    const tasks: Promise<unknown>[] = []
+    if (g1.length) tasks.push(triggerUpdate({ trainingId: Number(id), playerIds: g1, group: 'Grupp 1', grouprank: GROUP_DEFAULT_RANK['Grupp 1'] ?? null }))
+    if (g2.length) tasks.push(triggerUpdate({ trainingId: Number(id), playerIds: g2, group: 'Grupp 2', grouprank: GROUP_DEFAULT_RANK['Grupp 2'] ?? null }))
+    if (g3.length) tasks.push(triggerUpdate({ trainingId: Number(id), playerIds: g3, group: 'Grupp 3', grouprank: GROUP_DEFAULT_RANK['Grupp 3'] ?? null }))
+    await Promise.all(tasks)
+    clearSelection()
+    trigger({ trainingId: Number(id) }, { skipCache: true })
+  }
+
+  // Determine which sections to render based on tab
+  const visibleSections: { key: string; label: string }[] = useMemo(() => {
+    if (activeTab === 'all') {
+      return [
+        ...GROUPS.filter(g => (counts[g] ?? 0) > 0).map(g => ({ key: g, label: g })),
+        ...((counts[UNASSIGNED_KEY] ?? 0) > 0
+          ? [{ key: UNASSIGNED_KEY, label: 'Ej tilldelade' }]
+          : []),
+      ]
+    }
+    if (activeTab === UNASSIGNED_KEY) {
+      return [{ key: UNASSIGNED_KEY, label: 'Ej tilldelade' }]
+    }
+    return [{ key: activeTab, label: activeTab }]
+  }, [activeTab, counts])
+
+  return (
+    <div className="flex flex-col min-h-full">
+      {/* Header */}
+      <div className="text-[#FFCF08] px-4 pt-6 pb-4" style={{ backgroundColor: '#106A37' }}>
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-[#FFCF08]/80 text-sm hover:text-[#FFCF08] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Tillbaka
+          </button>
+          <button
+            onClick={() => setOverviewOpen(true)}
+            className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
+            aria-label="Gruppöversikt"
+            title="Gruppöversikt"
+          >
+            <List className="w-5 h-5" />
+          </button>
+        </div>
+        {training ? (
+          <>
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className="text-xs font-semibold text-white px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: trainingTypeColor(training.type) }}
+              >
+                {training.type}
+              </span>
+              <span className="text-xs text-[#FFCF08]/70">
+                {formatDate(training.date)} · {formatTime(training.date)}
+              </span>
+            </div>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Users className="w-5 h-5" /> Grupper
+            </h1>
+          </>
+        ) : (
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <Users className="w-5 h-5" /> Grupper
+          </h1>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="sticky top-0 z-10 bg-background border-b border-border px-2 py-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full overflow-x-auto flex justify-start h-auto p-1 gap-1">
+            <TabsTrigger value="all" className="text-xs px-2.5 py-1.5">
+              Alla ({participants.length})
+            </TabsTrigger>
+            {GROUPS.filter(g => (counts[g] ?? 0) > 0).map(g => (
+              <TabsTrigger key={g} value={g} className="text-xs px-2.5 py-1.5 whitespace-nowrap">
+                {g.replace('Grupp ', 'G')} ({counts[g] ?? 0})
+              </TabsTrigger>
+            ))}
+            {(counts[UNASSIGNED_KEY] ?? 0) > 0 && (
+              <TabsTrigger value={UNASSIGNED_KEY} className="text-xs px-2.5 py-1.5 whitespace-nowrap">
+                Ingen ({counts[UNASSIGNED_KEY] ?? 0})
+              </TabsTrigger>
+            )}
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Auto-assign toolbar */}
+      <div className="px-4 pt-3 pb-1">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={saving || loading || participants.length === 0}
+          onClick={autoAssignByRank}
+          className="w-full h-9 gap-1.5"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+          Tilldela automatiskt
+        </Button>
+      </div>
+
+      {/* Sort toolbar */}
+      <div className="px-4 pt-2 pb-0 flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Sortera:</span>
+        <button
+          onClick={() => toggleSort('name')}
+          className={cn(
+            'inline-flex items-center gap-1 h-7 px-2 rounded-md text-xs border transition-colors',
+            sortBy === 'name'
+              ? 'bg-muted border-border text-foreground'
+              : 'bg-background border-border text-muted-foreground hover:text-foreground hover:bg-muted',
+          )}
+        >
+          Namn
+          {sortBy === 'name' && (sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+        </button>
+        <button
+          onClick={() => toggleSort('rank')}
+          className={cn(
+            'inline-flex items-center gap-1 h-7 px-2 rounded-md text-xs border transition-colors',
+            sortBy === 'rank'
+              ? 'bg-muted border-border text-foreground'
+              : 'bg-background border-border text-muted-foreground hover:text-foreground hover:bg-muted',
+          )}
+        >
+          Rank
+          {sortBy === 'rank' && (sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 px-4 py-4 space-y-5 pb-32">
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />
+            ))}
+          </div>
+        ) : participants.length === 0 ? (
+          <div className="text-center text-sm text-muted-foreground py-12">
+            Inga deltagare inbjudna till denna träning.
+          </div>
+        ) : (
+          visibleSections.map(section => {
+            const list = buckets[section.key] ?? []
+            const isGroup = section.key !== UNASSIGNED_KEY
+            const ranks = new Set(list.map(p => p.grouprank).filter(Boolean) as string[])
+            const sharedRank = ranks.size === 1 ? [...ranks][0]! : null
+            return (
+              <div key={section.key}>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {section.label} ({list.length})
+                  </h2>
+                  {isGroup && list.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          disabled={saving || savingRank}
+                          className={cn(
+                            'inline-flex items-center gap-1 h-6 px-2 rounded-md text-[11px] font-bold border border-border transition-colors',
+                            'hover:bg-muted disabled:opacity-50',
+                          )}
+                          style={sharedRank ? rankStyle(sharedRank) : undefined}
+                          aria-label={`Sätt rank för ${section.label}`}
+                        >
+                          <span>Rank: {sharedRank ?? (ranks.size > 1 ? 'Blandad' : '–')}</span>
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-[8rem]">
+                        {RANK_OPTIONS.map(r => (
+                          <DropdownMenuItem
+                            key={r}
+                            onClick={() => setGroupRank(section.key, r)}
+                            className="gap-2"
+                          >
+                            <span
+                              className="inline-flex items-center justify-center w-7 h-5 rounded text-[10px] font-bold"
+                              style={rankStyle(r)}
+                            >
+                              {r}
+                            </span>
+                            <span className="text-xs">{r}</span>
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuItem
+                          onClick={() => setGroupRank(section.key, null)}
+                          className="gap-2 text-muted-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          <span className="text-xs">Ta bort rank</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+                {list.length === 0 ? (
+                  <div className="text-xs text-muted-foreground/70 italic px-3 py-3 border border-dashed border-border rounded-lg">
+                    Inga spelare i denna grupp
+                  </div>
+                ) : (
+                  <div className="bg-card border border-border rounded-xl divide-y divide-border">
+                    {list.map(p => (
+                      <ParticipantRow
+                        key={p.player_id}
+                        participant={p}
+                        selected={selected.has(p.player_id)}
+                        onToggleSelect={() => toggleSelect(p.player_id)}
+                        onMoveTo={(g) => moveOneTo(p.player_id, g)}
+                        disabled={saving || savingRank}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 z-20">
+          <div className="bg-card border border-border rounded-xl shadow-lg p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {selected.size} {selected.size === 1 ? 'vald' : 'valda'}
+              </span>
+              <button
+                onClick={clearSelection}
+                className="text-muted-foreground hover:text-foreground p-1"
+                aria-label="Rensa val"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                <ArrowRightLeft className="w-3 h-3" /> Flytta till:
+              </span>
+            </div>
+            <div className="grid grid-cols-6 gap-1.5">
+              {GROUPS.map(g => (
+                <Button
+                  key={g}
+                  size="sm"
+                  variant="outline"
+                  disabled={saving}
+                  onClick={() => moveSelectedTo(g)}
+                  className="h-9 px-0 text-xs font-semibold"
+                >
+                  {g.replace('Grupp ', '')}
+                </Button>
+              ))}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={saving}
+                onClick={() => moveSelectedTo(null)}
+                className="h-9 px-0 text-xs"
+                aria-label="Ta bort gruppindelning"
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            {saving && (
+              <div className="flex items-center justify-center text-xs text-muted-foreground gap-1.5">
+                <Loader2 className="w-3 h-3 animate-spin" /> Sparar…
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Condensed group overview */}
+      <Dialog open={overviewOpen} onOpenChange={setOverviewOpen}>
+        <DialogContent className="max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Gruppöversikt</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 py-1 max-h-[70vh] overflow-y-auto">
+            {participants.length === 0 ? (
+              <p className="col-span-2 text-xs text-muted-foreground text-center py-4">Inga deltagare.</p>
+            ) : (
+              <>
+                {[
+                  ...GROUPS.filter(g => (counts[g] ?? 0) > 0).map(g => ({ key: g, label: g })),
+                  ...((counts[UNASSIGNED_KEY] ?? 0) > 0 ? [{ key: UNASSIGNED_KEY, label: 'Ej tilldelade' }] : []),
+                ].map(({ key, label }) => (
+                  <div key={key}>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-xs font-semibold text-foreground">{label}</span>
+                      <span className="text-[10px] text-muted-foreground">({counts[key] ?? 0})</span>
+                    </div>
+                    <ul className="flex flex-col">
+                      {(buckets[key] ?? []).map(p => (
+                        <li key={p.player_id} className="flex items-center gap-2 py-0.5 border-b border-border/50 last:border-0">
+                          <span className="text-xs text-foreground w-20 truncate">{p.shortname}</span>
+                          {p.rank ? (
+                            <span className="text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0" style={rankStyle(p.rank)}>
+                              {p.rank}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground flex-shrink-0">–</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+interface RowProps {
+  participant: Participant
+  selected: boolean
+  onToggleSelect: () => void
+  onMoveTo: (group: string | null) => void
+  disabled: boolean
+}
+
+function ParticipantRow({ participant, selected, onToggleSelect, onMoveTo, disabled }: RowProps) {
+  const p = participant
+  const currentGroupNum = p.group_name?.replace('Grupp ', '') ?? null
+  const statusLow = p.status?.toLowerCase() ?? ''
+  const isKallad = statusLow.includes('kallad')
+
+  return (
+    <div className={cn('flex items-center gap-2.5 px-3 py-2.5', isKallad && 'bg-muted/100')}>
+      <Checkbox
+        checked={selected}
+        onCheckedChange={onToggleSelect}
+        className="flex-shrink-0"
+        aria-label={`Välj ${p.shortname}`}
+        disabled={disabled}
+      />
+      {/* Rank chip */}
+      <span
+        className="inline-flex items-center justify-center w-8 h-7 rounded-md text-[11px] font-bold shrink-0"
+        style={p.rank ? rankStyle(p.rank) : { backgroundColor: '#B7B7B7', color: '#fff' }}
+        title={`Rank: ${p.rank ?? '—'}`}
+      >
+        {p.rank ?? '–'}
+      </span>
+      <button
+        onClick={onToggleSelect}
+        className="flex flex-col min-w-0 flex-1 text-left"
+      >
+        <span className="text-sm font-medium text-foreground truncate">{p.shortname}</span>
+      </button>
+      {/* Per-row group buttons */}
+      <div className="flex items-center gap-1 shrink-0">
+        {GROUPS.map(g => {
+          const num = g.replace('Grupp ', '')
+          const active = currentGroupNum === num
+          const activeStyle = active && p.grouprank ? rankStyle(p.grouprank) : undefined
+          return (
+            <button
+              key={g}
+              onClick={() => onMoveTo(g)}
+              disabled={disabled || active}
+              style={activeStyle}
+              className={cn(
+                'w-7 h-7 rounded-md text-xs font-semibold border transition-colors',
+                active
+                  ? p.grouprank
+                    ? 'border-transparent cursor-default'
+                    : 'bg-primary text-primary-foreground border-primary cursor-default'
+                  : 'bg-background border-border text-muted-foreground hover:text-foreground hover:bg-muted',
+              )}
+              aria-label={`Flytta till ${g}`}
+            >
+              {num}
+            </button>
+          )
+        })}
+        <button
+          onClick={() => onMoveTo(null)}
+          disabled={disabled || !currentGroupNum}
+          className={cn(
+            'w-7 h-7 rounded-md text-xs border transition-colors flex items-center justify-center',
+            !currentGroupNum
+              ? 'bg-muted border-border text-muted-foreground cursor-default'
+              : 'bg-background border-border text-muted-foreground hover:text-foreground hover:bg-muted',
+          )}
+          aria-label="Ta bort gruppindelning"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  )
+}
