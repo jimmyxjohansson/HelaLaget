@@ -24,6 +24,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '../lib/shadcn/alert-dialog'
 import { ownTeamLogoUrl, ownTeamName } from '../utils/constants'
+import { runningClock } from '../utils/matchClock'
 
 interface MatchData {
   id: number
@@ -188,18 +189,9 @@ export default function MatchTimeline() {
   useEffect(() => {
     if (!match || clockRestoredFor.current === match.id) return
     clockRestoredFor.current = match.id
-    if (!match.clock_started_at || !match.clock_period) return
-    const started = Date.parse(match.clock_started_at)
-    const serverNow = match.server_now ? Date.parse(match.server_now) : Date.now()
-    // En klocka som glömts igång i mer än sex timmar räknas som stoppad
-    if (Number.isNaN(started) || serverNow - started > 6 * 60 * 60 * 1000) return
-    const skew = serverNow - Date.now()
-    setTimer({
-      startedAt: started - skew,
-      offsetMinutes: match.clock_offset_minutes ?? 0,
-      periodStartMinutes: match.clock_period_start_minutes ?? 0,
-      period: Math.min(3, Math.max(1, match.clock_period)) as 1 | 2 | 3,
-    })
+    const restored = runningClock(match)
+    if (!restored) return
+    setTimer(restored)
     setNow(Date.now())
   }, [match])
 

@@ -30,6 +30,8 @@ import {
   AlertDialogTitle,
 } from '../lib/shadcn/alert-dialog'
 import { ownTeamLogoUrl, ownTeamName } from '../utils/constants'
+import { runningClock, type RunningClock } from '../utils/matchClock'
+import LiveMatchClock from '../components/LiveMatchClock'
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -61,6 +63,11 @@ interface MatchData {
   fogisregistered: boolean | null
   svenskalag: string | null
   vs: number | null
+  clock_started_at?: string | null
+  clock_period?: number | null
+  clock_offset_minutes?: number | null
+  clock_period_start_minutes?: number | null
+  server_now?: string
 }
 
 interface OpponentMatch {
@@ -175,6 +182,22 @@ export default function MatchDetail() {
   useEffect(() => {
     if (match) setFogisRegistered(!!match.fogisregistered)
   }, [match?.id, match?.fogisregistered])
+
+  // Matchklockan från tidslinjen. Räknas om varje gång matchen hämtas.
+  const [clock, setClock] = useState<RunningClock | null>(null)
+  useEffect(() => {
+    setClock(match && match.status !== 'Avslutad' ? runningClock(match) : null)
+  }, [match])
+
+  // Medan klockan går hämtas matchen på nytt var 20:e sekund, så att mål och
+  // periodbyten syns utan att man behöver uppdatera.
+  useEffect(() => {
+    if (!clock || !id) return
+    const t = window.setInterval(() => {
+      if (document.visibilityState === 'visible') trigger({ id: Number(id) }, { skipCache: true }).catch(() => {})
+    }, 20000)
+    return () => window.clearInterval(t)
+  }, [clock, id])
 
   async function handleToggleFogisRegistered(next: boolean) {
     if (!match) return
@@ -324,7 +347,7 @@ export default function MatchDetail() {
           </AlertDialog>
         </div>
 
-        {loading || !match ? (
+        {!match || (loading && match.id !== Number(id)) ? (
           <div className="h-24 animate-pulse rounded-xl bg-white/10" />
         ) : (
           <div className="flex flex-col gap-3">
@@ -378,6 +401,9 @@ export default function MatchDetail() {
                 >
                   {isHome ? 'Hemma' : 'Borta'}
                 </span>
+                {clock && (
+                  <LiveMatchClock clock={clock} periods={match.periods && match.periods > 0 ? match.periods : 1} />
+                )}
               </div>
 
               <div className="flex flex-col items-center gap-1 flex-1">
