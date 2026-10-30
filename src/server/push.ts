@@ -11,6 +11,8 @@ import { adminDb } from './db'
 export type PushPayload = {
   title: string
   body: string
+  /** Bild i notisen (lagets logga). iPhone visar alltid appens ikon i stället. */
+  icon?: string
   /** Sidan som öppnas när man trycker på notisen. */
   url?: string
   /** Notiser med samma tagg ersätter varandra (t.ex. en per match). */

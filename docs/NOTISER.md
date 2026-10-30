@@ -4,15 +4,18 @@ Den som vill får en push-notis i telefonen när något händer i en match:
 
 | Händelse | När | Exempel |
 |---|---|---|
-| **Avspark** | Ledaren trycker på *Period 1* i tidslinjen | Avspark: P13 – IFK Malmö |
-| **Mål för laget** | Ett mål sparas i tidslinjen | ⚽ Mål för P13! 34' Kalle A (assist Nils B) · Hörna, P13 2–1 IFK Malmö |
-| **Mål för motståndarna** | Ett motståndarmål sparas | Mål för IFK Malmö: 40' P13 2–2 IFK Malmö |
-| **Halvtid / paus** | *Stoppa* trycks under en period som inte är den sista | Halvtid: P13 2–2 IFK Malmö |
-| **Ny period** | *Period 2* (eller 3) trycks | Period 2 har börjat: P13 2–2 IFK Malmö |
-| **Slutsignal** | *Stoppa* trycks under sista perioden | Slutsignal: P13 3–2 IFK Malmö · Vinst |
-| **Rättelse** | Ett mål som det skickats notis om tas bort | Målet i 34:e minuten är borttaget. P13 1–2 IFK Malmö |
+| **Avspark** | Ledaren trycker på *Period 1* i tidslinjen | Avspark: Skabersjö IF P13 – IFK Malmö |
+| **Mål för laget** | Ett mål sparas i tidslinjen | ⚽ Mål för Skabersjö IF P13! 34' Kalle A (assist Nils B) · Hörna, Skabersjö IF P13 2–1 IFK Malmö |
+| **Mål för motståndarna** | Ett motståndarmål sparas | Mål för IFK Malmö: 40' Skabersjö IF P13 2–2 IFK Malmö |
+| **Halvtid / paus** | *Stoppa* trycks under en period som inte är den sista | Halvtid: Skabersjö IF P13 2–2 IFK Malmö |
+| **Ny period** | *Period 2* (eller 3) trycks | Period 2 har börjat: Skabersjö IF P13 2–2 IFK Malmö |
+| **Slutsignal** | *Stoppa* trycks under sista perioden | Slutsignal: Skabersjö IF P13 3–2 IFK Malmö · Vinst |
+| **Rättelse** | Ett mål som det skickats notis om tas bort | Målet i 34:e minuten är borttaget. Skabersjö IF P13 1–2 IFK Malmö |
 
-Hemmalaget står först, precis som i en resultatlista.
+Hemmalaget står först, precis som i en resultatlista. Vårt lag skrivs med
+förening och lagnamn. Notisen visar loggan för laget som gjorde målet (lagets
+logga från *Admin → Medlemmar*, motståndarens från motståndarlaget). På iPhone
+visar iOS alltid appens ikon i stället.
 
 **Inga notiser skickas**
 - för matcher som är *Avslutad* eller *Registrerad i Fogis*

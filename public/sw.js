@@ -15,7 +15,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || '',
-      icon: '/icons/icon-192.png',
+      icon: data.icon || '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       tag: data.tag || undefined,
       // Ny notis med samma tagg (samma match) ska ändå plinga

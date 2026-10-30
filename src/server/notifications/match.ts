@@ -15,8 +15,11 @@ import { pushConfigured, sendToSquad, type PushPayload } from '../push'
 type MatchInfo = {
   id: number
   squad_id: number
+  /** Förening + lag, t.ex. "Skabersjö IF P-13" */
   squad_name: string
+  squad_logo: string | null
   opponent: string
+  opponent_logo: string | null
   homeaway: string | null
   ourgoals: number
   theirgoals: number
@@ -29,13 +32,16 @@ const FINISHED = ['Avslutad', 'Registrerad i Fogis']
 
 async function loadMatch(matchId: number, squadId: number): Promise<MatchInfo | null> {
   const { data } = await adminDb.query<MatchInfo>(
-    `SELECT m.id, m.squad_id, s.name AS squad_name, COALESCE(NULLIF(t.team, ''), 'Motståndarna') AS opponent,
+    `SELECT m.id, m.squad_id, trim(concat_ws(' ', o.name, s.name)) AS squad_name,
+            NULLIF(s.logo_url, '') AS squad_logo,
+            COALESCE(NULLIF(t.team, ''), 'Motståndarna') AS opponent, NULLIF(t.imgurl, '') AS opponent_logo,
             m.homeaway::text AS homeaway, COALESCE(m.ourgoals, 0)::int AS ourgoals,
             COALESCE(m.theirgoals, 0)::int AS theirgoals, m.periods, m.status::text AS status,
             -- Tider sparas som väggklocka (17:30Z = 17:30 svensk tid)
             (m.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Stockholm')::date AS is_today
      FROM matches m
      JOIN squads s ON s.id = m.squad_id
+     JOIN organizations o ON o.id = s.organization_id
      LEFT JOIN teams t ON t.id = m.vs
      WHERE m.id = $1 AND m.squad_id = $2`,
     [matchId, squadId],
@@ -68,8 +74,13 @@ function teams(m: MatchInfo) {
   return m.homeaway === 'Borta' ? `${m.opponent} – ${m.squad_name}` : `${m.squad_name} – ${m.opponent}`
 }
 
-function payload(m: MatchInfo, title: string, body: string): PushPayload {
-  return { title, body, url: `/matches/${m.id}?lag=${m.squad_id}`, tag: `match-${m.id}` }
+// Samma reservlogga som i appen när laget saknar egen logga
+const FALLBACK_LOGO = process.env.NEXT_PUBLIC_OWN_TEAM_LOGO_URL || '/icons/icon-192.png'
+
+/** Notisens bild: logga för laget som gjorde målet (annars vårt lags). */
+function payload(m: MatchInfo, title: string, body: string, logo: 'ours' | 'theirs' = 'ours'): PushPayload {
+  const icon = logo === 'theirs' ? (m.opponent_logo ?? '/icons/icon-192.png') : (m.squad_logo ?? FALLBACK_LOGO)
+  return { title, body, icon, url: `/matches/${m.id}?lag=${m.squad_id}`, tag: `match-${m.id}` }
 }
 
 const minuteText = (minute: number | null) => (minute != null ? `${minute}' ` : '')
@@ -129,7 +140,7 @@ export function notifyGoal({ squadId, matchId, userId, eventId }: Base & { event
       const kind = e.type && e.type !== 'Spelmål' ? ` · ${e.type === 'Självmål (motst.)' ? 'Självmål' : e.type}` : ''
       await sendToSquad(
         squadId,
-        payload(m, `Mål för ${m.opponent}`, `${minuteText(e.minute)}${scoreline(m)}${kind}`),
+        payload(m, `Mål för ${m.opponent}`, `${minuteText(e.minute)}${scoreline(m)}${kind}`, 'theirs'),
         userId,
       )
     }
