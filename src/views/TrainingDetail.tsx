@@ -15,7 +15,6 @@ import { AttendanceStatsButton } from '../components/AttendanceStatsButton'
 import { VisualCheckbox } from '../components/VisualCheckbox'
 import TrainingForm from './ui/TrainingForm'
 import { currentSquad } from '../lib/squad-store'
-import { openExternal } from '../lib/external-links'
 
 interface Attendee {
   player_id: number
@@ -478,7 +477,7 @@ export default function TrainingDetail() {
               <AttendanceStatsButton />
               {currentSquad()?.trainingAppUrl && (
               <button
-                onClick={() => openExternal(currentSquad()!.trainingAppUrl!.replace('{id}', String(id)))}
+                onClick={() => window.open(currentSquad()!.trainingAppUrl!.replace('{id}', String(id)), '_blank', 'noopener,noreferrer')}
                 className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
                 aria-label="Öppna i träningsappen"
                 title="Öppna i träningsappen"

@@ -8,7 +8,6 @@ import { callBackend } from '../hooks/backend/_core'
 import { getMe, hexToRgbChannels, setMe, type Me } from '../lib/squad-store'
 import { readSquadCookie, setSquadCookie } from '../lib/squad-cookie'
 import { registerServiceWorker } from '../lib/push'
-import { installExternalLinkHandler } from '../lib/external-links'
 import { Button } from '../lib/shadcn/button'
 
 const subscribe = () => () => {}
@@ -34,7 +33,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
     if (!mounted) return
     let cancelled = false
     registerServiceWorker()
-    installExternalLinkHandler()
     // Länkar från notiser anger laget (?lag=<id>), så att matchen öppnas i rätt lag.
     const fromLink = Number(new URLSearchParams(window.location.search).get('lag')) || null
     callBackend<Me>('account/getMe', { squadId: fromLink ?? readSquadCookie() })
