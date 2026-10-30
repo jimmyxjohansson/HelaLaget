@@ -6,6 +6,7 @@ import { useGetMatches } from '../hooks/backend/matches'
 import { usePersistentState } from '../hooks/usePersistentState'
 import { Search, MapPin, ChevronRight, Home, Plane, Plus } from 'lucide-react'
 import { rankStyle } from '../utils/rankColors'
+import SquadLogo from '../components/SquadLogo'
 interface Match {
   id: number
   matchtype: string
@@ -140,9 +141,12 @@ export default function Matches() {
       {/* Header */}
       <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Matcher</h1>
-            <p className="text-team-accent/70 text-sm">{played.length} spelade</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <SquadLogo />
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold">Matcher</h1>
+              <p className="text-team-accent/70 text-sm">{played.length} spelade</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <button

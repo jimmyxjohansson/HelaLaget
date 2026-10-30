@@ -16,6 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '../lib/shadcn/alert-dialog'
+import SquadLogo from '../components/SquadLogo'
 
 interface League {
   id: number
@@ -109,9 +110,12 @@ export default function Serier() {
       {/* Header */}
       <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Serier</h1>
-            <p className="text-team-accent/70 text-sm">{activeCount} pågående</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <SquadLogo />
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold">Serier</h1>
+              <p className="text-team-accent/70 text-sm">{activeCount} pågående</p>
+            </div>
           </div>
           <button
             onClick={openNew}

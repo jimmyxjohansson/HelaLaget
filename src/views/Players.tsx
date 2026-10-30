@@ -8,6 +8,7 @@ import { Search, User, Trophy, ChevronRight, ArrowUp, ArrowDown } from 'lucide-r
 import { rankStyle } from '../utils/rankColors'
 import PlayerActions from '../components/PlayerActions'
 import { canEdit } from '../lib/squad-store'
+import SquadLogo from '../components/SquadLogo'
 
 interface Player {
   id: number
@@ -160,9 +161,12 @@ export default function Players() {
       {/* Header */}
       <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Spelare</h1>
-            <p className="text-team-accent/70 text-sm">{filtered.length} spelare</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <SquadLogo />
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold">Spelare</h1>
+              <p className="text-team-accent/70 text-sm">{filtered.length} spelare</p>
+            </div>
           </div>
           {canEdit() && <PlayerActions onChanged={() => trigger({ months: timeFilter })} />}
         </div>

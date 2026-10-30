@@ -20,6 +20,7 @@ import { Button } from '../lib/shadcn/button'
 import { Input } from '../lib/shadcn/input'
 import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
+import SquadLogo from '../components/SquadLogo'
 // Alla träningar hämtas, så att flikarna (Kommande, Senaste, Rapporterade, Alla)
 // alltid är kompletta, även med importerade träningar långt fram i tiden.
 const TRAINING_WINDOW = () => ({ limit: 10000 })
@@ -201,9 +202,12 @@ export default function Trainings() {
       {/* Header */}
       <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Träningar</h1>
-            <p className="text-team-accent/70 text-sm">{filtered.length} pass</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <SquadLogo />
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold">Träningar</h1>
+              <p className="text-team-accent/70 text-sm">{filtered.length} pass</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <AttendanceStatsButton />

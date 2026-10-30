@@ -9,6 +9,8 @@ import { trainingTypeColor } from '../utils/trainingTypeColor'
 import { MapPin, ChevronRight, Home as HomeIcon, Plane, Cake } from 'lucide-react'
 import { ownTeamName } from '../utils/constants'
 import { wallDayIso } from '../utils/dateWindow'
+import SquadLogo from '../components/SquadLogo'
+import { currentSquad } from '../lib/squad-store'
 
 function matchTypeColor(type: string): string {
   if (type === 'Serie') return '#2563eb'
@@ -126,9 +128,12 @@ export default function Home() {
       {/* Header */}
       <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-team-accent/70 text-sm font-medium uppercase tracking-widest">{ownTeamName()}</p>
-            <h1 className="text-2xl font-bold mt-0.5">P-13</h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <SquadLogo className="w-12 h-12" />
+            <div className="min-w-0">
+              <p className="text-team-accent/70 text-sm font-medium uppercase tracking-widest">{ownTeamName()}</p>
+              <h1 className="text-2xl font-bold mt-0.5">{currentSquad()?.squadName ?? ''}</h1>
+            </div>
           </div>
         </div>
       </div>

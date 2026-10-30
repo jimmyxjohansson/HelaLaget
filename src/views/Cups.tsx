@@ -8,6 +8,7 @@ import { Search, MapPin, ChevronRight, Calendar, Trophy } from 'lucide-react'
 import { rankStyle } from '../utils/rankColors'
 import NewCupButton from '../components/NewCupButton'
 import { canEdit } from '../lib/squad-store'
+import SquadLogo from '../components/SquadLogo'
 
 interface Cup {
   id: number
@@ -93,9 +94,12 @@ export default function Cups() {
       {/* Header */}
       <div className="text-team-accent px-4 pt-6 pb-3" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Cuper</h1>
-            <p className="text-team-accent/70 text-sm">{finished.length} spelade</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <SquadLogo />
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold">Cuper</h1>
+              <p className="text-team-accent/70 text-sm">{finished.length} spelade</p>
+            </div>
           </div>
           {canEdit() && <NewCupButton />}
         </div>
