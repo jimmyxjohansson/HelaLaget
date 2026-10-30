@@ -10,6 +10,7 @@ Den som vill får en push-notis i telefonen när något händer i en match:
 | **Halvtid / paus** | *Stoppa* trycks under en period som inte är den sista | Halvtid: Skabersjö IF P13 2–2 IFK Malmö |
 | **Ny period** | *Period 2* (eller 3) trycks | Period 2 har börjat: Skabersjö IF P13 2–2 IFK Malmö |
 | **Slutsignal** | *Stoppa* trycks under sista perioden | Slutsignal: Skabersjö IF P13 3–2 IFK Malmö · Vinst |
+| **Matchen avslutad** | Matchen sätts till *Avslutad* (knappen i tidslinjen eller status under *Redigera*). Skickas inte om slutsignalen redan gått ut med samma resultat. | Matchen är avslutad: Slutresultat: Skabersjö IF P13 3–2 IFK Malmö · Vinst |
 | **Rättelse** | Ett mål som det skickats notis om tas bort | Målet i 34:e minuten är borttaget. Skabersjö IF P13 1–2 IFK Malmö |
 
 Hemmalaget står först, precis som i en resultatlista. Vårt lag skrivs med

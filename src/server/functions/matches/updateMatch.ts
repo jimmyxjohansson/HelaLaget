@@ -1,5 +1,6 @@
 import { db } from '@/server/db'
-import type { User } from '@/server/types'
+import { notifyFinished } from '@/server/notifications/match'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   id: number
@@ -27,8 +28,13 @@ type Params = {
   svenskalag: string | null
 }
 
-export default async function updateMatch(req: { params: Params; user: User }) {
+export default async function updateMatch(req: { params: Params; user: User; squad?: SquadAccess }) {
   const p = req.params
+
+  const { data: before } = await db.query<{ status: string | null }>(
+    'SELECT status::text AS status FROM matches WHERE id = $1',
+    [p.id],
+  )
 
   await db.query(
     `UPDATE matches SET
@@ -81,6 +87,17 @@ export default async function updateMatch(req: { params: Params; user: User }) {
       p.id,
     ]
   )
+
+  // Satt till Avslutad: stoppa matchklockan och skicka notis med slutresultatet
+  if (p.status === 'Avslutad' && before[0] && before[0].status !== 'Avslutad') {
+    await db.query(
+      `UPDATE matches SET clock_started_at = NULL, clock_period = NULL,
+         clock_offset_minutes = NULL, clock_period_start_minutes = NULL
+       WHERE id = $1`,
+      [p.id],
+    )
+    if (req.squad) notifyFinished({ squadId: req.squad.squadId, matchId: p.id, userId: req.user.id })
+  }
 
   return { success: true }
 }

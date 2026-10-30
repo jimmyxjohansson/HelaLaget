@@ -162,6 +162,28 @@ export function notifyGoalRemoved({ squadId, matchId, userId, eventId, minute }:
   })
 }
 
+const resultKey = (m: MatchInfo) => `result:${m.ourgoals}-${m.theirgoals}`
+
+/**
+ * Matchen har satts till Avslutad (knappen i tidslinjen eller status i
+ * Redigera). Skickas en gång, och inte om slutsignalen redan gått ut med samma
+ * resultat.
+ */
+export function notifyFinished({ squadId, matchId, userId }: Base) {
+  later('avslutad', async () => {
+    const m = await loadMatch(matchId, squadId)
+    if (!m || m.status !== 'Avslutad' || !m.is_today) return
+    if (!(await claim(matchId, 'finished'))) return
+    if (!(await claim(matchId, resultKey(m)))) return
+    const outcome = m.ourgoals > m.theirgoals ? 'Vinst' : m.ourgoals < m.theirgoals ? 'Förlust' : 'Oavgjort'
+    await sendToSquad(
+      squadId,
+      payload(m, 'Matchen är avslutad', `Slutresultat: ${scoreline(m)} · ${outcome}`),
+      userId,
+    )
+  })
+}
+
 /** Start eller stopp av en period i tidslinjens matchklocka. */
 export function notifyClock({ squadId, matchId, userId, event, period }: Base & { event: 'start' | 'stop'; period: number }) {
   later('periodnotis', async () => {
@@ -188,6 +210,8 @@ export function notifyClock({ squadId, matchId, userId, event, period }: Base & 
       const outcome = m.ourgoals > m.theirgoals ? 'Vinst' : m.ourgoals < m.theirgoals ? 'Förlust' : 'Oavgjort'
       title = 'Slutsignal'
       body = `${scoreline(m)} · ${outcome}`
+      // Avslutas matchen sedan med samma resultat behövs ingen notis till
+      await claim(matchId, resultKey(m))
     }
     await sendToSquad(squadId, payload(m, title, body), userId)
   })

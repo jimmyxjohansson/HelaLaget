@@ -1,15 +1,16 @@
 import { db } from '@/server/db'
-import type { User } from '@/server/types'
+import { notifyFinished } from '@/server/notifications/match'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   id: number
 }
 
-export default async function finishMatch(req: { params: Params; user: User }) {
+export default async function finishMatch(req: { params: Params; user: User; squad?: SquadAccess }) {
   const id = req.params.id
 
-  const current = await db.query<{ ourgoals: number; theirgoals: number }>(
-    `SELECT ourgoals, theirgoals FROM matches WHERE id = $1`,
+  const current = await db.query<{ ourgoals: number; theirgoals: number; status: string | null }>(
+    `SELECT ourgoals, theirgoals, status::text AS status FROM matches WHERE id = $1`,
     [id]
   )
 
@@ -30,6 +31,10 @@ export default async function finishMatch(req: { params: Params; user: User }) {
      WHERE id = $2`,
     [outcome, id]
   )
+
+  if (row.status !== 'Avslutad' && req.squad) {
+    notifyFinished({ squadId: req.squad.squadId, matchId: id, userId: req.user.id })
+  }
 
   return { success: true, outcome }
 }
