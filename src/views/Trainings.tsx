@@ -20,11 +20,9 @@ import { Button } from '../lib/shadcn/button'
 import { Input } from '../lib/shadcn/input'
 import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
-import { wallDayIso } from '../utils/dateWindow'
-
-// Senaste året bakåt och ett halvår framåt (importen från Svenskalag kan
-// lägga in träningar långt fram, som annars tränger undan de närmaste).
-const TRAINING_WINDOW = () => ({ limit: 1000, from: wallDayIso(-365), to: wallDayIso(183) })
+// Alla träningar hämtas, så att flikarna (Kommande, Senaste, Rapporterade, Alla)
+// alltid är kompletta, även med importerade träningar långt fram i tiden.
+const TRAINING_WINDOW = () => ({ limit: 10000 })
 
 interface Training {
   id: number
@@ -84,7 +82,7 @@ export default function Trainings() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('Alla')
   const [reportedFilter, setReportedFilter] = useState<'all' | 'unreported' | 'reported'>('all')
-  const [timeFilter, setTimeFilter] = useState<'coming' | 'recent' | 'all'>('coming')
+  const [timeFilter, setTimeFilter] = useState<'coming' | 'recent' | 'reported' | 'all'>('coming')
   const [weekDialogOpen, setWeekDialogOpen] = useState(false)
   const [creatingWeek, setCreatingWeek] = useState(false)
 
@@ -169,6 +167,7 @@ export default function Trainings() {
     const trainingDate = new Date(t.date)
     if (timeFilter === 'coming' && trainingDate < todayStart && t.reported) return false
     if (timeFilter === 'recent' && (!t.reported || trainingDate < recentCutoff)) return false
+    if (timeFilter === 'reported' && !t.reported) return false
     if (typeFilter !== 'Alla' && t.type !== typeFilter) return false
     if (reportedFilter === 'unreported' && t.reported) return false
     if (reportedFilter === 'reported' && !t.reported) return false
@@ -181,7 +180,7 @@ export default function Trainings() {
     return true
   })
 
-  // Sort: coming = ascending, recent/all = descending
+  // Sort: coming = ascending, recent/reported/all = descending
   const sorted = [...filtered].sort((a, b) => {
     const diff = new Date(a.date).getTime() - new Date(b.date).getTime()
     return timeFilter === 'coming' ? diff : -diff
@@ -231,7 +230,7 @@ export default function Trainings() {
       <div className="sticky top-0 z-10 bg-background border-b border-border px-4 py-3 flex flex-col gap-2">
         {/* Time filter */}
         <div className="flex gap-1 bg-muted rounded-lg p-1">
-          {([['coming', 'Kommande'], ['recent', 'Senaste'], ['all', 'Alla']] as const).map(([val, label]) => (
+          {([['coming', 'Kommande'], ['recent', 'Senaste'], ['reported', 'Rapporterade'], ['all', 'Alla']] as const).map(([val, label]) => (
             <button
               key={val}
               onClick={() => setTimeFilter(val)}
