@@ -160,7 +160,7 @@ export default function Planning() {
         ))}
       </div>
 
-      <div className="grid gap-3 p-3 md:p-4 md:[grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+      <div className="grid gap-3 p-3 md:p-4 md:[grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
         {slots.map((id, i) => {
           const taken = new Set(slots.filter((s, j) => s && j !== i) as number[])
           const neighbor = (j: number) => {

@@ -345,13 +345,13 @@ export default function SlotColumn(props: Props) {
             )}
 
             {players.length > 0 && (
-              <div className="flex items-center gap-2 px-1.5">
+              <div className="flex items-center gap-1.5 px-1.5">
                 <span className="w-4 shrink-0" />
                 <SortHead label="Namn" k="name" sort={playerSort} onSort={setPlayerSort} className="min-w-0 flex-1" />
-                <span className="w-6 shrink-0 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                <span className="w-5 shrink-0 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
                   title="Föreslagen målvakt">MV</span>
-                <SortHead label="Rank" k="rank" sort={playerSort} onSort={setPlayerSort} className="w-9 shrink-0" />
-                <SortHead label="Svar" k="status" sort={playerSort} onSort={setPlayerSort} className="w-12 shrink-0" />
+                <SortHead label="Rank" k="rank" sort={playerSort} onSort={setPlayerSort} className="w-8 shrink-0" />
+                <SortHead label="Svar" k="status" sort={playerSort} onSort={setPlayerSort} className="w-9 shrink-0" />
                 <SortHead label="%" k="percent" sort={playerSort} onSort={setPlayerSort} firstDir="desc"
                   className="w-9 shrink-0 justify-end" title="Sortera på träningsnärvaro" />
               </div>
@@ -366,7 +366,7 @@ export default function SlotColumn(props: Props) {
                       type="button"
                       onClick={() => setSelected((s) => toggle(s, p.id))}
                       className={cn(
-                        'flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-muted',
+                        'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-sm hover:bg-muted',
                         selected.has(p.id) && 'bg-primary/10',
                         grey && 'text-muted-foreground',
                       )}
@@ -404,7 +404,7 @@ export default function SlotColumn(props: Props) {
                           }
                         }}
                         className={cn(
-                          'flex w-6 shrink-0 justify-center rounded py-0.5 hover:bg-background',
+                          'flex w-5 shrink-0 justify-center rounded py-0.5 hover:bg-background',
                           p.position === 'Målvakt' ? 'text-sky-600 dark:text-sky-400'
                             : p.canGoalkeeper ? 'text-muted-foreground/60 hover:text-foreground'
                               : 'text-muted-foreground/25 hover:text-foreground',
@@ -412,10 +412,10 @@ export default function SlotColumn(props: Props) {
                       >
                         <Hand className="h-3.5 w-3.5" fill={p.position === 'Målvakt' ? 'currentColor' : 'none'} />
                       </span>
-                      <span className="w-9 shrink-0">
+                      <span className="w-8 shrink-0">
                         {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
                       </span>
-                      <span className="flex w-12 shrink-0 items-center" title={p.status ?? ''}>
+                      <span className="flex w-9 shrink-0 items-center" title={p.status ?? ''}>
                         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: answerHex(p.status) }} />
                       </span>
                       <span className={cn('w-9 shrink-0 text-right text-xs tabular-nums', percentClass(pct))} title={`${p.coming} av ${p.total} träningar`}>
@@ -518,10 +518,10 @@ export function CandidateList({
             : percent(p.coming, p.total))
   return (
     <div className="flex flex-col">
-      <div className="flex items-center gap-2 px-1.5 pb-0.5">
+      <div className="flex items-center gap-1.5 px-1.5 pb-0.5">
         <span className="w-4 shrink-0" />
         <SortHead label="Namn" k="name" sort={sort} onSort={setSort} className="min-w-0 flex-1" />
-        <SortHead label="Rank" k="rank" sort={sort} onSort={setSort} className="w-9 shrink-0" />
+        <SortHead label="Rank" k="rank" sort={sort} onSort={setSort} className="w-8 shrink-0" />
         <SortHead label="Sen." k="lastmatch" sort={sort} onSort={setSort} firstDir="desc"
           className="w-9 shrink-0 justify-end" title="Sortera på dagar sedan senaste match" />
         <SortHead label="M" k="matches" sort={sort} onSort={setSort}
@@ -537,7 +537,7 @@ export function CandidateList({
             <button
               type="button"
               onClick={() => onToggle(p.id)}
-              className={cn('flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-muted', selected.has(p.id) && 'bg-primary/10')}
+              className={cn('flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-sm hover:bg-muted', selected.has(p.id) && 'bg-primary/10')}
             >
               <VisualCheckbox checked={selected.has(p.id)} />
               <span className="min-w-0 flex-1 truncate">
@@ -548,7 +548,7 @@ export function CandidateList({
                     title="Har positionen Målvakt">MV</span>
                 )}
               </span>
-              <span className="w-9 shrink-0">
+              <span className="w-8 shrink-0">
                 {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
               </span>
               <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground"
