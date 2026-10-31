@@ -210,8 +210,11 @@ export default function MatchTimeline() {
         value: String(p.player),
         label: p.shortname ?? (`${p.firstname ?? ''} ${p.lastname ?? ''}`.trim() || '–'),
         number: p.number,
+        // Föreslagna målvakter från planeringen visas först
+        planned: p.position === 'Målvakt',
+        description: p.position === 'Målvakt' ? 'Föreslagen målvakt' : null,
       }))
-    return list.sort((a, b) => a.label.localeCompare(b.label, 'sv'))
+    return list.sort((a, b) => Number(b.planned) - Number(a.planned) || a.label.localeCompare(b.label, 'sv'))
   }, [participants])
 
   async function handleGoalkeeperChange(value: string) {

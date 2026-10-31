@@ -47,7 +47,7 @@ export default function SummaryDialog({
 
   async function copy(s: Slot) {
     const text = coming(s)
-      .map((p) => [p.number ?? '', p.fullname ?? p.shortname ?? '', p.birthdate?.slice(0, 10) ?? ''].join('\t'))
+      .map((p) => [p.number ?? '', `${p.fullname ?? p.shortname ?? ''}${p.position === 'Målvakt' ? ' (MV)' : ''}`, p.birthdate?.slice(0, 10) ?? ''].join('\t'))
       .join('\n')
     try {
       await navigator.clipboard.writeText(text)
@@ -97,7 +97,10 @@ export default function SummaryDialog({
                     {rows.map((p) => (
                       <tr key={p.id} className="border-t border-border">
                         <td className="py-1 tabular-nums">{p.number ?? ''}</td>
-                        <td className="py-1">{p.fullname ?? p.shortname}</td>
+                        <td className="py-1">
+                          {p.fullname ?? p.shortname}
+                          {p.position === 'Målvakt' && <span className="ml-1 text-xs font-semibold text-sky-700 dark:text-sky-300">(MV)</span>}
+                        </td>
                         <td className="py-1 tabular-nums">{p.birthdate?.slice(0, 10) ?? ''}</td>
                       </tr>
                     ))}

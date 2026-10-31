@@ -44,6 +44,8 @@ export type SlotPlayer = {
   status: string | null
   reason: string | null
   position: string | null
+  /** Har positionen Målvakt på spelarkortet */
+  canGoalkeeper: boolean
   coming: number
   total: number
 }
@@ -96,6 +98,7 @@ export default async function getPlanningSlot(req: { params: Params; user: User 
             NULLIF(trim(concat_ws(' ', p.firstname, p.lastname)), '') AS fullname,
             p.number, p.birthdate, p.rank::text AS rank, p.status::text AS playerstatus,
             x.status::text AS status, x.reason, x.position::text AS position,
+            COALESCE(p.goalkeeper, false) AS "canGoalkeeper",
             COALESCE(a.coming, 0) AS coming, COALESCE(a.total, 0) AS total
      FROM ${k.participants} x
      JOIN players p ON p.id = x.player

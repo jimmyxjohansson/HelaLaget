@@ -10,6 +10,7 @@ import type getPlanningSlot from '../../server/functions/planning/getPlanningSlo
 import type movePlanningParticipants from '../../server/functions/planning/movePlanningParticipants'
 import type removePlanningParticipants from '../../server/functions/planning/removePlanningParticipants'
 import type setPlanningEventStatus from '../../server/functions/planning/setPlanningEventStatus'
+import type setPlanningGoalkeeper from '../../server/functions/planning/setPlanningGoalkeeper'
 import type setPlanningStatus from '../../server/functions/planning/setPlanningStatus'
 import type updatePlanningAnswer from '../../server/functions/planning/updatePlanningAnswer'
 
@@ -57,6 +58,11 @@ export const useSetPlanningEventStatus = createBackendHook<
   Parameters<typeof setPlanningEventStatus>[0]['params'],
   Awaited<ReturnType<typeof setPlanningEventStatus>>
 >('planning/setPlanningEventStatus')
+
+export const useSetPlanningGoalkeeper = createBackendHook<
+  Parameters<typeof setPlanningGoalkeeper>[0]['params'],
+  Awaited<ReturnType<typeof setPlanningGoalkeeper>>
+>('planning/setPlanningGoalkeeper')
 
 export const useSetPlanningStatus = createBackendHook<
   Parameters<typeof setPlanningStatus>[0]['params'],

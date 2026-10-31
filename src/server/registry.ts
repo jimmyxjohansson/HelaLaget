@@ -77,6 +77,7 @@ import planning_getPlanningSlot from './functions/planning/getPlanningSlot'
 import planning_movePlanningParticipants from './functions/planning/movePlanningParticipants'
 import planning_removePlanningParticipants from './functions/planning/removePlanningParticipants'
 import planning_setPlanningEventStatus from './functions/planning/setPlanningEventStatus'
+import planning_setPlanningGoalkeeper from './functions/planning/setPlanningGoalkeeper'
 import planning_setPlanningStatus from './functions/planning/setPlanningStatus'
 import planning_updatePlanningAnswer from './functions/planning/updatePlanningAnswer'
 import players_addPlayersToSquad from './functions/players/addPlayersToSquad'
@@ -200,6 +201,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'planning/movePlanningParticipants': { handler: planning_movePlanningParticipants, access: 'leader' },
   'planning/removePlanningParticipants': { handler: planning_removePlanningParticipants, access: 'leader' },
   'planning/setPlanningEventStatus': { handler: planning_setPlanningEventStatus, access: 'leader' },
+  'planning/setPlanningGoalkeeper': { handler: planning_setPlanningGoalkeeper, access: 'leader' },
   'planning/setPlanningStatus': { handler: planning_setPlanningStatus, access: 'leader' },
   'planning/updatePlanningAnswer': { handler: planning_updatePlanningAnswer, access: 'leader' },
   'players/addPlayersToSquad': { handler: players_addPlayersToSquad, access: 'leader' },

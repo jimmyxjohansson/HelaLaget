@@ -21,6 +21,8 @@ export type Candidate = {
   rank: string | null
   backbone: string | null
   status: string | null
+  /** Har positionen Målvakt på spelarkortet */
+  canGoalkeeper: boolean
   coming: number
   total: number
   /** Dagar sedan senaste spelade matchen (svar Kommer), null om ingen */
@@ -39,6 +41,7 @@ export default async function getPlanningCandidates(req: { params: Params; user:
 
   const { data } = await db.query<Candidate>(
     `SELECT p.id, p.shortname, p.number, p.rank::text AS rank, p.backbone::text AS backbone, p.status::text AS status,
+            COALESCE(p.goalkeeper, false) AS "canGoalkeeper",
             COALESCE(a.coming, 0) AS coming, COALESCE(a.total, 0) AS total,
             ((now() AT TIME ZONE 'Europe/Stockholm')::date - lm.last::date) AS lastmatch,
             COALESCE(lm.matches, 0)::int AS matches

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, ArrowRight, ClipboardList, ExternalLink, Loader2, MessageSquare, Plus, Trash2, UserPlus, X,
+  ArrowLeft, ArrowRight, ClipboardList, ExternalLink, Hand, Loader2, MessageSquare, Plus, Trash2, UserPlus, X,
 } from 'lucide-react'
 import {
   useAddPlanningLeaders,
@@ -13,6 +13,7 @@ import {
   useMovePlanningParticipants,
   useRemovePlanningParticipants,
   useSetPlanningEventStatus,
+  useSetPlanningGoalkeeper,
   useSetPlanningStatus,
 } from '../../hooks/backend/planning'
 import { Combobox } from '../../components/Combobox'
@@ -61,6 +62,7 @@ export default function SlotColumn(props: Props) {
   const remove = useRemovePlanningParticipants()
   const move = useMovePlanningParticipants()
   const setEventStatus = useSetPlanningEventStatus()
+  const setGoalkeeper = useSetPlanningGoalkeeper()
 
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [selectedCandidates, setSelectedCandidates] = useState<Set<number>>(new Set())
@@ -259,6 +261,18 @@ export default function SlotColumn(props: Props) {
             </div>
           </div>
 
+          {(() => {
+            const keepers = (data?.players ?? []).filter((p) => p.position === 'Målvakt')
+            return (
+              <p className="-mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Hand className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                {keepers.length > 0
+                  ? <>Målvakt: <span className="text-foreground">{keepers.map((k) => k.shortname).join(', ')}</span></>
+                  : 'Ingen föreslagen målvakt'}
+              </p>
+            )
+          })()}
+
           {error && <p className="text-xs text-destructive">{error}</p>}
           {info && <p className="text-xs text-muted-foreground">{info}</p>}
 
@@ -334,6 +348,8 @@ export default function SlotColumn(props: Props) {
               <div className="flex items-center gap-2 px-1.5">
                 <span className="w-4 shrink-0" />
                 <SortHead label="Namn" k="name" sort={playerSort} onSort={setPlayerSort} className="min-w-0 flex-1" />
+                <span className="w-6 shrink-0 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                  title="Föreslagen målvakt">MV</span>
                 <SortHead label="Rank" k="rank" sort={playerSort} onSort={setPlayerSort} className="w-9 shrink-0" />
                 <SortHead label="Svar" k="status" sort={playerSort} onSort={setPlayerSort} className="w-12 shrink-0" />
                 <SortHead label="%" k="percent" sort={playerSort} onSort={setPlayerSort} firstDir="desc"
@@ -368,6 +384,33 @@ export default function SlotColumn(props: Props) {
                             <MessageSquare className="h-3 w-3 text-muted-foreground" aria-label={p.reason} />
                           </span>
                         )}
+                      </span>
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={p.position === 'Målvakt'}
+                        title={p.position === 'Målvakt'
+                          ? 'Föreslagen målvakt. Tryck för att ta bort.'
+                          : p.canGoalkeeper ? 'Föreslå som målvakt (kan stå i mål)' : 'Föreslå som målvakt'}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          run(() => setGoalkeeper.trigger({ kind, id: ev.id, participantId: p.id, on: p.position !== 'Målvakt' }))
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            run(() => setGoalkeeper.trigger({ kind, id: ev.id, participantId: p.id, on: p.position !== 'Målvakt' }))
+                          }
+                        }}
+                        className={cn(
+                          'flex w-6 shrink-0 justify-center rounded py-0.5 hover:bg-background',
+                          p.position === 'Målvakt' ? 'text-sky-600 dark:text-sky-400'
+                            : p.canGoalkeeper ? 'text-muted-foreground/60 hover:text-foreground'
+                              : 'text-muted-foreground/25 hover:text-foreground',
+                        )}
+                      >
+                        <Hand className="h-3.5 w-3.5" fill={p.position === 'Målvakt' ? 'currentColor' : 'none'} />
                       </span>
                       <span className="w-9 shrink-0">
                         {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
@@ -448,6 +491,7 @@ type CandidateRow = {
   rank: string | null
   backbone: string | null
   status: string | null
+  canGoalkeeper: boolean
   coming: number
   total: number
   lastmatch: number | null
@@ -499,6 +543,10 @@ export function CandidateList({
               <span className="min-w-0 flex-1 truncate">
                 {p.shortname}
                 {p.status && p.status !== 'Aktiv' && <span className="ml-1 text-[10px] text-muted-foreground">({p.status})</span>}
+                {p.canGoalkeeper && (
+                  <span className="ml-1 rounded bg-sky-100 px-1 text-[10px] font-semibold text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+                    title="Har positionen Målvakt">MV</span>
+                )}
               </span>
               <span className="w-9 shrink-0">
                 {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
