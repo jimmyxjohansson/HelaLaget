@@ -66,7 +66,7 @@ export function drawOverview(
   const lists = slots.map((s) => overviewPlayers(s, opts.showDeclined))
   const colHeight = (i: number) =>
     HEAD_H + 8 + Math.max(1, lists[i].length) * LINE_H + (slots[i].leaders.length ? 26 + LINE_H : 0) + 8
-  const height = PAD + 30 + Math.max(...slots.map((_, i) => colHeight(i)), 80) + PAD
+  const height = PAD + Math.max(...slots.map((_, i) => colHeight(i)), 80) + PAD
 
   canvas.width = width * scale
   canvas.height = height * scale
@@ -76,20 +76,10 @@ export function drawOverview(
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, width, height)
 
-  ctx.fillStyle = '#111827'
-  ctx.font = `700 14px ${FONT}`
-  ctx.fillText(fit(ctx, opts.title, width - PAD * 2 - 210), PAD, PAD + 9)
-  ctx.font = `400 10px ${FONT}`
-  ctx.fillStyle = '#6b7280'
-  const stamp = new Date().toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Stockholm' })
-  ctx.textAlign = 'right'
-  const period = opts.periodLabel === 'Alla' ? 'all tid' : `senaste ${opts.periodLabel.replace('mån', 'månader').replace('1 månader', '1 månad')}`
-  ctx.fillText(`Träningsnärvaro ${period} · ${stamp}`, width - PAD, PAD + 9)
-  ctx.textAlign = 'left'
 
   slots.forEach((s, i) => {
     const x = PAD + i * (COL_W + GAP)
-    let y = PAD + 30
+    let y = PAD
     const h = colHeight(i)
 
     ctx.strokeStyle = '#e5e7eb'
