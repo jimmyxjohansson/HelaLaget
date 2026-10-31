@@ -1,3 +1,7 @@
+import { GOALKEEPER_GROUP } from './trainingGroups'
+
+export { GOALKEEPER_GROUP }
+
 /** Automatisk gruppindelning för träningar. Ren logik utan React, så att den går att testa. */
 
 export type GroupMethod = 'rank' | 'rank-equal' | 'random-balanced' | 'random'
@@ -6,14 +10,12 @@ export type GroupPlayer = { player_id: number; rank: string | null; goalkeeper?:
 
 export type GroupCount = 2 | 3 | 4 | 5
 
-/** Målvakterna läggs alltid i den här gruppen. */
-export const GOALKEEPER_GROUP = 'Grupp 5'
 
 export type GroupOptions = {
   method: GroupMethod
   /** Antal grupper för utespelarna */
   groups: GroupCount
-  /** Målvakter i Grupp 5 (går inte med 5 grupper utespelare) */
+  /** Målvakter i en egen grupp, Målvakter */
   separateGoalkeepers: boolean
 }
 
@@ -86,8 +88,7 @@ function byRank<T extends GroupPlayer>(list: T[], random: () => number): T[] {
 
 export function makeGroups(players: GroupPlayer[], opts: GroupOptions, random: () => number = Math.random): GroupResult {
   const n = opts.groups
-  // Målvaktsgruppen är Grupp 5, så med 5 grupper utespelare får målvakterna vara med bland dem
-  const separate = opts.separateGoalkeepers && n < 5
+  const separate = opts.separateGoalkeepers
   const keepers = separate ? players.filter((p) => p.goalkeeper) : []
   const field = separate ? players.filter((p) => !p.goalkeeper) : players
   const buckets: number[][] = Array.from({ length: n }, () => [])

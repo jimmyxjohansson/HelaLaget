@@ -18,6 +18,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '../lib/shadcn/tabs'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
 import GroupDialog from './ui/GroupDialog'
+import { GROUP_DEFAULT_RANK, TRAINING_GROUPS, groupShort, groupTab } from '../utils/trainingGroups'
 import type { GroupResult } from '../utils/groups'
 import { rankStyle } from '../utils/rankColors'
 import { cn } from '../lib/shadcn/utils'
@@ -57,16 +58,8 @@ interface GroupsData {
   participants: Participant[]
 }
 
-const GROUPS = ['Grupp 1', 'Grupp 2', 'Grupp 3', 'Grupp 4', 'Grupp 5'] as const
+const GROUPS = TRAINING_GROUPS
 const UNASSIGNED_KEY = '__unassigned__'
-
-const GROUP_DEFAULT_RANK: Record<string, string> = {
-  'Grupp 1': 'A',
-  'Grupp 2': 'B',
-  'Grupp 3': 'C',
-  'Grupp 4': 'X',
-  'Grupp 5': 'X',
-}
 
 const VISIBLE_STATUSES = new Set(['Närvarande', 'Kallad', 'Anmäld'])
 
@@ -275,7 +268,7 @@ export default function TrainingGroups() {
             </TabsTrigger>
             {GROUPS.filter(g => (counts[g] ?? 0) > 0).map(g => (
               <TabsTrigger key={g} value={g} className="text-xs px-2.5 py-1.5 whitespace-nowrap">
-                {g.replace('Grupp ', 'G')} ({counts[g] ?? 0})
+                {groupTab(g)} ({counts[g] ?? 0})
               </TabsTrigger>
             ))}
             {(counts[UNASSIGNED_KEY] ?? 0) > 0 && (
@@ -459,7 +452,7 @@ export default function TrainingGroups() {
                 <ArrowRightLeft className="w-3 h-3" /> Flytta till:
               </span>
             </div>
-            <div className="grid grid-cols-6 gap-1.5">
+            <div className="grid grid-cols-5 gap-1.5">
               {GROUPS.map(g => (
                 <Button
                   key={g}
@@ -469,7 +462,7 @@ export default function TrainingGroups() {
                   onClick={() => moveSelectedTo(g)}
                   className="h-9 px-0 text-xs font-semibold"
                 >
-                  {g.replace('Grupp ', '')}
+                  {groupShort(g)}
                 </Button>
               ))}
               <Button
@@ -547,7 +540,6 @@ interface RowProps {
 
 function ParticipantRow({ participant, selected, onToggleSelect, onMoveTo, disabled }: RowProps) {
   const p = participant
-  const currentGroupNum = p.group_name?.replace('Grupp ', '') ?? null
   const statusLow = p.status?.toLowerCase() ?? ''
   const isKallad = statusLow.includes('kallad')
 
@@ -574,46 +566,25 @@ function ParticipantRow({ participant, selected, onToggleSelect, onMoveTo, disab
       >
         <span className="text-sm font-medium text-foreground truncate">{p.shortname}</span>
       </button>
-      {/* Per-row group buttons */}
-      <div className="flex items-center gap-1 shrink-0">
-        {GROUPS.map(g => {
-          const num = g.replace('Grupp ', '')
-          const active = currentGroupNum === num
-          const activeStyle = active && p.grouprank ? rankStyle(p.grouprank) : undefined
-          return (
-            <button
-              key={g}
-              onClick={() => onMoveTo(g)}
-              disabled={disabled || active}
-              style={activeStyle}
-              className={cn(
-                'w-7 h-7 rounded-md text-xs font-semibold border transition-colors',
-                active
-                  ? p.grouprank
-                    ? 'border-transparent cursor-default'
-                    : 'bg-primary text-primary-foreground border-primary cursor-default'
-                  : 'bg-background border-border text-muted-foreground hover:text-foreground hover:bg-muted',
-              )}
-              aria-label={`Flytta till ${g}`}
-            >
-              {num}
-            </button>
-          )
-        })}
-        <button
-          onClick={() => onMoveTo(null)}
-          disabled={disabled || !currentGroupNum}
-          className={cn(
-            'w-7 h-7 rounded-md text-xs border transition-colors flex items-center justify-center',
-            !currentGroupNum
-              ? 'bg-muted border-border text-muted-foreground cursor-default'
-              : 'bg-background border-border text-muted-foreground hover:text-foreground hover:bg-muted',
-          )}
-          aria-label="Ta bort gruppindelning"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      {/* Grupp per rad: en lista i stället för nio knappar, så att raden får plats i mobilen */}
+      <select
+        value={p.group_name && GROUPS.includes(p.group_name as typeof GROUPS[number]) ? p.group_name : ''}
+        onChange={(e) => onMoveTo(e.target.value || null)}
+        disabled={disabled}
+        aria-label={`Grupp för ${p.shortname}`}
+        style={p.group_name && p.grouprank ? rankStyle(p.grouprank) : undefined}
+        className={cn(
+          'h-7 shrink-0 rounded-md border px-1.5 text-xs font-semibold',
+          p.group_name
+            ? p.grouprank ? 'border-transparent' : 'bg-primary text-primary-foreground border-primary'
+            : 'bg-background border-border text-muted-foreground',
+        )}
+      >
+        <option value="">Ingen</option>
+        {GROUPS.map(g => (
+          <option key={g} value={g}>{g === 'Målvakter' ? 'Målvakter' : groupTab(g)}</option>
+        ))}
+      </select>
     </div>
   )
 }

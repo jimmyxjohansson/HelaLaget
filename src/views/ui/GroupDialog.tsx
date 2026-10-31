@@ -112,7 +112,7 @@ export default function GroupDialog({
         </div>
 
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">Antal grupper{separateGk && groups < 5 ? ' (plus målvakter i Grupp 5)' : ''}</p>
+          <p className="text-xs text-muted-foreground">Antal grupper{separateGk ? ' (plus gruppen Målvakter)' : ''}</p>
           <div className="flex gap-1 rounded-lg bg-muted p-1">
             {([2, 3, 4, 5] as const).map((n) => (
               <button key={n} type="button" onClick={() => setGroups(n)} className={toggle(groups === n)}>
@@ -128,17 +128,14 @@ export default function GroupDialog({
               Anmälda och inbjudna
             </button>
           </div>
-          <label className={cn('flex items-center gap-2 text-sm', groups === 5 && 'opacity-50')}>
-            <input type="checkbox" checked={separateGk && groups < 5} disabled={groups === 5}
-              onChange={(e) => setSeparateGk(e.target.checked)} />
-            Målvakter i Grupp 5
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={separateGk} onChange={(e) => setSeparateGk(e.target.checked)} />
+            Målvakter i egen grupp
             <span className="text-xs text-muted-foreground">
               ({keeperCount === 1 ? '1 målvakt' : `${keeperCount} målvakter`} enligt spelarkortet)
             </span>
           </label>
-          {groups === 5 && (
-            <p className="text-xs text-muted-foreground">Med 5 grupper delas målvakterna in som övriga spelare.</p>
-          )}
+
         </div>
 
         {/* Förhandsvisning */}
@@ -155,7 +152,7 @@ export default function GroupDialog({
           {result.filter((g) => g.playerIds.length > 0).map((g) => (
             <div key={g.name} className="rounded-lg border border-border p-2">
               <p className="mb-1.5 text-xs font-semibold">
-                {g.name}{g.goalkeepers ? ' · Målvakter' : ''} <span className="font-normal text-muted-foreground">({g.playerIds.length})</span>
+                {g.name} <span className="font-normal text-muted-foreground">({g.playerIds.length})</span>
               </p>
               <div className="flex flex-wrap gap-1">
                 {g.playerIds

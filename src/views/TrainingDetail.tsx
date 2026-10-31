@@ -17,6 +17,7 @@ import TrainingForm from './ui/TrainingForm'
 import { currentSquad } from '../lib/squad-store'
 import DatePicker from '../components/DatePicker'
 import TimeInput from '../components/TimeInput'
+import { GROUP_DEFAULT_RANK, TRAINING_GROUPS, groupShort } from '../utils/trainingGroups'
 
 interface Attendee {
   player_id: number
@@ -98,10 +99,8 @@ function rowBgColor(
   const hex = STATUS_CONFIG[statusKey]?.hex
   return hex ? hex + '10' : undefined
 }
-const REASON_GROUPS = ['Grupp 1', 'Grupp 2', 'Grupp 3', 'Grupp 4', 'Grupp 5'] as const
-const REASON_GROUP_DEFAULT_RANK: Record<string, string> = {
-  'Grupp 1': 'A', 'Grupp 2': 'B', 'Grupp 3': 'C', 'Grupp 4': 'X', 'Grupp 5': 'X',
-}
+const REASON_GROUPS = TRAINING_GROUPS
+const REASON_GROUP_DEFAULT_RANK = GROUP_DEFAULT_RANK
 
 export default function TrainingDetail() {
   const { id } = useParams<{ id: string }>()
@@ -1357,13 +1356,13 @@ export default function TrainingDetail() {
                         key={g}
                         type="button"
                         onClick={() => setReasonGroup(g)}
-                        className={`h-8 w-8 rounded-md text-xs font-semibold border transition-colors ${
+                        className={`h-8 min-w-8 px-1.5 rounded-md text-xs font-semibold border transition-colors ${
                           active
                             ? 'bg-primary text-primary-foreground border-primary'
                             : 'bg-background text-muted-foreground border-border hover:text-foreground hover:bg-muted'
                         }`}
                       >
-                        {g.replace('Grupp ', '')}
+                        {groupShort(g)}
                       </button>
                     )
                   })}
