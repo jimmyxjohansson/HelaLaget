@@ -40,3 +40,17 @@ export const NOW_WALLCLOCK = `((now() AT TIME ZONE 'Europe/Stockholm') AT TIME Z
 export function withinMonthsOf(column: string, param: string) {
   return `(${param}::int = 0 OR ${column} >= (((now() AT TIME ZONE 'Europe/Stockholm')::date - make_interval(months => ${param}::int))::timestamp AT TIME ZONE 'UTC'))`
 }
+
+/** Villkor på valfri tidskolumn: från datum (null = alla) till och med datum (null = i dag), aldrig i framtiden. */
+export function betweenDatesOf(column: string, fromParam: string, toParam: string) {
+  return `(${fromParam}::date IS NULL OR ${column} >= (${fromParam}::date)::timestamp AT TIME ZONE 'UTC')
+      AND (${toParam}::date IS NULL OR ${column} < ((${toParam}::date + 1)::timestamp AT TIME ZONE 'UTC'))
+      AND ${column} < ${TOMORROW}`
+}
+
+/**
+ * Villkor på deltagarraden `pm` och matchen `m`: spelaren har spelat matchen
+ * (status Kommer och matchen avslutad eller påbörjad).
+ */
+export const PLAYED_MATCH = `pm.status::text = 'Kommer' AND pm.leader IS NULL AND pm.player IS NOT NULL
+    AND (m.status::text IN ('Avslutad', 'Registrerad i Fogis') OR m.date <= ${NOW_WALLCLOCK})`

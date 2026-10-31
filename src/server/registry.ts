@@ -89,6 +89,9 @@ import players_getPlayers from './functions/players/getPlayers'
 import players_getUpcomingBirthdays from './functions/players/getUpcomingBirthdays'
 import players_removePlayerFromSquad from './functions/players/removePlayerFromSquad'
 import players_updatePlayer from './functions/players/updatePlayer'
+import stats_getStatsEvents from './functions/stats/getStatsEvents'
+import stats_getStatsMatches from './functions/stats/getStatsMatches'
+import stats_getStatsTrainings from './functions/stats/getStatsTrainings'
 import svenskalag_acknowledgeRemovedEvent from './functions/svenskalag/acknowledgeRemovedEvent'
 import svenskalag_decideSvenskalagEvent from './functions/svenskalag/decideSvenskalagEvent'
 import svenskalag_getSvenskalagStatus from './functions/svenskalag/getSvenskalagStatus'
@@ -214,6 +217,9 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'players/getUpcomingBirthdays': { handler: players_getUpcomingBirthdays, access: 'viewer' },
   'players/removePlayerFromSquad': { handler: players_removePlayerFromSquad, access: 'leader' },
   'players/updatePlayer': { handler: players_updatePlayer, access: 'leader' },
+  'stats/getStatsEvents': { handler: stats_getStatsEvents, access: 'viewer' },
+  'stats/getStatsMatches': { handler: stats_getStatsMatches, access: 'viewer' },
+  'stats/getStatsTrainings': { handler: stats_getStatsTrainings, access: 'viewer' },
   'svenskalag/acknowledgeRemovedEvent': { handler: svenskalag_acknowledgeRemovedEvent, access: 'leader' },
   'svenskalag/decideSvenskalagEvent': { handler: svenskalag_decideSvenskalagEvent, access: 'leader' },
   'svenskalag/getSvenskalagStatus': { handler: svenskalag_getSvenskalagStatus, access: 'leader' },
