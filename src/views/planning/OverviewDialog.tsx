@@ -65,7 +65,7 @@ export function drawOverview(
   const width = PAD * 2 + n * COL_W + (n - 1) * GAP
   const lists = slots.map((s) => overviewPlayers(s, opts.showDeclined))
   const colHeight = (i: number) =>
-    HEAD_H + 34 + Math.max(1, lists[i].length) * LINE_H + (slots[i].leaders.length ? 34 + LINE_H : 0) + 12
+    HEAD_H + 12 + Math.max(1, lists[i].length) * LINE_H + (slots[i].leaders.length ? 34 + LINE_H : 0) + 12
   const height = PAD + 44 + Math.max(...slots.map((_, i) => colHeight(i)), 120) + PAD
 
   canvas.width = width * scale
@@ -141,18 +141,9 @@ export function drawOverview(
     ctx.fillText(fit(ctx, [s.event.homeaway, s.event.matchplayers, `${lists[i].length} spelare`].filter(Boolean).join(' · '), tw), tx, y + 58)
     y += HEAD_H
 
-    // Kolumnrubriker
     const rankX = x + COL_W - 112
     const pctRight = x + COL_W - 12
-    ctx.font = `700 10px ${FONT}`
-    ctx.fillStyle = '#6b7280'
-    y += 8
-    ctx.fillText('NAMN', x + 12, y + 9)
-    ctx.fillText('RANK', rankX, y + 9)
-    ctx.textAlign = 'right'
-    ctx.fillText('NÄRVARO', pctRight, y + 9)
-    ctx.textAlign = 'left'
-    y += 26
+    y += 12
 
     ctx.font = `400 14px ${FONT}`
     if (lists[i].length === 0) {
@@ -165,7 +156,7 @@ export function drawOverview(
       const dim = p.status === 'Nekat' || p.status === 'Ej svarat'
       ctx.font = `400 14px ${FONT}`
       ctx.fillStyle = dim ? '#9ca3af' : '#111827'
-      const name = `${p.shortname ?? ''}${p.position === 'Målvakt' ? ' (Målvakt)' : ''}`
+      const name = `${p.shortname ?? ''}${p.position === 'Målvakt' ? ' (MV)' : ''}`
       ctx.fillText(fit(ctx, name, rankX - x - 18), x + 12, cy)
       if (p.rank) {
         ctx.font = `700 11px ${FONT}`
