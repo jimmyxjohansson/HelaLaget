@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ClipboardList, SlidersHorizontal, Users } from 'lucide-react'
+import { ClipboardList, Image as ImageIcon, SlidersHorizontal, Users } from 'lucide-react'
 import { useGetPlanningEvents } from '../../hooks/backend/planning'
 import { usePersistentState } from '../../hooks/usePersistentState'
 import { AttendanceStatsButton } from '../../components/AttendanceStatsButton'
@@ -11,6 +11,7 @@ import { cn } from '../../lib/shadcn/utils'
 import SlotColumn from './SlotColumn'
 import AnswersDialog from './AnswersDialog'
 import SummaryDialog from './SummaryDialog'
+import OverviewDialog from './OverviewDialog'
 import TotalDialog from './TotalDialog'
 import { PERIODS, PLAYER_STATUSES, periodFrom, type Kind } from './shared'
 
@@ -36,6 +37,7 @@ export default function Planning() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [answers, setAnswers] = useState<{ id: number; title: string } | null>(null)
   const [summaryOpen, setSummaryOpen] = useState(false)
+  const [overviewOpen, setOverviewOpen] = useState(false)
   const [totalOpen, setTotalOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const events = useGetPlanningEvents()
@@ -117,6 +119,11 @@ export default function Planning() {
               className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-muted disabled:opacity-50">
               <ClipboardList className="h-4 w-4" /> {kind === 'match' ? 'Fogis' : 'Summering'}
             </button>
+            <button type="button" onClick={() => setOverviewOpen(true)} disabled={filled.length === 0}
+              title="Bild med alla valda sida vid sida, att skicka till andra"
+              className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-muted disabled:opacity-50">
+              <ImageIcon className="h-4 w-4" /> Översikt
+            </button>
           </div>
         </div>
         <div className={cn('flex-wrap items-center gap-x-4 gap-y-2 md:flex', filtersOpen ? 'flex' : 'hidden')}>
@@ -191,6 +198,7 @@ export default function Planning() {
 
       <AnswersDialog kind={kind} target={answers} onClose={() => setAnswers(null)} onChanged={() => setRefreshKey((k) => k + 1)} />
       <SummaryDialog kind={kind} eventIds={filled.map((s) => s.id)} open={summaryOpen} onClose={() => setSummaryOpen(false)} />
+      <OverviewDialog kind={kind} eventIds={filled.map((s) => s.id)} open={overviewOpen} onClose={() => setOverviewOpen(false)} />
       <TotalDialog kind={kind} slots={filled} open={totalOpen} from={from} playerStatuses={playerStatuses}
         onClose={() => setTotalOpen(false)} onChanged={() => setRefreshKey((k) => k + 1)} />
     </div>
