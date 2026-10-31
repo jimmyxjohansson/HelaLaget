@@ -37,7 +37,7 @@ export default async function getUpcomingBirthdays(req: { params: Params; user: 
         ) AS next_birthday
       FROM players p
       WHERE EXISTS (SELECT 1 FROM squad_players sp WHERE sp.player_id = p.id AND sp.squad_id = app.squad_id())
-        AND active = true AND status != 'Slutat' AND birthdate IS NOT NULL
+        AND status::text <> 'Slutat' AND birthdate IS NOT NULL
     )
     SELECT
       id, firstname, lastname, shortname, img, number, birthdate, next_birthday,
