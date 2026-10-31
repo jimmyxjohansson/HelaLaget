@@ -15,6 +15,8 @@ import { AttendanceStatsButton } from '../components/AttendanceStatsButton'
 import { VisualCheckbox } from '../components/VisualCheckbox'
 import TrainingForm from './ui/TrainingForm'
 import { currentSquad } from '../lib/squad-store'
+import DatePicker from '../components/DatePicker'
+import TimeInput from '../components/TimeInput'
 
 interface Attendee {
   player_id: number
@@ -1173,23 +1175,11 @@ export default function TrainingDetail() {
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Datum</label>
-              <input
-                type="date"
-                value={copyDatePart}
-                onChange={e => setCopyDatePart(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-border focus:outline-none focus:border-primary text-foreground [color-scheme:light] dark:[color-scheme:dark]"
-              />
+              <DatePicker value={copyDatePart} onChange={setCopyDatePart} clearable={false} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Tid</label>
-              <input
-                type="text"
-                value={copyTimePart}
-                onChange={e => setCopyTimePart(e.target.value)}
-                placeholder="HH:MM"
-                pattern="\d{2}:\d{2}"
-                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-border focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
-              />
+              <TimeInput value={copyTimePart} onChange={setCopyTimePart} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Svenskalag</label>

@@ -11,6 +11,7 @@ import { Textarea } from '../lib/shadcn/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../lib/shadcn/select'
+import DateTimePicker from '../components/DateTimePicker'
 
 const TYPES = ['Träning', 'Extra', 'Coerver', 'Målvaktsträning']
 const LOCATIONS = ['Inomhus', 'Utomhus']
@@ -83,11 +84,7 @@ export default function NewTraining() {
           {/* Date & time */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Datum & tid</Label>
-            <Input
-              type="datetime-local"
-              value={dateVal}
-              onChange={e => setDateVal(e.target.value)}
-            />
+            <DateTimePicker value={dateVal} onChange={setDateVal} />
           </div>
 
           {/* Location */}

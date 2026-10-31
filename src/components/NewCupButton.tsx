@@ -8,6 +8,7 @@ import { Button } from '../lib/shadcn/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../lib/shadcn/dialog'
 import { Input } from '../lib/shadcn/input'
 import { Label } from '../lib/shadcn/label'
+import DatePicker from './DatePicker'
 
 /** Skapa en ny cup och gå till den. */
 export default function NewCupButton() {
@@ -56,11 +57,11 @@ export default function NewCupButton() {
             <div className="flex gap-2">
               <div className="flex-1 flex flex-col gap-1.5">
                 <Label htmlFor="nc-start">Startdatum</Label>
-                <Input id="nc-start" type="date" value={form.startdate} onChange={(e) => setForm({ ...form, startdate: e.target.value })} />
+                <DatePicker id="nc-start" value={form.startdate} onChange={(v) => setForm({ ...form, startdate: v })} />
               </div>
               <div className="flex-1 flex flex-col gap-1.5">
                 <Label htmlFor="nc-end">Slutdatum</Label>
-                <Input id="nc-end" type="date" value={form.enddate} onChange={(e) => setForm({ ...form, enddate: e.target.value })} />
+                <DatePicker id="nc-end" value={form.enddate} onChange={(v) => setForm({ ...form, enddate: v })} />
               </div>
             </div>
             <div className="flex flex-col gap-1.5">

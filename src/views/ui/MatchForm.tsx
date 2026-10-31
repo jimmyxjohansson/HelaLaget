@@ -9,6 +9,7 @@ import { Textarea } from '../../lib/shadcn/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../lib/shadcn/select'
 import { Combobox } from '../../lib/shadcn/combobox'
 import { useCreateMatch, useGetTeamsAndLeagues } from '../../hooks/backend/matches'
+import DateTimePicker from '../../components/DateTimePicker'
 
 interface Props {
   open: boolean
@@ -113,7 +114,7 @@ export default function MatchForm({ open, onClose, onCreated }: Props) {
           {/* Date & time */}
           <div className="flex flex-col gap-1.5">
             <Label>Datum & tid</Label>
-            <Input type="datetime-local" value={dateVal} onChange={e => setDateVal(e.target.value)} />
+            <DateTimePicker value={dateVal} onChange={setDateVal} />
           </div>
 
           {/* Home / Away */}

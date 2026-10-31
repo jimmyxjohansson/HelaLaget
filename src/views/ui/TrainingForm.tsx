@@ -9,6 +9,7 @@ import { Textarea } from '../../lib/shadcn/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../lib/shadcn/select'
 import { useCreateTraining } from '../../hooks/backend/trainings'
 import { useUpdateTraining } from '../../hooks/backend/trainings'
+import DateTimePicker from '../../components/DateTimePicker'
 
 export interface TrainingFormData {
   id?: number
@@ -119,11 +120,7 @@ export default function TrainingForm({ open, onClose, onSaved, initial }: Props)
           {/* Date & time */}
           <div className="flex flex-col gap-1.5">
             <Label>Datum & tid</Label>
-            <Input
-              type="datetime-local"
-              value={dateVal}
-              onChange={e => setDateVal(e.target.value)}
-            />
+            <DateTimePicker value={dateVal} onChange={setDateVal} />
           </div>
 
           {/* Location */}

@@ -11,6 +11,7 @@ import { rankStyle } from '../utils/rankColors'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../lib/shadcn/select'
+import DatePicker from '../components/DatePicker'
 
 const MATCHPLAYERS = ['3 v 3', '5 v 5', '7 v 7', '8 v 8', '9 v 9', '11 v 11']
 const DIFFICULTIES = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D', 'X']
@@ -127,10 +128,10 @@ export default function EditCup() {
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Startdatum">
-              <Input type="date" value={startdate} onChange={e => setStartdate(e.target.value)} />
+              <DatePicker value={startdate} onChange={setStartdate} />
             </Field>
             <Field label="Slutdatum">
-              <Input type="date" value={enddate} onChange={e => setEnddate(e.target.value)} />
+              <DatePicker value={enddate} onChange={setEnddate} />
             </Field>
           </div>
 

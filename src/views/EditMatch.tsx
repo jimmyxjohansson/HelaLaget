@@ -20,6 +20,7 @@ import {
 } from '../lib/shadcn/select'
 import { rankStyle } from '../utils/rankColors'
 import { countryFlag } from '../utils/countryFlag'
+import DateTimePicker from '../components/DateTimePicker'
 
 const TYPES = ['Serie', 'Cup', 'Träning']
 const HOMEAWAY = ['Hemma', 'Borta']
@@ -228,11 +229,7 @@ export default function EditMatch() {
             {/* Basic info — same order as NewMatch */}
             <Section title="Grundinfo">
               <Field label="Datum & tid">
-                <Input
-                  type="datetime-local"
-                  value={form.date}
-                  onChange={e => set('date', e.target.value)}
-                />
+                <DateTimePicker value={form.date} onChange={v => set('date', v)} />
               </Field>
 
               <Field label="Hemma / Borta">

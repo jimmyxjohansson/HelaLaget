@@ -21,6 +21,7 @@ import { Input } from '../lib/shadcn/input'
 import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
 import SquadLogo from '../components/SquadLogo'
+import DateTimePicker from '../components/DateTimePicker'
 // Alla träningar hämtas, så att flikarna (Kommande, Senaste, Rapporterade, Alla)
 // alltid är kompletta, även med importerade träningar långt fram i tiden.
 const TRAINING_WINDOW = () => ({ limit: 10000 })
@@ -401,12 +402,7 @@ export default function Trainings() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-sm font-medium">Datum &amp; tid</Label>
-              <Input
-                type="datetime-local"
-                value={editDate}
-                onChange={e => setEditDate(e.target.value)}
-                className="[color-scheme:light] dark:[color-scheme:dark]"
-              />
+              <DateTimePicker value={editDate} onChange={setEditDate} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-sm font-medium">Plats</Label>

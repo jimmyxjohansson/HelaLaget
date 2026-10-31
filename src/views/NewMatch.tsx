@@ -15,6 +15,7 @@ import { countryFlag } from '../utils/countryFlag'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../lib/shadcn/select'
+import DateTimePicker from '../components/DateTimePicker'
 
 const TYPES = ['Serie', 'Cup', 'Träning']
 const HOMEAWAY = ['Hemma', 'Borta']
@@ -166,11 +167,7 @@ export default function NewMatch() {
       <div className="flex-1 px-4 py-5 space-y-5">
         <Section title="Grundinfo">
           <Field label="Datum & tid">
-            <Input
-              type="datetime-local"
-              value={dateVal}
-              onChange={e => setDateVal(e.target.value)}
-            />
+            <DateTimePicker value={dateVal} onChange={setDateVal} />
           </Field>
 
           <Field label="Hemma / Borta">

@@ -10,7 +10,7 @@ import { Input } from '../lib/shadcn/input'
 import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../lib/shadcn/select'
-import DateTextInput from '../components/DateTextInput'
+import DatePicker from '../components/DatePicker'
 
 const STATUS_OPTIONS = ['Aktiv', 'Aktiv, ej matchklar', 'Vilande', 'Gästspelare', 'Slutat']
 const RANK_OPTIONS = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D']
@@ -324,9 +324,12 @@ export default function PlayerDetail() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
                     <Label className="text-xs text-muted-foreground">Födelsedag</Label>
-                    <DateTextInput
+                    <DatePicker
                       value={form.birthdate}
-                      onChange={v => setField('birthdate', v)}
+                      onChange={v => setField('birthdate', v || null)}
+                      fromYear={new Date().getFullYear() - 80}
+                      toYear={new Date().getFullYear()}
+                      placeholder="Välj"
                       className="h-9 text-sm"
                     />
                   </div>
