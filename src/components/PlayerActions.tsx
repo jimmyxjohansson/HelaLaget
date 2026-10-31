@@ -8,6 +8,7 @@ import { Checkbox } from '../lib/shadcn/checkbox'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../lib/shadcn/dialog'
 import { Input } from '../lib/shadcn/input'
 import { Label } from '../lib/shadcn/label'
+import DateTextInput from './DateTextInput'
 
 /** Ny spelare, eller hämta spelare från föreningens andra lag (t.ex. lån). */
 export default function PlayerActions({ onChanged }: { onChanged: () => void }) {
@@ -101,7 +102,7 @@ export default function PlayerActions({ onChanged }: { onChanged: () => void }) 
                 </div>
                 <div className="flex-1 flex flex-col gap-1.5">
                   <Label htmlFor="np-birth">Födelsedatum</Label>
-                  <Input id="np-birth" type="date" value={form.birthdate} onChange={(e) => setForm({ ...form, birthdate: e.target.value })} />
+                  <DateTextInput id="np-birth" value={form.birthdate} onChange={(v) => setForm({ ...form, birthdate: v ?? '' })} />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">Fler uppgifter, som position och bild, fyller du i på spelarens sida.</p>
