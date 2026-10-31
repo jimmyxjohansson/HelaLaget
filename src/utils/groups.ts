@@ -8,7 +8,9 @@ export type GroupMethod = 'rank' | 'rank-equal' | 'random-balanced' | 'random'
 
 export type GroupPlayer = { player_id: number; rank: string | null; goalkeeper?: boolean | null }
 
-export type GroupCount = 2 | 3 | 4 | 5
+export type GroupCount = 2 | 3 | 4 | 5 | 6 | 7 | 8
+
+export const GROUP_COUNTS: GroupCount[] = [2, 3, 4, 5, 6, 7, 8]
 
 
 export type GroupOptions = {
@@ -47,8 +49,11 @@ const TIER_STARTS: Record<GroupCount, number[]> = {
   3: [0, 2, 4], // A–AB | B–BC | C och lägre
   4: [0, 1, 3, 5], // A | AB–B | BC–C | CD och lägre
   5: [0, 1, 2, 3, 5], // A | AB | B | BC–C | CD och lägre
+  6: [0, 1, 2, 3, 4, 5], // A | AB | B | BC | C | CD och lägre
+  7: [0, 1, 2, 3, 4, 5, 6], // A | AB | B | BC | C | CD | D och lägre
+  8: [0, 1, 2, 3, 4, 5, 6, 7], // A | AB | B | BC | C | CD | D | X och utan rank
 }
-const RANKS = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D']
+const RANKS = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D', 'X']
 
 export function rankTier(rank: string | null, groups: GroupCount) {
   const i = rankIndex(rank)
@@ -62,10 +67,10 @@ export function rankTier(rank: string | null, groups: GroupCount) {
 
 /** "A–AB", "B och lägre" … för varje nivå. */
 export const TIER_LABEL: Record<GroupCount, string[]> = Object.fromEntries(
-  ([2, 3, 4, 5] as GroupCount[]).map((n) => {
+  GROUP_COUNTS.map((n) => {
     const starts = TIER_STARTS[n]
     return [n, starts.map((start, t) => {
-      if (t === starts.length - 1) return `${RANKS[start]} och lägre`
+      if (t === starts.length - 1) return RANKS[start] === 'X' ? 'X och utan rank' : `${RANKS[start]} och lägre`
       const end = starts[t + 1] - 1
       return end === start ? RANKS[start] : `${RANKS[start]}–${RANKS[end]}`
     })]

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shad
 import { Button } from '../../lib/shadcn/button'
 import { cn } from '../../lib/shadcn/utils'
 import { rankStyle } from '../../utils/rankColors'
-import { makeGroups, METHODS, TIER_LABEL, type GroupCount, type GroupMethod, type GroupResult } from '../../utils/groups'
+import { GROUP_COUNTS, makeGroups, METHODS, TIER_LABEL, type GroupCount, type GroupMethod, type GroupResult } from '../../utils/groups'
 
 type Player = {
   player_id: number
@@ -114,7 +114,7 @@ export default function GroupDialog({
         <div className="flex flex-col gap-2">
           <p className="text-xs text-muted-foreground">Antal grupper{separateGk ? ' (plus gruppen Målvakter)' : ''}</p>
           <div className="flex gap-1 rounded-lg bg-muted p-1">
-            {([2, 3, 4, 5] as const).map((n) => (
+            {GROUP_COUNTS.map((n) => (
               <button key={n} type="button" onClick={() => setGroups(n)} className={toggle(groups === n)}>
                 {n}
               </button>
