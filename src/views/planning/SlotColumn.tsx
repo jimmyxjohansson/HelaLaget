@@ -337,7 +337,10 @@ export default function SlotColumn(props: Props) {
                       )}
                     >
                       <VisualCheckbox checked={selected.has(p.id)} />
-                      <span className="w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{p.number ?? ''}</span>
+                      <span className="w-7 shrink-0">
+                        {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
+                      </span>
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: answerHex(p.status) }} title={p.status ?? ''} />
                       <span className="min-w-0 flex-1 truncate">
                         {p.shortname}
                         {p.playerstatus && p.playerstatus !== 'Aktiv' && (
@@ -345,13 +348,9 @@ export default function SlotColumn(props: Props) {
                         )}
                       </span>
                       {p.reason && <MessageSquare className="h-3 w-3 shrink-0 text-muted-foreground" aria-label={p.reason} />}
-                      {p.rank && (
-                        <span className="shrink-0 rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>
-                      )}
                       <span className={cn('w-9 shrink-0 text-right text-xs tabular-nums', percentClass(pct))} title={`${p.coming} av ${p.total} träningar`}>
                         {pct != null ? `${pct}%` : '–'}
                       </span>
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: answerHex(p.status) }} title={p.status ?? ''} />
                     </button>
                   </li>
                 )
@@ -451,15 +450,13 @@ export function CandidateList({
               className={cn('flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-muted', selected.has(p.id) && 'bg-primary/10')}
             >
               <VisualCheckbox checked={selected.has(p.id)} />
-              <span className="w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{p.number ?? ''}</span>
+              <span className="w-7 shrink-0">
+                {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
+              </span>
               <span className="min-w-0 flex-1 truncate">
                 {p.shortname}
                 {p.status && p.status !== 'Aktiv' && <span className="ml-1 text-[10px] text-muted-foreground">({p.status})</span>}
               </span>
-              {p.backbone && (
-                <span className="shrink-0 text-[10px] text-muted-foreground" title={`Ryggrad ${p.backbone}`}>R{p.backbone}</span>
-              )}
-              {p.rank && <span className="shrink-0 rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
               <span className="w-8 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground"
                 title={p.lastmatch != null ? `Senaste match för ${p.lastmatch} dagar sedan` : 'Ingen match än'}>
                 {p.lastmatch != null ? `${p.lastmatch}d` : '–'}
