@@ -88,3 +88,74 @@ export function Counts({ c }: { c: { coming: number; declined: number; invited: 
     </span>
   )
 }
+
+// ── Sortering av listorna ────────────────────────────────────────────────────
+
+export type SortDir = 'asc' | 'desc'
+export type SortState<K extends string> = { key: K; dir: SortDir } | null
+
+const RANK_ORDER: Record<string, number> = { A: 0, AB: 1, B: 2, BC: 3, C: 4, CD: 5, D: 6, X: 7 }
+const ANSWER_ORDER: Record<string, number> = { Kommer: 0, Inbjuden: 1, Förslag: 2, Reserv: 3, 'Ej svarat': 4, Nekat: 5 }
+
+export const rankIndex = (r: string | null | undefined) => (r ? RANK_ORDER[r.toUpperCase()] ?? 98 : 99)
+export const answerIndex = (s: string | null | undefined) => (s ? ANSWER_ORDER[s] ?? 98 : 99)
+
+/** Klick på samma kolumn: stigande → fallande → ingen sortering. */
+export function nextSort<K extends string>(prev: SortState<K>, key: K, firstDir: SortDir = 'asc'): SortState<K> {
+  if (!prev || prev.key !== key) return { key, dir: firstDir }
+  if (prev.dir === firstDir) return { key, dir: firstDir === 'asc' ? 'desc' : 'asc' }
+  return null
+}
+
+/** Sortera en kopia. Saknade värden hamnar alltid sist; lika värden sorteras på namn. */
+export function sortRows<T extends { shortname: string | null }, K extends string>(
+  rows: T[],
+  sort: SortState<K>,
+  value: (row: T, key: K) => number | string | null,
+): T[] {
+  if (!sort) return rows
+  const dir = sort.dir === 'asc' ? 1 : -1
+  return [...rows].sort((a, b) => {
+    const va = value(a, sort.key)
+    const vb = value(b, sort.key)
+    if (va == null && vb != null) return 1
+    if (vb == null && va != null) return -1
+    let cmp = 0
+    if (typeof va === 'string' || typeof vb === 'string') cmp = String(va ?? '').localeCompare(String(vb ?? ''), 'sv')
+    else cmp = (va as number) - (vb as number)
+    if (cmp !== 0) return cmp * dir
+    return (a.shortname ?? '').localeCompare(b.shortname ?? '', 'sv')
+  })
+}
+
+/** Rubrik som sorterar listan, med pil för aktiv riktning. */
+export function SortHead<K extends string>({
+  label,
+  k,
+  sort,
+  onSort,
+  className,
+  title,
+  firstDir,
+}: {
+  label: string
+  k: K
+  sort: SortState<K>
+  onSort: (s: SortState<K>) => void
+  className?: string
+  title?: string
+  firstDir?: SortDir
+}) {
+  const active = sort?.key === k
+  return (
+    <button
+      type="button"
+      title={title ?? `Sortera på ${label.toLowerCase()}`}
+      onClick={() => onSort(nextSort(sort, k, firstDir))}
+      className={`flex items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wide ${active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'} ${className ?? ''}`}
+    >
+      <span className="truncate">{label}</span>
+      {active ? <span aria-hidden>{sort!.dir === 'asc' ? '▲' : '▼'}</span> : null}
+    </button>
+  )
+}

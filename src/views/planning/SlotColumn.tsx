@@ -22,8 +22,12 @@ import { cn } from '../../lib/shadcn/utils'
 import { rankStyle } from '../../utils/rankColors'
 import type { PlanningEvent } from '../../server/functions/planning/getPlanningEvents'
 import {
-  ANSWERS, answerHex, Counts, EVENT_STATUSES, formatCupDates, formatWhen, percent, percentClass, type Kind,
+  ANSWERS, answerHex, answerIndex, Counts, EVENT_STATUSES, formatCupDates, formatWhen, percent, percentClass,
+  rankIndex, SortHead, sortRows, type Kind, type SortState,
 } from './shared'
+
+type PlayerSort = 'name' | 'rank' | 'status' | 'percent'
+type CandidateSort = 'name' | 'rank' | 'lastmatch' | 'matches' | 'percent'
 
 type Neighbor = { index: number; id: number; title: string } | null
 
@@ -63,6 +67,7 @@ export default function SlotColumn(props: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
+  const [playerSort, setPlayerSort] = useState<SortState<PlayerSort>>(null)
   const statusKey = playerStatuses.join(',')
 
   useEffect(() => {
@@ -81,7 +86,11 @@ export default function SlotColumn(props: Props) {
 
   const data = eventId && slot.data?.event.id === eventId ? slot.data : null
   const ev = data?.event
-  const players = data?.players ?? []
+  const players = sortRows(data?.players ?? [], playerSort, (p, k) =>
+    k === 'name' ? p.shortname
+      : k === 'rank' ? rankIndex(p.rank)
+        : k === 'status' ? answerIndex(p.status)
+          : percent(p.coming, p.total))
   const cands = eventId ? (candidates.data ?? []) : []
 
   async function run(action: () => Promise<unknown>, done?: string) {
@@ -321,6 +330,16 @@ export default function SlotColumn(props: Props) {
               </div>
             )}
 
+            {players.length > 0 && (
+              <div className="flex items-center gap-2 px-1.5">
+                <span className="w-4 shrink-0" />
+                <SortHead label="Namn" k="name" sort={playerSort} onSort={setPlayerSort} className="min-w-0 flex-1" />
+                <SortHead label="Rank" k="rank" sort={playerSort} onSort={setPlayerSort} className="w-9 shrink-0" />
+                <SortHead label="Svar" k="status" sort={playerSort} onSort={setPlayerSort} className="w-12 shrink-0" />
+                <SortHead label="%" k="percent" sort={playerSort} onSort={setPlayerSort} firstDir="desc"
+                  className="w-9 shrink-0 justify-end" title="Sortera på träningsnärvaro" />
+              </div>
+            )}
             <ul className="flex flex-col">
               {players.map((p) => {
                 const pct = percent(p.coming, p.total)
@@ -337,17 +356,25 @@ export default function SlotColumn(props: Props) {
                       )}
                     >
                       <VisualCheckbox checked={selected.has(p.id)} />
-                      <span className="w-7 shrink-0">
-                        {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
-                      </span>
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: answerHex(p.status) }} title={p.status ?? ''} />
-                      <span className="min-w-0 flex-1 truncate">
-                        {p.shortname}
-                        {p.playerstatus && p.playerstatus !== 'Aktiv' && (
-                          <span className="ml-1 text-[10px] text-muted-foreground">({p.playerstatus})</span>
+                      <span className="flex min-w-0 flex-1 items-center gap-1">
+                        <span className="truncate">
+                          {p.shortname}
+                          {p.playerstatus && p.playerstatus !== 'Aktiv' && (
+                            <span className="ml-1 text-[10px] text-muted-foreground">({p.playerstatus})</span>
+                          )}
+                        </span>
+                        {p.reason && (
+                          <span title={p.reason} className="shrink-0">
+                            <MessageSquare className="h-3 w-3 text-muted-foreground" aria-label={p.reason} />
+                          </span>
                         )}
                       </span>
-                      {p.reason && <MessageSquare className="h-3 w-3 shrink-0 text-muted-foreground" aria-label={p.reason} />}
+                      <span className="w-9 shrink-0">
+                        {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
+                      </span>
+                      <span className="flex w-12 shrink-0 items-center" title={p.status ?? ''}>
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: answerHex(p.status) }} />
+                      </span>
                       <span className={cn('w-9 shrink-0 text-right text-xs tabular-nums', percentClass(pct))} title={`${p.coming} av ${p.total} träningar`}>
                         {pct != null ? `${pct}%` : '–'}
                       </span>
@@ -437,10 +464,29 @@ export function CandidateList({
   selected: Set<number>
   onToggle: (id: number) => void
 }) {
+  const [sort, setSort] = useState<SortState<CandidateSort>>(null)
   if (rows.length === 0) return <p className="px-1.5 py-2 text-xs text-muted-foreground">Inga fler spelare med valda filter.</p>
+  const sorted = sortRows(rows, sort, (p, k) =>
+    k === 'name' ? p.shortname
+      : k === 'rank' ? rankIndex(p.rank)
+        : k === 'lastmatch' ? p.lastmatch
+          : k === 'matches' ? p.matches
+            : percent(p.coming, p.total))
   return (
+    <div className="flex flex-col">
+      <div className="flex items-center gap-2 px-1.5 pb-0.5">
+        <span className="w-4 shrink-0" />
+        <SortHead label="Namn" k="name" sort={sort} onSort={setSort} className="min-w-0 flex-1" />
+        <SortHead label="Rank" k="rank" sort={sort} onSort={setSort} className="w-9 shrink-0" />
+        <SortHead label="Sen." k="lastmatch" sort={sort} onSort={setSort} firstDir="desc"
+          className="w-9 shrink-0 justify-end" title="Sortera på dagar sedan senaste match" />
+        <SortHead label="M" k="matches" sort={sort} onSort={setSort}
+          className="w-7 shrink-0 justify-end" title="Sortera på antal matcher under perioden" />
+        <SortHead label="%" k="percent" sort={sort} onSort={setSort} firstDir="desc"
+          className="w-9 shrink-0 justify-end" title="Sortera på träningsnärvaro" />
+      </div>
     <ul className="flex flex-col">
-      {rows.map((p) => {
+      {sorted.map((p) => {
         const pct = percent(p.coming, p.total)
         return (
           <li key={p.id}>
@@ -450,18 +496,18 @@ export function CandidateList({
               className={cn('flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-muted', selected.has(p.id) && 'bg-primary/10')}
             >
               <VisualCheckbox checked={selected.has(p.id)} />
-              <span className="w-7 shrink-0">
-                {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
-              </span>
               <span className="min-w-0 flex-1 truncate">
                 {p.shortname}
                 {p.status && p.status !== 'Aktiv' && <span className="ml-1 text-[10px] text-muted-foreground">({p.status})</span>}
               </span>
-              <span className="w-8 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground"
+              <span className="w-9 shrink-0">
+                {p.rank && <span className="rounded px-1 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
+              </span>
+              <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground"
                 title={p.lastmatch != null ? `Senaste match för ${p.lastmatch} dagar sedan` : 'Ingen match än'}>
                 {p.lastmatch != null ? `${p.lastmatch}d` : '–'}
               </span>
-              <span className="w-6 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground" title="Serie- och träningsmatcher under perioden">
+              <span className="w-7 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground" title="Serie- och träningsmatcher under perioden">
                 {p.matches}M
               </span>
               <span className={cn('w-9 shrink-0 text-right text-xs tabular-nums', percentClass(pct))} title={`${p.coming} av ${p.total} träningar`}>
@@ -472,5 +518,6 @@ export function CandidateList({
         )
       })}
     </ul>
+    </div>
   )
 }
