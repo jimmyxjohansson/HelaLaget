@@ -1,9 +1,10 @@
 import { db } from '@/server/db'
+import { betweenDates } from '@/server/attendance'
 import type { User } from '@/server/types'
 
 type Params = {
   playerId: number
-  // Optional window matching the attendance report (upper bound extended by 14 days).
+  // Valfri period, samma som närvarostatistiken (genomförda träningar till och med date2).
   date1?: string
   date2?: string
 }
@@ -32,7 +33,7 @@ export default async function getPlayerTrainings(req: { params: Params; user: Us
     FROM participantstrainings pt
     JOIN trainings t ON t.id = pt.training
     WHERE pt.player = $1 AND pt.leader IS NULL${
-      hasRange ? "\n      AND t.date > $2::timestamptz AND t.date < ($3::timestamptz + interval '14 days')" : ''
+      hasRange ? `\n      AND ${betweenDates('$2', '$3')}` : ''
     }
     ORDER BY t.date DESC`,
     hasRange ? [playerId, date1, date2] : [playerId]

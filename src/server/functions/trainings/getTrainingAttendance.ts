@@ -1,8 +1,9 @@
 import { db } from '@/server/db'
+import { ATTENDED_STATUSES, betweenDates } from '@/server/attendance'
 import type { User } from '@/server/types'
 
 type Params = {
-  // ISO date strings (inclusive-ish range). Upper bound is extended by 14 days to match the original report.
+  // ÅÅÅÅ-MM-DD. Genomförda träningar från date1 till och med date2 (se server/attendance.ts).
   date1: string
   date2: string
   // Player statuses to include. Empty/omitted → default set.
@@ -29,16 +30,15 @@ export default async function getTrainingAttendance(req: { params: Params; user:
       p.id,
       p.shortname,
       p.rank,
-      COUNT(CASE WHEN pt.status::text IN ('Närvarande', 'Närvarande, ej hela', 'Anmäld', 'Annan aktivitet') AND t.type::text = 'Träning' THEN pt.player END) AS coming,
+      COUNT(CASE WHEN pt.status::text IN ${ATTENDED_STATUSES} AND t.type::text = 'Träning' THEN pt.player END) AS coming,
       COUNT(CASE WHEN t.type::text = 'Träning' THEN pt.player END) AS total,
-      CAST(COUNT(CASE WHEN pt.status::text IN ('Närvarande', 'Närvarande, ej hela', 'Anmäld', 'Annan aktivitet') AND t.type::text = 'Träning' THEN pt.player END) AS decimal)
+      CAST(COUNT(CASE WHEN pt.status::text IN ${ATTENDED_STATUSES} AND t.type::text = 'Träning' THEN pt.player END) AS decimal)
         / NULLIF(CAST(COUNT(CASE WHEN t.type::text = 'Träning' THEN pt.player END) AS decimal), 0) AS percent
     FROM participantstrainings pt
     LEFT JOIN players p ON pt.player = p.id
     LEFT JOIN trainings t ON pt.training = t.id
     WHERE
-      t.date > $1::timestamptz
-      AND t.date < ($2::timestamptz + interval '14 days')
+      ${betweenDates('$1', '$2')}
       AND p.status::text = ANY($3::text[])
     GROUP BY p.id
     ORDER BY p.rank ASC, percent DESC NULLS LAST`,

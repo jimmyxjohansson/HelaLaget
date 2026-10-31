@@ -1,4 +1,5 @@
 import { db } from '@/server/db'
+import { ATTENDED_STATUSES, PAST_TRAINING, withinMonths } from '@/server/attendance'
 import type { User } from '@/server/types'
 
 type Params = {
@@ -30,17 +31,17 @@ export default async function getPlayers(req: { params: Params; user: User }) {
     `SELECT
       p.id, p.firstname, p.lastname, p.shortname, p.number, p.img, p.status, p.rank,
       p.defender, p.defensivemidfielder, p.offensivemidfielder, p.winger, p.striker, p.goalkeeper,
-      COUNT(CASE WHEN pt.status::text IN ('Närvarande', 'Anmäld', 'Annan aktivitet') AND t.id IS NOT NULL THEN 1 END) AS sessions_attended,
+      COUNT(CASE WHEN pt.status::text IN ${ATTENDED_STATUSES} AND t.id IS NOT NULL THEN 1 END) AS sessions_attended,
       COUNT(t.id) AS total_sessions
     FROM players p
     LEFT JOIN participantstrainings pt ON pt.player = p.id
     LEFT JOIN trainings t ON t.id = pt.training
-      AND t.type::text = 'Träning'
-      AND ($1::int = 0 OR t.date >= NOW() - make_interval(months => $2::int))
+      AND ${PAST_TRAINING}
+      AND ${withinMonths('$1')}
     WHERE EXISTS (SELECT 1 FROM squad_players sp WHERE sp.player_id = p.id AND sp.squad_id = app.squad_id())
     GROUP BY p.id
     ORDER BY p.shortname`,
-    [months, months]
+    [months]
   )
   return result.data
 }

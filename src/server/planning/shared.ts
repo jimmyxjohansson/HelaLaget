@@ -1,5 +1,6 @@
 import 'server-only'
 import { AccessError } from '../access'
+import { ATTENDED_STATUSES, betweenDates } from '../attendance'
 
 /** Planeringen hanterar kallelser till både matcher och cuper på samma sätt. */
 export type Kind = 'match' | 'cup'
@@ -46,13 +47,12 @@ export function fromDate(value: unknown): string | null {
 export function attendanceLateral(fromParam: string) {
   return `LEFT JOIN LATERAL (
       SELECT
-        COUNT(*) FILTER (WHERE pt.status::text IN ('Närvarande', 'Närvarande, ej hela', 'Anmäld', 'Annan aktivitet'))::int AS coming,
+        COUNT(*) FILTER (WHERE pt.status::text IN ${ATTENDED_STATUSES})::int AS coming,
         COUNT(*)::int AS total
       FROM participantstrainings pt
       JOIN trainings t ON t.id = pt.training
       WHERE pt.player = p.id
         AND t.type::text = 'Träning'
-        AND (${fromParam}::date IS NULL OR t.date >= (${fromParam}::date)::timestamp AT TIME ZONE 'UTC')
-        AND t.date < (((now() AT TIME ZONE 'Europe/Stockholm')::date + 1)::timestamp AT TIME ZONE 'UTC')
+        AND ${betweenDates(fromParam, 'NULL')}
     ) a ON true`
 }
