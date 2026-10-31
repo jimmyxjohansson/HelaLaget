@@ -74,6 +74,7 @@ export default function SquadSettings() {
     planningUrl: '',
     trainingAppUrl: '',
     svenskalagIcalUrl: '',
+    svenskalagUrl: '',
   })
   const [savedSettings, setSavedSettings] = useState(false)
   const [newLeader, setNewLeader] = useState({ firstname: '', lastname: '' })
@@ -95,6 +96,7 @@ export default function SquadSettings() {
             planningUrl: s.planningUrl ?? '',
             trainingAppUrl: s.trainingAppUrl ?? '',
             svenskalagIcalUrl: s.svenskalagIcalUrl ?? '',
+            svenskalagUrl: s.svenskalagUrl ?? '',
           })
       })
       .catch(() => {})
@@ -326,6 +328,16 @@ export default function SquadSettings() {
               placeholder="https://…#trainingid={id}"
               onChange={(e) => setForm({ ...form, trainingAppUrl: e.target.value })}
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sq-svl-site">Lagets sida på Svenskalag (valfritt)</Label>
+            <Input
+              id="sq-svl-site"
+              value={form.svenskalagUrl}
+              placeholder="https://www.svenskalag.se/…"
+              onChange={(e) => setForm({ ...form, svenskalagUrl: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">Visas som länken Svenskalag i menyn, under Mina lag.</p>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="sq-svl">Svenskalag-kalender (valfritt)</Label>

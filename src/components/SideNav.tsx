@@ -37,7 +37,7 @@ export default function SideNav({ theme, onToggleTheme }: Props) {
   const extraLinks = accountLinks()
   // Första fliken heter som laget (t.ex. P-13) i stället för Hem
   const homeTabs = tabs.map((t) => (t.to === '/' && squad ? { ...t, label: squad.squadName } : t))
-  const adminActive = [...adminTabs, ...extraLinks, { to: '/planering' }].some(t => pathname.startsWith(t.to))
+  const adminActive = [...adminTabs, ...extraLinks.filter((l) => !l.external), { to: '/planering' }].some(t => pathname.startsWith(t.to))
   const [adminOpen, setAdminOpen] = useState(adminActive)
 
   return (
@@ -124,10 +124,11 @@ export default function SideNav({ theme, onToggleTheme }: Props) {
         )}
 
         <div className="mt-4 pt-4 border-t border-border flex flex-col gap-1">
-          {extraLinks.map(({ to, icon: Icon, label }) => (
+          {extraLinks.map(({ to, icon: Icon, label, external }) => (
             <Link
               key={to}
               href={to}
+              {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                 pathname === to ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'

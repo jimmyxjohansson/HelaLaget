@@ -44,7 +44,7 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
   const extraLinks = accountLinks()
   // Första fliken heter som laget (t.ex. P-13) i stället för Hem
   const homeTabs = tabs.map((t) => (t.to === '/' && squad ? { ...t, label: squad.squadName } : t))
-  const adminActive = [...adminTabs, ...extraLinks, { to: '/planering' }].some(t => pathname.startsWith(t.to))
+  const adminActive = [...adminTabs, ...extraLinks.filter((l) => !l.external), { to: '/planering' }].some(t => pathname.startsWith(t.to))
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border max-w-[430px] mx-auto pb-[env(safe-area-inset-bottom)]">
@@ -103,9 +103,9 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            {extraLinks.map(({ to, icon: Icon, label }) => (
+            {extraLinks.map(({ to, icon: Icon, label, external }) => (
               <DropdownMenuItem key={to} asChild>
-                <Link href={to} className="flex items-center gap-2 cursor-pointer">
+                <Link href={to} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="flex items-center gap-2 cursor-pointer">
                   <Icon className="w-4 h-4" />
                   <span>{label}</span>
                 </Link>
