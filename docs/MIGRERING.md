@@ -125,9 +125,9 @@ fungera när Retool-kontot avslutas. Flytta dem så här, från projektmappen:
    `node --env-file=.env.local scripts/migrate-images.mjs`
 4. Flytta på riktigt:
    `node --env-file=.env.local scripts/migrate-images.mjs --apply`
-5. Skriptet skriver ut en ny adress för lagets egen logga. Lägg in den som
-   `NEXT_PUBLIC_OWN_TEAM_LOGO_URL` i Vercel och deploya om (*Deployments →
-   Redeploy*).
+5. Skriptet skriver ut en ny adress för lagets egen logga. Lägg in den under
+   *Admin → Medlemmar → Logga* för laget. Lag utan egen logga visar Hela Lagets
+   neutrala logga.
 
 Skriptet kan köras flera gånger. Bilder som inte går att hämta (t.ex. om de inte
 var publika i Retool) behåller sin gamla länk och listas i slutet. Ladda upp dem

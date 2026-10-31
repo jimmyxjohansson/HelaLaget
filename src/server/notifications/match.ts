@@ -75,7 +75,7 @@ function teams(m: MatchInfo) {
 }
 
 // Samma reservlogga som i appen när laget saknar egen logga
-const FALLBACK_LOGO = process.env.NEXT_PUBLIC_OWN_TEAM_LOGO_URL || '/icons/icon-192.png'
+const FALLBACK_LOGO = '/icons/icon-192.png'
 
 /** Notisens bild: logga för laget som gjorde målet (annars vårt lags). */
 function payload(m: MatchInfo, title: string, body: string, logo: 'ours' | 'theirs' = 'ours'): PushPayload {
