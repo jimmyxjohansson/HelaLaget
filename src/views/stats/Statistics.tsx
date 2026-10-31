@@ -25,6 +25,7 @@ export const PLAYER_STATUSES = ['Aktiv', 'Aktiv, ej matchklar', 'Provspelare', '
 
 const PERIODS = [
   { key: '1', label: '1 mån' },
+  { key: '2', label: '2 mån' },
   { key: '3', label: '3 mån' },
   { key: '6', label: '6 mån' },
   { key: '12', label: '1 år' },
@@ -52,12 +53,12 @@ function periodRange(key: string, customFrom: string | null, customTo: string | 
  */
 export default function Statistics() {
   const [tab, setTab] = usePersistentState<Tab>('hl-stats-tab', 'training')
-  const [period, setPeriod] = usePersistentState('hl-stats-period', 'year')
+  const [period, setPeriod] = usePersistentState('hl-stats-period-v2', '2')
   const [customFrom, setCustomFrom] = usePersistentState<string | null>('hl-stats-from', null)
   const [customTo, setCustomTo] = usePersistentState<string | null>('hl-stats-to', null)
   const [playerStatuses, setPlayerStatuses] = usePersistentState<string[]>(
-    'hl-stats-pstatus',
-    PLAYER_STATUSES.filter((s) => s !== 'Slutat'),
+    'hl-stats-pstatus-v2',
+    ['Aktiv', 'Aktiv, ej matchklar'],
   )
   const [search, setSearch] = useState('')
   const [filtersOpen, setFiltersOpen] = useState(false)
