@@ -4,11 +4,16 @@ export type GroupMethod = 'rank' | 'rank-equal' | 'random-balanced' | 'random'
 
 export type GroupPlayer = { player_id: number; rank: string | null; goalkeeper?: boolean | null }
 
+export type GroupCount = 2 | 3 | 4 | 5
+
+/** Målvakterna läggs alltid i den här gruppen. */
+export const GOALKEEPER_GROUP = 'Grupp 5'
+
 export type GroupOptions = {
   method: GroupMethod
   /** Antal grupper för utespelarna */
-  groups: 2 | 3
-  /** Målvakter i en egen grupp efter utespelarnas */
+  groups: GroupCount
+  /** Målvakter i Grupp 5 (går inte med 5 grupper utespelare) */
   separateGoalkeepers: boolean
 }
 
@@ -31,18 +36,39 @@ export const METHODS: { value: GroupMethod; label: string; help: string }[] = [
 const RANK_ORDER: Record<string, number> = { A: 0, AB: 1, B: 2, BC: 3, C: 4, CD: 5, D: 6, X: 7 }
 const rankIndex = (r: string | null) => (r ? RANK_ORDER[r.toUpperCase()] ?? 8 : 8)
 
-/** Fasta nivåer för "Efter rank": 2 grupper A–AB | B och lägre, 3 grupper A–AB | B–BC | C och lägre. */
-export function rankTier(rank: string | null, groups: 2 | 3) {
+/**
+ * Fasta nivåer för "Efter rank": index i rankordningen A, AB, B, BC, C, CD, D
+ * där varje nivå börjar. Spelare utan rank hamnar i sista nivån.
+ */
+const TIER_STARTS: Record<GroupCount, number[]> = {
+  2: [0, 2], // A–AB | B och lägre
+  3: [0, 2, 4], // A–AB | B–BC | C och lägre
+  4: [0, 1, 3, 5], // A | AB–B | BC–C | CD och lägre
+  5: [0, 1, 2, 3, 5], // A | AB | B | BC–C | CD och lägre
+}
+const RANKS = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D']
+
+export function rankTier(rank: string | null, groups: GroupCount) {
   const i = rankIndex(rank)
-  if (i <= 1) return 0
-  if (groups === 2) return 1
-  return i <= 3 ? 1 : 2
+  const starts = TIER_STARTS[groups]
+  let tier = 0
+  starts.forEach((start, t) => {
+    if (i >= start) tier = t
+  })
+  return tier
 }
 
-export const TIER_LABEL: Record<2 | 3, string[]> = {
-  2: ['A–AB', 'B och lägre'],
-  3: ['A–AB', 'B–BC', 'C och lägre'],
-}
+/** "A–AB", "B och lägre" … för varje nivå. */
+export const TIER_LABEL: Record<GroupCount, string[]> = Object.fromEntries(
+  ([2, 3, 4, 5] as GroupCount[]).map((n) => {
+    const starts = TIER_STARTS[n]
+    return [n, starts.map((start, t) => {
+      if (t === starts.length - 1) return `${RANKS[start]} och lägre`
+      const end = starts[t + 1] - 1
+      return end === start ? RANKS[start] : `${RANKS[start]}–${RANKS[end]}`
+    })]
+  }),
+) as Record<GroupCount, string[]>
 
 function shuffle<T>(list: T[], random: () => number): T[] {
   const a = [...list]
@@ -60,8 +86,10 @@ function byRank<T extends GroupPlayer>(list: T[], random: () => number): T[] {
 
 export function makeGroups(players: GroupPlayer[], opts: GroupOptions, random: () => number = Math.random): GroupResult {
   const n = opts.groups
-  const keepers = opts.separateGoalkeepers ? players.filter((p) => p.goalkeeper) : []
-  const field = opts.separateGoalkeepers ? players.filter((p) => !p.goalkeeper) : players
+  // Målvaktsgruppen är Grupp 5, så med 5 grupper utespelare får målvakterna vara med bland dem
+  const separate = opts.separateGoalkeepers && n < 5
+  const keepers = separate ? players.filter((p) => p.goalkeeper) : []
+  const field = separate ? players.filter((p) => !p.goalkeeper) : players
   const buckets: number[][] = Array.from({ length: n }, () => [])
 
   if (opts.method === 'rank') {
@@ -86,14 +114,19 @@ export function makeGroups(players: GroupPlayer[], opts: GroupOptions, random: (
     shuffle(field, random).forEach((p, i) => buckets[i % n].push(p.player_id))
   }
 
-  const rankGroups = opts.method === 'rank' || opts.method === 'rank-equal'
-  const result: GroupResult = buckets.map((ids, i) => ({
-    name: `Grupp ${i + 1}`,
-    grouprank: rankGroups ? (['A', 'B', 'C'][i] ?? null) : null,
-    playerIds: ids,
-  }))
+  // Gruppens nivå: nivåns bästa rank (Efter rank) eller bästa spelarens rank (lika stora)
+  const byIdRank = new Map(field.map((p) => [p.player_id, p.rank]))
+  const groupRank = (ids: number[], i: number) => {
+    if (opts.method === 'rank') return RANKS[TIER_STARTS[n][i]]
+    if (opts.method === 'rank-equal') {
+      const best = ids.map((id) => byIdRank.get(id) ?? null).sort((a, b) => rankIndex(a) - rankIndex(b))[0]
+      return best ? best.toUpperCase() : null
+    }
+    return null
+  }
+  const result: GroupResult = buckets.map((ids, i) => ({ name: `Grupp ${i + 1}`, grouprank: groupRank(ids, i), playerIds: ids }))
   if (keepers.length) {
-    result.push({ name: `Grupp ${n + 1}`, grouprank: null, playerIds: keepers.map((p) => p.player_id), goalkeepers: true })
+    result.push({ name: GOALKEEPER_GROUP, grouprank: null, playerIds: keepers.map((p) => p.player_id), goalkeepers: true })
   }
   return result
 }
