@@ -11,11 +11,11 @@ import { RANK_COLOR } from '../../utils/rankColors'
 
 type Slot = { event: SlotEvent; players: SlotPlayer[]; leaders: SlotLeader[] }
 
-const COL_W = 260
-const GAP = 16
-const PAD = 20
-const HEAD_H = 78
-const LINE_H = 22
+const COL_W = 200
+const GAP = 10
+const PAD = 12
+const HEAD_H = 56
+const LINE_H = 17
 const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
 
 function fit(ctx: CanvasRenderingContext2D, text: string, max: number) {
@@ -65,8 +65,8 @@ export function drawOverview(
   const width = PAD * 2 + n * COL_W + (n - 1) * GAP
   const lists = slots.map((s) => overviewPlayers(s, opts.showDeclined))
   const colHeight = (i: number) =>
-    HEAD_H + 12 + Math.max(1, lists[i].length) * LINE_H + (slots[i].leaders.length ? 34 + LINE_H : 0) + 12
-  const height = PAD + 44 + Math.max(...slots.map((_, i) => colHeight(i)), 120) + PAD
+    HEAD_H + 8 + Math.max(1, lists[i].length) * LINE_H + (slots[i].leaders.length ? 26 + LINE_H : 0) + 8
+  const height = PAD + 30 + Math.max(...slots.map((_, i) => colHeight(i)), 80) + PAD
 
   canvas.width = width * scale
   canvas.height = height * scale
@@ -77,99 +77,99 @@ export function drawOverview(
   ctx.fillRect(0, 0, width, height)
 
   ctx.fillStyle = '#111827'
-  ctx.font = `700 18px ${FONT}`
-  ctx.fillText(fit(ctx, opts.title, width - PAD * 2 - 150), PAD, PAD + 12)
-  ctx.font = `400 12px ${FONT}`
+  ctx.font = `700 14px ${FONT}`
+  ctx.fillText(fit(ctx, opts.title, width - PAD * 2 - 210), PAD, PAD + 9)
+  ctx.font = `400 10px ${FONT}`
   ctx.fillStyle = '#6b7280'
   const stamp = new Date().toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Stockholm' })
   ctx.textAlign = 'right'
   const period = opts.periodLabel === 'Alla' ? 'all tid' : `senaste ${opts.periodLabel.replace('mån', 'månader').replace('1 månader', '1 månad')}`
-  ctx.fillText(`Träningsnärvaro ${period} · ${stamp}`, width - PAD, PAD + 12)
+  ctx.fillText(`Träningsnärvaro ${period} · ${stamp}`, width - PAD, PAD + 9)
   ctx.textAlign = 'left'
 
   slots.forEach((s, i) => {
     const x = PAD + i * (COL_W + GAP)
-    let y = PAD + 44
+    let y = PAD + 30
     const h = colHeight(i)
 
     ctx.strokeStyle = '#e5e7eb'
     ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.roundRect(x + 0.5, y + 0.5, COL_W - 1, h - 1, 10)
+    ctx.roundRect(x + 0.5, y + 0.5, COL_W - 1, h - 1, 8)
     ctx.stroke()
 
     // Rubrik i lagets färg, med motståndarens logga
     ctx.fillStyle = opts.primary
     ctx.beginPath()
-    ctx.roundRect(x, y, COL_W, HEAD_H, [10, 10, 0, 0])
+    ctx.roundRect(x, y, COL_W, HEAD_H, [8, 8, 0, 0])
     ctx.fill()
-    let tx = x + 12
+    let tx = x + 9
     const logo = logos[i]
     if (opts.kind === 'match') {
-      const cx = x + 12 + 22
+      const cx = x + 9 + 16
       const cy = y + HEAD_H / 2
       ctx.fillStyle = '#ffffff'
       ctx.beginPath()
-      ctx.arc(cx, cy, 22, 0, Math.PI * 2)
+      ctx.arc(cx, cy, 16, 0, Math.PI * 2)
       ctx.fill()
       if (logo) {
-        const r = Math.min(34 / logo.width, 34 / logo.height)
+        const r = Math.min(24 / logo.width, 24 / logo.height)
         const w = logo.width * r
         const lh = logo.height * r
         ctx.save()
         ctx.beginPath()
-        ctx.arc(cx, cy, 21, 0, Math.PI * 2)
+        ctx.arc(cx, cy, 15, 0, Math.PI * 2)
         ctx.clip()
         ctx.drawImage(logo, cx - w / 2, cy - lh / 2, w, lh)
         ctx.restore()
       } else {
         ctx.fillStyle = '#6b7280'
-        ctx.font = `700 18px ${FONT}`
+        ctx.font = `700 13px ${FONT}`
         ctx.textAlign = 'center'
         ctx.fillText((s.event.title[0] ?? '?').toUpperCase(), cx, cy + 1)
         ctx.textAlign = 'left'
       }
-      tx = x + 12 + 44 + 10
+      tx = x + 9 + 32 + 8
     }
-    const tw = x + COL_W - 12 - tx
+    const tw = x + COL_W - 9 - tx
     ctx.fillStyle = opts.accent
-    ctx.font = `700 15px ${FONT}`
-    ctx.fillText(fit(ctx, `${i + 1}. ${s.event.title}`, tw), tx, y + 20)
-    ctx.font = `400 12px ${FONT}`
+    ctx.font = `700 12px ${FONT}`
+    ctx.fillText(fit(ctx, `${i + 1}. ${s.event.title}`, tw), tx, y + 14)
+    ctx.font = `400 10px ${FONT}`
     const when = opts.kind === 'match' ? formatWhen(s.event.date) : formatCupDates(s.event.date, s.event.enddate)
-    ctx.fillText(fit(ctx, [s.event.difficulty, when].filter(Boolean).join(' · '), tw), tx, y + 40)
-    ctx.fillText(fit(ctx, [s.event.homeaway, s.event.matchplayers, `${lists[i].length} spelare`].filter(Boolean).join(' · '), tw), tx, y + 58)
+    ctx.fillText(fit(ctx, [s.event.difficulty, when].filter(Boolean).join(' · '), tw), tx, y + 29)
+    ctx.fillText(fit(ctx, [s.event.homeaway, s.event.matchplayers, `${lists[i].length} spelare`].filter(Boolean).join(' · '), tw), tx, y + 43)
     y += HEAD_H
 
-    const rankX = x + COL_W - 112
-    const pctRight = x + COL_W - 12
-    y += 12
+    const rankX = x + COL_W - 70
+    const pctRight = x + COL_W - 9
+    y += 8
 
-    ctx.font = `400 14px ${FONT}`
+    ctx.font = `400 12px ${FONT}`
     if (lists[i].length === 0) {
       ctx.fillStyle = '#9ca3af'
-      ctx.fillText('Ingen kallad ännu', x + 12, y + LINE_H / 2 - 2)
+      ctx.fillText('Ingen kallad ännu', x + 9, y + LINE_H / 2 - 2)
       y += LINE_H
     }
     for (const p of lists[i]) {
       const cy = y + LINE_H / 2 - 2
       const dim = p.status === 'Nekat' || p.status === 'Ej svarat'
-      ctx.font = `400 14px ${FONT}`
+      ctx.font = `400 12px ${FONT}`
       ctx.fillStyle = dim ? '#9ca3af' : '#111827'
       const name = `${p.shortname ?? ''}${p.position === 'Målvakt' ? ' (MV)' : ''}`
-      ctx.fillText(fit(ctx, name, rankX - x - 18), x + 12, cy)
+      ctx.fillText(fit(ctx, name, rankX - x - 14), x + 9, cy)
       if (p.rank) {
-        ctx.font = `700 11px ${FONT}`
-        const bw = ctx.measureText(p.rank).width + 10
+        ctx.font = `700 9px ${FONT}`
+        const bw = ctx.measureText(p.rank).width + 8
         ctx.fillStyle = RANK_COLOR[p.rank.toUpperCase()] ?? '#B7B7B7'
         ctx.beginPath()
-        ctx.roundRect(rankX, cy - 8, bw, 16, 3)
+        ctx.roundRect(rankX, cy - 6.5, bw, 13, 3)
         ctx.fill()
         ctx.fillStyle = '#ffffff'
-        ctx.fillText(p.rank, rankX + 5, cy + 1)
+        ctx.fillText(p.rank, rankX + 4, cy + 1)
       }
       const pct = percent(p.coming, p.total)
-      ctx.font = `400 13px ${FONT}`
+      ctx.font = `400 11px ${FONT}`
       ctx.fillStyle = pct == null ? '#9ca3af' : pct >= 75 ? '#15803d' : pct >= 50 ? '#d97706' : '#dc2626'
       ctx.textAlign = 'right'
       ctx.fillText(pct == null ? '–' : `${pct}%`, pctRight, cy)
@@ -178,14 +178,14 @@ export function drawOverview(
     }
 
     if (s.leaders.length) {
-      y += 12
-      ctx.font = `700 10px ${FONT}`
+      y += 10
+      ctx.font = `700 9px ${FONT}`
       ctx.fillStyle = '#6b7280'
-      ctx.fillText('LEDARE', x + 12, y + 9)
-      y += 22
-      ctx.font = `400 13px ${FONT}`
+      ctx.fillText('LEDARE', x + 9, y + 8)
+      y += 16
+      ctx.font = `400 11px ${FONT}`
       ctx.fillStyle = '#111827'
-      ctx.fillText(fit(ctx, s.leaders.map((l) => l.shortname).join(', '), COL_W - 24), x + 12, y + LINE_H / 2 - 2)
+      ctx.fillText(fit(ctx, s.leaders.map((l) => l.shortname).join(', '), COL_W - 18), x + 9, y + LINE_H / 2 - 2)
     }
   })
 }
