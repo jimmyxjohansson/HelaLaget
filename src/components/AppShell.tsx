@@ -41,6 +41,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
         setMe(me)
         if (me.current) {
           if (readSquadCookie() !== me.current.squadId) setSquadCookie(me.current.squadId)
+          // Fliknamn: "Skabersjö IF P-13 – Hela Laget"
+          document.title = `${me.current.organizationName} ${me.current.squadName} – Hela Laget`
           const root = document.documentElement.style
           const primary = hexToRgbChannels(me.current.primaryColor)
           const accent = hexToRgbChannels(me.current.accentColor)
