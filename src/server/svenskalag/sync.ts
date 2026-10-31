@@ -167,7 +167,7 @@ export async function syncSquad(squadId: number): Promise<SyncSummary> {
     [squadId],
   )
   const squad = squads[0]
-  if (!squad?.svenskalag_ical_url) throw new Error('Laget har ingen Svenskalag-kalender. Lägg in länken under Admin → Medlemmar.')
+  if (!squad?.svenskalag_ical_url) throw new Error('Laget har ingen Svenskalag-kalender. Lägg in länken under Admin → Laginställningar.')
 
   let summary: SyncSummary
   try {

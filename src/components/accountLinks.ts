@@ -9,7 +9,7 @@ export function accountLinks() {
   const links: { to: string; icon: typeof Bell; label: string; external?: boolean }[] = [
     { to: '/lag', icon: Repeat, label: 'Mina lag' },
   ]
-  // Lagets sida på Svenskalag (Medlemmar → Lagets inställningar), öppnas i ny flik
+  // Lagets sida på Svenskalag (Laginställningar), öppnas i ny flik
   if (me?.current?.svenskalagUrl) {
     links.push({ to: me.current.svenskalagUrl, icon: ExternalLink, label: 'Svenskalag', external: true })
   }
@@ -17,7 +17,7 @@ export function accountLinks() {
   if (me?.current?.role === 'leader' || me?.current?.role === 'admin') {
     links.push({ to: '/svenskalag', icon: RefreshCw, label: 'Svenskalag-synk' })
   }
-  if (me?.current?.role === 'admin') links.push({ to: '/lag/installningar', icon: UserCog, label: 'Medlemmar' })
+  if (me?.current?.role === 'admin') links.push({ to: '/lag/installningar', icon: UserCog, label: 'Laginställningar' })
   if (me?.isSuperadmin || (me?.adminOrganizationIds.length ?? 0) > 0) {
     links.push({ to: '/foreningar', icon: Building2, label: 'Föreningar' })
   }

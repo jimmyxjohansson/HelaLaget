@@ -97,10 +97,10 @@ export default function Svenskalag() {
             kalenderlänken under{' '}
             {squad?.role === 'admin' ? (
               <Link href="/lag/installningar" className="underline underline-offset-4">
-                Medlemmar och inställningar
+                Laginställningar
               </Link>
             ) : (
-              'Admin → Medlemmar'
+              'Admin → Laginställningar'
             )}
             . Länken finns i Svenskalag under lagets kalender → Prenumerera.
           </p>

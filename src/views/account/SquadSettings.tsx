@@ -132,7 +132,7 @@ export default function SquadSettings() {
 
   return (
     <div className="flex flex-col min-h-full pb-8">
-      <PageHeader title="Medlemmar och inställningar" subtitle={squad ? `${squad.organizationName} ${squad.squadName}` : ''} />
+      <PageHeader title="Laginställningar" subtitle={squad ? `${squad.organizationName} ${squad.squadName}` : ''} />
       {error && <div className="px-4 pt-3"><ErrorText>{error}</ErrorText></div>}
 
       <Section title={`Ansökningar${pending.length ? ` (${pending.length})` : ''}`}>
