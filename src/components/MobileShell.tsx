@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 import BottomNav from './BottomNav'
 import SideNav from './SideNav'
 import { useTheme } from '../hooks/useTheme'
@@ -11,6 +12,8 @@ interface Props {
 
 export default function MobileShell({ children }: Props) {
   const { theme, toggleTheme } = useTheme()
+  // Planeringen visar fyra kolumner bredvid varandra och får använda hela bredden
+  const wide = (usePathname() ?? '').startsWith('/planering')
 
   return (
     <div className="flex justify-center min-h-screen bg-muted">
@@ -18,7 +21,7 @@ export default function MobileShell({ children }: Props) {
       <SideNav theme={theme} onToggleTheme={toggleTheme} />
 
       {/* Content column */}
-      <div className="relative w-full max-w-[430px] md:max-w-[1080px] bg-background flex flex-col min-h-screen shadow-lg md:shadow-none md:border-x md:border-border">
+      <div className={`relative w-full max-w-[430px] ${wide ? 'md:max-w-none' : 'md:max-w-[1080px]'} bg-background flex flex-col min-h-screen shadow-lg md:shadow-none md:border-x md:border-border`}>
         <main className="flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
           {children}
         </main>

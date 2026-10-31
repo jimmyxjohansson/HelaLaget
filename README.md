@@ -10,6 +10,10 @@ till Next.js med Supabase (databas, inloggning och bildlagring) och Vercel (host
 
 **Notiser från matcher:** se [docs/NOTISER.md](docs/NOTISER.md).
 
+**Planering av kallelser** (`/planering`, ledare och admin): upp till fyra matcher
+eller cuper bredvid varandra med kallade och ej kallade spelare, svar och
+anledningar, Fogis-/cupsummering och träningsnärvaro. Ersätter planeringsappen i Retool.
+
 **Ska appen flyttas från Retool?** Följ [docs/MIGRERING.md](docs/MIGRERING.md).
 
 ## Teknik
@@ -113,4 +117,4 @@ till `/login`.
 - Spelarbilder och lagloggor lagras i Supabase Storage.
 - `views/Drills.tsx` (övningsbank) fanns i Retool-exporten men hade ingen route.
   Den finns kvar och kan kopplas in genom att skapa `src/app/(app)/drills/page.tsx`.
-- Länkarna till planerings- och träningsapparna ställs in per lag (*Admin → Medlemmar*).
+- Planeringen finns i appen (`/planering`). Länken till träningsappen ställs in per lag (*Admin → Medlemmar*).

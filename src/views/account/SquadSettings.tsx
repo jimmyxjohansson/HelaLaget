@@ -319,15 +319,6 @@ export default function SquadSettings() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sq-plan">Länk till planeringsapp (valfritt)</Label>
-            <Input
-              id="sq-plan"
-              value={form.planningUrl}
-              placeholder="https://…"
-              onChange={(e) => setForm({ ...form, planningUrl: e.target.value })}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
             <Label htmlFor="sq-train">Länk till träningsapp (valfritt, {'{id}'} ersätts med träningens id)</Label>
             <Input
               id="sq-train"

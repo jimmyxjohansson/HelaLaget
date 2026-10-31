@@ -68,6 +68,17 @@ import organizations_addSquadAdmin from './functions/organizations/addSquadAdmin
 import organizations_createOrganization from './functions/organizations/createOrganization'
 import organizations_createSquad from './functions/organizations/createSquad'
 import organizations_getOrganizations from './functions/organizations/getOrganizations'
+import planning_addPlanningLeaders from './functions/planning/addPlanningLeaders'
+import planning_addPlanningPlayers from './functions/planning/addPlanningPlayers'
+import planning_getPlanningAnswers from './functions/planning/getPlanningAnswers'
+import planning_getPlanningCandidates from './functions/planning/getPlanningCandidates'
+import planning_getPlanningEvents from './functions/planning/getPlanningEvents'
+import planning_getPlanningSlot from './functions/planning/getPlanningSlot'
+import planning_movePlanningParticipants from './functions/planning/movePlanningParticipants'
+import planning_removePlanningParticipants from './functions/planning/removePlanningParticipants'
+import planning_setPlanningEventStatus from './functions/planning/setPlanningEventStatus'
+import planning_setPlanningStatus from './functions/planning/setPlanningStatus'
+import planning_updatePlanningAnswer from './functions/planning/updatePlanningAnswer'
 import players_addPlayersToSquad from './functions/players/addPlayersToSquad'
 import players_createPlayer from './functions/players/createPlayer'
 import players_getOrganizationPlayers from './functions/players/getOrganizationPlayers'
@@ -180,6 +191,17 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'organizations/createOrganization': { handler: organizations_createOrganization, access: 'superadmin' },
   'organizations/createSquad': { handler: organizations_createSquad, access: 'user' },
   'organizations/getOrganizations': { handler: organizations_getOrganizations, access: 'user' },
+  'planning/addPlanningLeaders': { handler: planning_addPlanningLeaders, access: 'leader' },
+  'planning/addPlanningPlayers': { handler: planning_addPlanningPlayers, access: 'leader' },
+  'planning/getPlanningAnswers': { handler: planning_getPlanningAnswers, access: 'leader' },
+  'planning/getPlanningCandidates': { handler: planning_getPlanningCandidates, access: 'leader' },
+  'planning/getPlanningEvents': { handler: planning_getPlanningEvents, access: 'leader' },
+  'planning/getPlanningSlot': { handler: planning_getPlanningSlot, access: 'leader' },
+  'planning/movePlanningParticipants': { handler: planning_movePlanningParticipants, access: 'leader' },
+  'planning/removePlanningParticipants': { handler: planning_removePlanningParticipants, access: 'leader' },
+  'planning/setPlanningEventStatus': { handler: planning_setPlanningEventStatus, access: 'leader' },
+  'planning/setPlanningStatus': { handler: planning_setPlanningStatus, access: 'leader' },
+  'planning/updatePlanningAnswer': { handler: planning_updatePlanningAnswer, access: 'leader' },
   'players/addPlayersToSquad': { handler: players_addPlayersToSquad, access: 'leader' },
   'players/createPlayer': { handler: players_createPlayer, access: 'leader' },
   'players/getOrganizationPlayers': { handler: players_getOrganizationPlayers, access: 'leader' },
