@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowDown, ArrowLeft, ArrowRightLeft, ArrowUp, ChevronDown, List, Loader2, Users, Wand2, X } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRightLeft, ArrowUp, ChevronDown, List, Loader2, RotateCcw, Users, Wand2, X } from 'lucide-react'
 import { useGetTrainingGroups, useUpdateGroupRank, useUpdateParticipantGroups } from '../hooks/backend/trainings'
 import { Button } from '../lib/shadcn/button'
 import { Checkbox } from '../lib/shadcn/checkbox'
@@ -194,6 +194,18 @@ export default function TrainingGroups() {
     trigger({ trainingId }, { skipCache: true })
   }
 
+  async function resetAllGroups() {
+    if (!id) return
+    const playerIds = participants.filter((p) => p.group_name).map((p) => p.player_id)
+    if (playerIds.length === 0) return
+    if (!window.confirm(`Ta bort alla ${playerIds.length} spelare ur sina grupper?`)) return
+    const trainingId = Number(id)
+    await triggerUpdate({ trainingId, playerIds, group: null, grouprank: null })
+    clearSelection()
+    setActiveTab('all')
+    trigger({ trainingId }, { skipCache: true })
+  }
+
   // Determine which sections to render based on tab
   const visibleSections: { key: string; label: string }[] = useMemo(() => {
     if (activeTab === 'all') {
@@ -276,16 +288,27 @@ export default function TrainingGroups() {
       </div>
 
       {/* Auto-assign toolbar */}
-      <div className="px-4 pt-3 pb-1">
+      <div className="px-4 pt-3 pb-1 flex gap-2">
         <Button
           variant="outline"
           size="sm"
           disabled={saving || loading || participants.length === 0}
           onClick={() => setGroupDialogOpen(true)}
-          className="w-full h-9 gap-1.5"
+          className="flex-1 h-9 gap-1.5"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
           Dela in i grupper
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={saving || loading || !participants.some((p) => p.group_name)}
+          onClick={resetAllGroups}
+          className="h-9 gap-1.5"
+          title="Ta bort alla spelare ur sina grupper"
+        >
+          <RotateCcw className="w-4 h-4" />
+          Nollställ alla grupper
         </Button>
         <GroupDialog
           open={groupDialogOpen}
