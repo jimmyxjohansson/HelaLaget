@@ -6,6 +6,7 @@ import type addPlayersToSquad from '../../server/functions/players/addPlayersToS
 import type createPlayer from '../../server/functions/players/createPlayer'
 import type getOrganizationPlayers from '../../server/functions/players/getOrganizationPlayers'
 import type getPlayer from '../../server/functions/players/getPlayer'
+import type getPlayerStats from '../../server/functions/players/getPlayerStats'
 import type getPlayers from '../../server/functions/players/getPlayers'
 import type getUpcomingBirthdays from '../../server/functions/players/getUpcomingBirthdays'
 import type removePlayerFromSquad from '../../server/functions/players/removePlayerFromSquad'
@@ -32,6 +33,11 @@ export const useGetPlayer = createBackendHook<
   Parameters<typeof getPlayer>[0]['params'],
   Awaited<ReturnType<typeof getPlayer>>
 >('players/getPlayer')
+
+export const useGetPlayerStats = createBackendHook<
+  Parameters<typeof getPlayerStats>[0]['params'],
+  Awaited<ReturnType<typeof getPlayerStats>>
+>('players/getPlayerStats')
 
 export const useGetPlayers = createBackendHook<
   Parameters<typeof getPlayers>[0]['params'],

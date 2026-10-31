@@ -32,3 +32,11 @@ export function betweenDates(fromParam: string, toParam: string) {
       AND (${toParam}::date IS NULL OR t.date < ((${toParam}::date + 1)::timestamp AT TIME ZONE 'UTC'))
       AND t.date < ${TOMORROW}`
 }
+
+/** Svensk "nu" i lagrad väggklocka. */
+export const NOW_WALLCLOCK = `((now() AT TIME ZONE 'Europe/Stockholm') AT TIME ZONE 'UTC')`
+
+/** Villkor på valfri tidskolumn: senaste N månaderna (0 = alla). */
+export function withinMonthsOf(column: string, param: string) {
+  return `(${param}::int = 0 OR ${column} >= (((now() AT TIME ZONE 'Europe/Stockholm')::date - make_interval(months => ${param}::int))::timestamp AT TIME ZONE 'UTC'))`
+}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useGetPlayer, useUpdatePlayer, useUploadPlayerImage } from '../hooks/backend/players'
+import { useGetPlayer, useGetPlayerStats, useUpdatePlayer, useUploadPlayerImage } from '../hooks/backend/players'
 import { ArrowLeft, Edit2, Check, X, User, Upload, Loader2 } from 'lucide-react'
 import { rankStyle } from '../utils/rankColors'
 import { Button } from '../lib/shadcn/button'
@@ -11,6 +11,17 @@ import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../lib/shadcn/select'
 import DatePicker from '../components/DatePicker'
+import PlayerStats, { StatsSummary } from './player/PlayerStats'
+import { cn } from '../lib/shadcn/utils'
+
+const PERIODS = [
+  { months: 1, label: '1 mån' },
+  { months: 2, label: '2 mån' },
+  { months: 3, label: '3 mån' },
+  { months: 6, label: '6 mån' },
+  { months: 12, label: '1 år' },
+  { months: 0, label: 'Alla' },
+]
 
 const STATUS_OPTIONS = ['Aktiv', 'Aktiv, ej matchklar', 'Vilande', 'Gästspelare', 'Slutat']
 const RANK_OPTIONS = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D']
@@ -60,26 +71,19 @@ interface PlayerData {
   total_sessions: string
 }
 
-function pct(attended: string, total: string) {
-  const t = Number(total)
-  if (!t) return 0
-  return Math.round((Number(attended) / t) * 100)
-}
-
-function pctColor(n: number) {
-  if (n >= 75) return 'text-green-600 dark:text-green-400'
-  if (n >= 50) return 'text-orange-500'
-  return 'text-red-500'
-}
-
 export default function PlayerDetail() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const searchParams = useSearchParams()
   // Match the training-attendance window used by the player list (defaults to 2 months).
   const monthsParam = searchParams.get('months')
-  const months = monthsParam != null && monthsParam !== '' ? Number(monthsParam) : 2
+  const [months, setMonths] = useState(() => {
+    const n = monthsParam != null && monthsParam !== '' ? Number(monthsParam) : 2
+    return Number.isFinite(n) ? n : 2
+  })
   const { data, loading, trigger } = useGetPlayer()
+  const stats = useGetPlayerStats()
+  const infoRef = useRef<HTMLDivElement>(null)
   const { trigger: updateTrigger, loading: saving } = useUpdatePlayer()
   const { trigger: uploadImage, loading: uploadingImg } = useUploadPlayerImage()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -90,8 +94,19 @@ export default function PlayerDetail() {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    if (id) trigger({ id: Number(id), months })
+    if (!id) return
+    trigger({ id: Number(id), months })
+    stats.trigger({ playerId: Number(id), months }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, months])
+
+  function changeMonths(n: number) {
+    setMonths(n)
+    // Behåll perioden i adressen, så att Tillbaka och omladdning visar samma
+    const url = new URL(window.location.href)
+    url.searchParams.set('months', String(n))
+    window.history.replaceState(null, '', url.toString())
+  }
 
   const player = data as unknown as PlayerData | null | undefined
 
@@ -104,6 +119,7 @@ export default function PlayerDetail() {
     setEditing(true)
     setSaved(false)
     setSaveError(null)
+    requestAnimationFrame(() => infoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   function handleCancel() {
@@ -177,9 +193,6 @@ export default function PlayerDetail() {
   }
 
   const displayPlayer = editing ? form : player
-  const attendPct = displayPlayer
-    ? pct(displayPlayer.sessions_attended, displayPlayer.total_sessions)
-    : 0
 
   return (
     <div className="flex flex-col min-h-full">
@@ -196,19 +209,19 @@ export default function PlayerDetail() {
         </div>
       </div>
 
-      {loading && (
+      {loading && !displayPlayer && (
         <div className="flex flex-col gap-4 p-4">
           <div className="h-32 bg-muted rounded-xl animate-pulse" />
           <div className="h-48 bg-muted rounded-xl animate-pulse" />
         </div>
       )}
 
-      {!loading && displayPlayer && (
-        <div className="flex flex-col gap-4 p-4 pb-6">
+      {displayPlayer && (
+        <div className="grid gap-4 p-4 pb-6 md:grid-cols-[minmax(0,340px)_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start">
           {/* Profile card */}
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="bg-card border border-border rounded-xl overflow-hidden md:col-start-1 md:row-start-1">
             {/* Avatar row */}
-            <div className="flex items-center gap-4 p-4 border-b border-border">
+            <div className="flex items-center gap-4 p-4">
               <div className="relative flex-shrink-0">
                 {displayPlayer.img ? (
                   <img
@@ -258,26 +271,26 @@ export default function PlayerDetail() {
                 </button>
               )}
             </div>
+          </div>
 
-            {/* Attendance stat */}
-            <div className="grid grid-cols-3 divide-x divide-border">
-              <div className="flex flex-col items-center py-3">
-                <span className={`text-2xl font-bold ${pctColor(attendPct)}`}>{attendPct}%</span>
-                <span className="text-xs text-muted-foreground mt-0.5">Närvaro</span>
-              </div>
-              <div className="flex flex-col items-center py-3">
-                <span className="text-2xl font-bold text-foreground">{displayPlayer.sessions_attended}</span>
-                <span className="text-xs text-muted-foreground mt-0.5">Pass</span>
-              </div>
-              <div className="flex flex-col items-center py-3">
-                <span className="text-2xl font-bold text-foreground">{displayPlayer.total_sessions}</span>
-                <span className="text-xs text-muted-foreground mt-0.5">Totalt</span>
-              </div>
+          {/* Statistik */}
+          <div className="flex min-w-0 flex-col gap-3 md:col-start-2 md:row-span-2 md:row-start-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 hidden text-xs text-muted-foreground sm:inline">Period</span>
+              {PERIODS.map((p) => (
+                <button key={p.months} type="button" onClick={() => changeMonths(p.months)}
+                  className={cn('whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+                    months === p.months ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>
+                  {p.label}
+                </button>
+              ))}
             </div>
+            <StatsSummary data={stats.data} loading={stats.loading} />
+            <PlayerStats data={stats.data} loading={stats.loading} />
           </div>
 
           {/* Edit / View form */}
-          <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-4">
+          <div ref={infoRef} className="bg-card border border-border rounded-xl p-4 flex flex-col gap-4 scroll-mt-4 md:col-start-1 md:row-start-2">
             <h2 className="text-sm font-semibold text-foreground">Information</h2>
 
             {editing && form ? (
