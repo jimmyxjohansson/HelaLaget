@@ -17,6 +17,8 @@ import {
 } from '../lib/shadcn/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger } from '../lib/shadcn/tabs'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
+import GroupDialog from './ui/GroupDialog'
+import type { GroupResult } from '../utils/groups'
 import { rankStyle } from '../utils/rankColors'
 import { cn } from '../lib/shadcn/utils'
 
@@ -40,6 +42,7 @@ interface Participant {
   status: string
   group_name: string | null
   grouprank: string | null
+  goalkeeper?: boolean
 }
 
 interface TrainingInfo {
@@ -91,6 +94,7 @@ export default function TrainingGroups() {
   const [sortBy, setSortBy] = useState<SortBy>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [overviewOpen, setOverviewOpen] = useState(false)
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false)
 
   useEffect(() => {
     if (id) trigger({ trainingId: Number(id) })
@@ -178,26 +182,15 @@ export default function TrainingGroups() {
     trigger({ trainingId: Number(id) }, { skipCache: true })
   }
 
-  async function autoAssignByRank() {
+  async function saveGroups(groups: GroupResult, clearIds: number[]) {
     if (!id) return
-    const g1: number[] = []
-    const g2: number[] = []
-    const g3: number[] = []
-    for (const p of participants) {
-      if (p.group_name) continue
-      const r = p.rank?.toUpperCase() ?? ''
-      if (r === 'A' || r === 'AB') g1.push(p.player_id)
-      else if (r === 'B' || r === 'BC') g2.push(p.player_id)
-      else if (r === 'C' || r === 'CD' || r === 'D') g3.push(p.player_id)
-    }
-    if (!g1.length && !g2.length && !g3.length) return
-    const tasks: Promise<unknown>[] = []
-    if (g1.length) tasks.push(triggerUpdate({ trainingId: Number(id), playerIds: g1, group: 'Grupp 1', grouprank: GROUP_DEFAULT_RANK['Grupp 1'] ?? null }))
-    if (g2.length) tasks.push(triggerUpdate({ trainingId: Number(id), playerIds: g2, group: 'Grupp 2', grouprank: GROUP_DEFAULT_RANK['Grupp 2'] ?? null }))
-    if (g3.length) tasks.push(triggerUpdate({ trainingId: Number(id), playerIds: g3, group: 'Grupp 3', grouprank: GROUP_DEFAULT_RANK['Grupp 3'] ?? null }))
-    await Promise.all(tasks)
+    const trainingId = Number(id)
+    await Promise.all([
+      ...groups.map((g) => triggerUpdate({ trainingId, playerIds: g.playerIds, group: g.name, grouprank: g.grouprank })),
+      ...(clearIds.length ? [triggerUpdate({ trainingId, playerIds: clearIds, group: null, grouprank: null })] : []),
+    ])
     clearSelection()
-    trigger({ trainingId: Number(id) }, { skipCache: true })
+    trigger({ trainingId }, { skipCache: true })
   }
 
   // Determine which sections to render based on tab
@@ -287,12 +280,18 @@ export default function TrainingGroups() {
           variant="outline"
           size="sm"
           disabled={saving || loading || participants.length === 0}
-          onClick={autoAssignByRank}
+          onClick={() => setGroupDialogOpen(true)}
           className="w-full h-9 gap-1.5"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-          Tilldela automatiskt
+          Dela in i grupper
         </Button>
+        <GroupDialog
+          open={groupDialogOpen}
+          onOpenChange={setGroupDialogOpen}
+          participants={participants}
+          onSave={saveGroups}
+        />
       </div>
 
       {/* Sort toolbar */}

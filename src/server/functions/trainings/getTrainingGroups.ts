@@ -31,6 +31,7 @@ export default async function getTrainingGroups(req: { params: Params; user: Use
     status: string
     group_name: string | null
     grouprank: string | null
+    goalkeeper: boolean
   }>(
     `SELECT
       p.id AS player_id,
@@ -42,7 +43,8 @@ export default async function getTrainingGroups(req: { params: Params; user: Use
       p.rank::text AS rank,
       pt.status::text AS status,
       pt."group" AS group_name,
-      pt.grouprank
+      pt.grouprank,
+      COALESCE(p.goalkeeper, false) AS goalkeeper
     FROM participantstrainings pt
     JOIN players p ON p.id = pt.player
     WHERE pt.training = $1
