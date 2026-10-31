@@ -51,7 +51,9 @@ export default function GroupDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [participantKey, includeInvited],
   )
-  const excluded = participants.filter((p) => !included.includes(p))
+  // Jämför på id: listan från föräldern byts ut när grupperna laddas om
+  const includedIds = new Set(included.map((p) => p.player_id))
+  const excluded = participants.filter((p) => !includedIds.has(p.player_id))
   const keeperCount = included.filter((p) => p.goalkeeper).length
 
   // Ny slumpning när något ändras eller man trycker på "Slumpa igen"

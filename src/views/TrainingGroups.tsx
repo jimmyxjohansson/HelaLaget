@@ -185,10 +185,11 @@ export default function TrainingGroups() {
   async function saveGroups(groups: GroupResult, clearIds: number[]) {
     if (!id) return
     const trainingId = Number(id)
-    await Promise.all([
-      ...groups.map((g) => triggerUpdate({ trainingId, playerIds: g.playerIds, group: g.name, grouprank: g.grouprank })),
-      ...(clearIds.length ? [triggerUpdate({ trainingId, playerIds: clearIds, group: null, grouprank: null })] : []),
-    ])
+    // Först bort ur grupperna för dem som inte är med, sedan de nya grupperna
+    const assigned = new Set(groups.flatMap((g) => g.playerIds))
+    const toClear = clearIds.filter((pid) => !assigned.has(pid))
+    if (toClear.length) await triggerUpdate({ trainingId, playerIds: toClear, group: null, grouprank: null })
+    await Promise.all(groups.map((g) => triggerUpdate({ trainingId, playerIds: g.playerIds, group: g.name, grouprank: g.grouprank })))
     clearSelection()
     trigger({ trainingId }, { skipCache: true })
   }
