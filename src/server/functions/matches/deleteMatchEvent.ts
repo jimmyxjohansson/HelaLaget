@@ -21,9 +21,9 @@ export default async function deleteMatchEvent(req: { params: Params; user: User
     `WITH ordered AS (
        SELECT id,
               SUM(CASE WHEN goal IS NOT NULL OR type::text = 'Självmål' THEN 1 ELSE 0 END)
-                OVER (ORDER BY minute NULLS LAST, id) AS our_running,
+                OVER (ORDER BY COALESCE(period, 1), minute NULLS LAST, id) AS our_running,
               SUM(CASE WHEN goal IS NULL AND save IS NULL AND (type IS NULL OR type::text <> 'Självmål') THEN 1 ELSE 0 END)
-                OVER (ORDER BY minute NULLS LAST, id) AS their_running
+                OVER (ORDER BY COALESCE(period, 1), minute NULLS LAST, id) AS their_running
        FROM matchgoalsassists
        WHERE match = $1
      )

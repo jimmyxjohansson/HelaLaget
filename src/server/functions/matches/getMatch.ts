@@ -129,6 +129,7 @@ export default async function getMatch(req: { params: Params; user: User }) {
     assist: number | null
     save: number | null
     minute: number | null
+    period: number | null
     ourgoal: number
     theirgoal: number
     type: string | null
@@ -136,7 +137,7 @@ export default async function getMatch(req: { params: Params; user: User }) {
     assist_name: string | null
     save_name: string | null
   }>(
-    `SELECT mga.id, mga.goal, mga.assist, mga.save, mga.minute,
+    `SELECT mga.id, mga.goal, mga.assist, mga.save, mga.minute, mga.period,
       mga.ourgoal, mga.theirgoal, mga.type,
       pg.shortname AS goal_name,
       pa.shortname AS assist_name,
@@ -146,7 +147,7 @@ export default async function getMatch(req: { params: Params; user: User }) {
     LEFT JOIN players pa ON pa.id = mga.assist
     LEFT JOIN players ps ON ps.id = mga.save
     WHERE mga.match = $1
-    ORDER BY mga.minute ASC NULLS LAST, mga.id ASC`,
+    ORDER BY COALESCE(mga.period, 1), mga.minute ASC NULLS LAST, mga.id ASC`,
     [id]
   )
 

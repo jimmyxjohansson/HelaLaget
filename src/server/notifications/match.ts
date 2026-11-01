@@ -83,7 +83,12 @@ function payload(m: MatchInfo, title: string, body: string, logo: 'ours' | 'thei
   return { title, body, icon, url: `/matches/${m.id}?lag=${m.squad_id}`, tag: `match-${m.id}` }
 }
 
-const minuteText = (minute: number | null) => (minute != null ? `${minute}' ` : '')
+/** "24' " eller i tilläggstid "30+1' " (perioden sparas på händelsen). */
+const minuteText = (minute: number | null, period?: number | null, playtime?: number | null) => {
+  if (minute == null) return ''
+  const end = period && playtime ? period * playtime : null
+  return end && minute > end ? `${end}+${minute - end}' ` : `${minute}' `
+}
 
 /** Kör efter svaret; fel loggas men stoppar aldrig registreringen. */
 function later(label: string, fn: () => Promise<void>) {
@@ -108,11 +113,13 @@ export function notifyGoal({ squadId, matchId, userId, eventId }: Base & { event
       goal: number | null
       save: number | null
       minute: number | null
+      period: number | null
+      playtime: number | null
       type: string | null
       scorer: string | null
       assister: string | null
     }>(
-      `SELECT e.goal, e.save, e.minute, e.type::text AS type,
+      `SELECT e.goal, e.save, e.minute, e.period, (SELECT m.playtime FROM matches m WHERE m.id = e.match) AS playtime, e.type::text AS type,
               COALESCE(g.shortname, NULLIF(trim(concat_ws(' ', g.firstname, g.lastname)), '')) AS scorer,
               COALESCE(a.shortname, NULLIF(trim(concat_ws(' ', a.firstname, a.lastname)), '')) AS assister
        FROM matchgoalsassists e
@@ -133,14 +140,14 @@ export function notifyGoal({ squadId, matchId, userId, eventId }: Base & { event
       const kind = e.goal != null && e.type && e.type !== 'Spelmål' ? ` · ${e.type}` : ''
       await sendToSquad(
         squadId,
-        payload(m, `⚽ Mål för ${m.squad_name}!`, `${minuteText(e.minute)}${who}${assist}${kind}\n${scoreline(m)}`),
+        payload(m, `⚽ Mål för ${m.squad_name}!`, `${minuteText(e.minute, e.period, e.playtime)}${who}${assist}${kind}\n${scoreline(m)}`),
         userId,
       )
     } else {
       const kind = e.type && e.type !== 'Spelmål' ? ` · ${e.type === 'Självmål (motst.)' ? 'Självmål' : e.type}` : ''
       await sendToSquad(
         squadId,
-        payload(m, `Mål för ${m.opponent}`, `${minuteText(e.minute)}${scoreline(m)}${kind}`, 'theirs'),
+        payload(m, `Mål för ${m.opponent}`, `${minuteText(e.minute, e.period, e.playtime)}${scoreline(m)}${kind}`, 'theirs'),
         userId,
       )
     }

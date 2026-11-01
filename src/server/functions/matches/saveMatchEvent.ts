@@ -14,10 +14,13 @@ type Params = {
   savePlayer?: number | null
   /** Goal type: 'Spelmål' | 'Hörna' | 'Frispark' | 'Straff'. Only applies to goal events. */
   type?: string | null
+  /** Perioden händelsen hör till (från matchklockan). Utelämnad vid ändring = behåll. */
+  period?: number | null
 }
 
 export default async function saveMatchEvent(req: { params: Params; user: User; squad?: SquadAccess }) {
   const p = req.params
+  const period = p.period != null && [1, 2, 3].includes(Number(p.period)) ? Number(p.period) : null
   let newId: number | null = null
 
   const goal = p.kind === 'our_goal' ? (p.goalPlayer ?? null) : null
@@ -32,15 +35,16 @@ export default async function saveMatchEvent(req: { params: Params; user: User; 
   if (p.id) {
     await db.query(
       `UPDATE matchgoalsassists
-         SET goal = $1, assist = $2, save = $3, minute = $4, type = $5
+         SET goal = $1, assist = $2, save = $3, minute = $4, type = $5,
+             period = CASE WHEN $8::boolean THEN $9::int ELSE period END
        WHERE id = $6 AND match = $7`,
-      [goal, assist, save, p.minute, type, p.id, p.matchId],
+      [goal, assist, save, p.minute, type, p.id, p.matchId, p.period !== undefined, period],
     )
   } else {
     const { data } = await db.query<{ id: number }>(
-      `INSERT INTO matchgoalsassists (match, goal, assist, save, minute, type, ourgoal, theirgoal)
-       VALUES ($1, $2, $3, $4, $5, $6, 0, 0) RETURNING id`,
-      [p.matchId, goal, assist, save, p.minute, type],
+      `INSERT INTO matchgoalsassists (match, goal, assist, save, minute, type, period, ourgoal, theirgoal)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0) RETURNING id`,
+      [p.matchId, goal, assist, save, p.minute, type, period],
     )
     newId = data[0]?.id ?? null
   }
@@ -51,9 +55,9 @@ export default async function saveMatchEvent(req: { params: Params; user: User; 
     `WITH ordered AS (
        SELECT id,
               SUM(CASE WHEN goal IS NOT NULL OR type::text = 'Självmål' THEN 1 ELSE 0 END)
-                OVER (ORDER BY minute NULLS LAST, id) AS our_running,
+                OVER (ORDER BY COALESCE(period, 1), minute NULLS LAST, id) AS our_running,
               SUM(CASE WHEN goal IS NULL AND save IS NULL AND (type IS NULL OR type::text <> 'Självmål') THEN 1 ELSE 0 END)
-                OVER (ORDER BY minute NULLS LAST, id) AS their_running
+                OVER (ORDER BY COALESCE(period, 1), minute NULLS LAST, id) AS their_running
        FROM matchgoalsassists
        WHERE match = $1
      )

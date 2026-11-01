@@ -66,6 +66,8 @@ interface MatchEvent {
   assist: number | null
   save: number | null
   minute: number | null
+  /** Perioden händelsen registrerades i (null för äldre händelser) */
+  period?: number | null
   ourgoal: number
   theirgoal: number
   type: string | null
@@ -91,6 +93,7 @@ interface EventForm {
   id?: number
   kind: EventKind
   minute: string
+  period: number | null
   goalPlayer: string
   assistPlayer: string
   savePlayer: string
@@ -114,6 +117,7 @@ function emptyForm(): EventForm {
   return {
     kind: 'our_goal',
     minute: '',
+    period: null,
     goalPlayer: '',
     assistPlayer: '',
     savePlayer: '',
@@ -126,6 +130,7 @@ function formFromEvent(e: MatchEvent): EventForm {
     id: e.id,
     kind: classifyEvent(e),
     minute: e.minute != null ? String(e.minute) : '',
+    period: e.period ?? null,
     goalPlayer: e.goal != null ? String(e.goal) : '',
     assistPlayer: e.assist != null ? String(e.assist) : '',
     savePlayer: e.save != null ? String(e.save) : '',
@@ -300,12 +305,15 @@ export default function MatchTimeline() {
         return kind === 'save' ? filters.has('save') : filters.has('goal')
       })
       .sort((a, b) => {
+        const ap = eventPeriodOf(a, playtime, periodCount)
+        const bp = eventPeriodOf(b, playtime, periodCount)
+        if (ap !== bp) return bp - ap
         const am = a.minute ?? -1
         const bm = b.minute ?? -1
         if (am !== bm) return bm - am
         return b.id - a.id
       })
-  }, [events, filters])
+  }, [events, filters, playtime, periodCount])
 
   // Saves grouped per goalkeeper, sorted by most saves.
   const saveSummary = useMemo(() => {
@@ -333,6 +341,7 @@ export default function MatchTimeline() {
       ...emptyForm(),
       kind,
       minute: currentMinute != null ? String(currentMinute) : '',
+      period: timer?.period ?? null,
     })
     setError(null)
   }
@@ -371,6 +380,7 @@ export default function MatchTimeline() {
         matchId,
         kind: form.kind,
         minute: form.minute !== '' ? Number(form.minute) : null,
+        period: form.period,
         goalPlayer: form.kind === 'our_goal' && form.goalPlayer ? Number(form.goalPlayer) : null,
         assistPlayer: form.kind === 'our_goal' && form.assistPlayer ? Number(form.assistPlayer) : null,
         savePlayer: form.kind === 'save' && form.savePlayer ? Number(form.savePlayer) : null,
@@ -395,6 +405,7 @@ export default function MatchTimeline() {
         matchId,
         kind: 'save',
         minute: currentMinute,
+        period: timer?.period ?? null,
         savePlayer: match.goalkeeper,
         goalPlayer: null,
         assistPlayer: null,
@@ -769,13 +780,9 @@ export default function MatchTimeline() {
 
                   // Period this event belongs to, and whether it opens a new period
                   // block in the descending (newest-first) list.
-                  const eventPeriod = playtime && e.minute != null
-                    ? Math.min(periodCount, Math.max(1, Math.floor((e.minute - 1) / playtime) + 1))
-                    : 1
+                  const eventPeriod = eventPeriodOf(e, playtime, periodCount)
                   const prev = orderedEvents[i - 1]
-                  const prevPeriod = prev && playtime && prev.minute != null
-                    ? Math.min(periodCount, Math.max(1, Math.floor((prev.minute - 1) / playtime) + 1))
-                    : null
+                  const prevPeriod = prev ? eventPeriodOf(prev, playtime, periodCount) : null
                   const showDivider = periodCount > 1 && eventPeriod !== prevPeriod
 
                   return (
@@ -827,7 +834,7 @@ export default function MatchTimeline() {
                           )}
                         </div>
                         <span className="text-[12px] font-mono text-muted-foreground leading-tight">
-                          {e.minute != null ? `${e.minute}'` : '–'}
+                          {minuteLabel(e, playtime)}
                         </span>
                         {!isSave && (
                           <span className="text-[12px] font-bold text-foreground tabular-nums leading-tight">
@@ -965,4 +972,18 @@ function Field({
       {children}
     </div>
   )
+}
+
+/** Perioden en händelse hör till: sparad period, annars räknad från minuten. */
+function eventPeriodOf(e: { minute: number | null; period?: number | null }, playtime: number | null, periodCount: number) {
+  if (e.period) return Math.min(periodCount, e.period)
+  if (!playtime || e.minute == null) return 1
+  return Math.min(periodCount, Math.max(1, Math.floor((e.minute - 1) / playtime) + 1))
+}
+
+/** "24'" eller i tilläggstid "30+1'". */
+function minuteLabel(e: { minute: number | null; period?: number | null }, playtime: number | null) {
+  if (e.minute == null) return '–'
+  const end = e.period && playtime ? e.period * playtime : null
+  return end && e.minute > end ? `${end}+${e.minute - end}'` : `${e.minute}'`
 }
