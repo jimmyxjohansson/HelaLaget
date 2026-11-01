@@ -43,6 +43,7 @@ export default async function getMatch(req: { params: Params; user: User }) {
     clock_offset_minutes: number | null
     clock_period_start_minutes: number | null
     server_now: string
+    mute_notifications: boolean
   }>(
     `SELECT
       m.id, m.matchtype, m.date, m.homeaway, m.ourgoals, m.theirgoals,
@@ -50,6 +51,7 @@ export default async function getMatch(req: { params: Params; user: User }) {
       m.notes, m.teamname, m.cup, m.cupphase, m.difficulty, m.playtime, m.periods,
       m.fogislink, m.fogisno, m.fogisregistered, m.svenskalag, m.vs, m.league, m.goalkeeper,
       m.clock_started_at, m.clock_period, m.clock_offset_minutes, m.clock_period_start_minutes, now() AS server_now,
+      COALESCE(m.mute_notifications, false) AS mute_notifications,
       t.team AS opponent,
       t.imgurl AS opponent_img,
       l.name AS league_name,

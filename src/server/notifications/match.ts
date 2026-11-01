@@ -26,6 +26,8 @@ type MatchInfo = {
   periods: number | null
   status: string | null
   is_today: boolean
+  /** "Tysta notiser" på matchen */
+  muted: boolean
 }
 
 const FINISHED = ['Avslutad', 'Registrerad i Fogis']
@@ -38,7 +40,8 @@ async function loadMatch(matchId: number, squadId: number): Promise<MatchInfo | 
             m.homeaway::text AS homeaway, COALESCE(m.ourgoals, 0)::int AS ourgoals,
             COALESCE(m.theirgoals, 0)::int AS theirgoals, m.periods, m.status::text AS status,
             -- Tider sparas som väggklocka (17:30Z = 17:30 svensk tid)
-            (m.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Stockholm')::date AS is_today
+            (m.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Stockholm')::date AS is_today,
+            COALESCE(m.mute_notifications, false) AS muted
      FROM matches m
      JOIN squads s ON s.id = m.squad_id
      JOIN organizations o ON o.id = s.organization_id
@@ -50,7 +53,7 @@ async function loadMatch(matchId: number, squadId: number): Promise<MatchInfo | 
 }
 
 function shouldNotify(m: MatchInfo | null): m is MatchInfo {
-  return !!m && !FINISHED.includes(m.status ?? '') && m.is_today
+  return !!m && !m.muted && !FINISHED.includes(m.status ?? '') && m.is_today
 }
 
 /** Markera en notis som skickad. Falskt om den redan var skickad. */
@@ -179,7 +182,7 @@ const resultKey = (m: MatchInfo) => `result:${m.ourgoals}-${m.theirgoals}`
 export function notifyFinished({ squadId, matchId, userId }: Base) {
   later('avslutad', async () => {
     const m = await loadMatch(matchId, squadId)
-    if (!m || m.status !== 'Avslutad' || !m.is_today) return
+    if (!m || m.muted || m.status !== 'Avslutad' || !m.is_today) return
     if (!(await claim(matchId, 'finished'))) return
     if (!(await claim(matchId, resultKey(m)))) return
     const outcome = m.ourgoals > m.theirgoals ? 'Vinst' : m.ourgoals < m.theirgoals ? 'Förlust' : 'Oavgjort'

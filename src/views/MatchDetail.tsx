@@ -2,8 +2,8 @@
 
 import { useEffect, useState, Fragment, type ReactNode } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useGetMatch, useUpdateMatchFogisRegistered, useDeleteMatch, useGetMatchesVsOpponent, useSyncParticipantsFromCup } from '../hooks/backend/matches'
-import { ArrowLeft, MapPin, Users, Clock, User, Pencil, ExternalLink, UserCog, MoreVertical, Trash2, Calendar, Trophy, Download, RefreshCw } from 'lucide-react'
+import { useGetMatch, useUpdateMatchFogisRegistered, useSetMatchMuted, useDeleteMatch, useGetMatchesVsOpponent, useSyncParticipantsFromCup } from '../hooks/backend/matches'
+import { ArrowLeft, MapPin, Users, Clock, User, Pencil, ExternalLink, UserCog, MoreVertical, Trash2, Calendar, Trophy, Download, RefreshCw, BellOff } from 'lucide-react'
 import { rankStyle } from '../utils/rankColors'
 import {
   DropdownMenu,
@@ -67,6 +67,7 @@ interface MatchData {
   clock_period?: number | null
   clock_offset_minutes?: number | null
   clock_period_start_minutes?: number | null
+  mute_notifications?: boolean
   server_now?: string
 }
 
@@ -165,6 +166,8 @@ export default function MatchDetail() {
   const [activeTab,  setActiveTab]  = useState<Tab>('handelser')
   const [filters,    setFilters]    = useState<Set<FilterKind>>(new Set(['goal']))
   const [fogisRegistered, setFogisRegistered] = useState<boolean>(false)
+  const [muted, setMuted] = useState(false)
+  const { trigger: triggerSetMuted } = useSetMatchMuted()
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [confirmSyncOpen, setConfirmSyncOpen] = useState(false)
@@ -182,6 +185,20 @@ export default function MatchDetail() {
   useEffect(() => {
     if (match) setFogisRegistered(!!match.fogisregistered)
   }, [match?.id, match?.fogisregistered])
+
+  useEffect(() => {
+    if (match) setMuted(!!match.mute_notifications)
+  }, [match?.id, match?.mute_notifications])
+
+  async function handleToggleMuted(next: boolean) {
+    if (!match) return
+    setMuted(next)
+    try {
+      await triggerSetMuted({ id: match.id, muted: next })
+    } catch {
+      setMuted(!next)
+    }
+  }
 
   // Matchklockan från tidslinjen. Räknas om varje gång matchen hämtas.
   const [clock, setClock] = useState<RunningClock | null>(null)
@@ -313,6 +330,13 @@ export default function MatchDetail() {
               >
                 Registrerad i Fogis
               </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={muted}
+                onCheckedChange={(v) => handleToggleMuted(!!v)}
+                onSelect={(e) => e.preventDefault()}
+              >
+                Tysta notiser
+              </DropdownMenuCheckboxItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={() => setConfirmDeleteOpen(true)}
@@ -401,6 +425,11 @@ export default function MatchDetail() {
                 >
                   {isHome ? 'Hemma' : 'Borta'}
                 </span>
+                {muted && (
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-team-accent/90" title="Inga notiser skickas för den här matchen">
+                    <BellOff className="h-3 w-3" /> Tysta notiser
+                  </span>
+                )}
                 {clock && (
                   <LiveMatchClock clock={clock} periods={match.periods && match.periods > 0 ? match.periods : 1} />
                 )}

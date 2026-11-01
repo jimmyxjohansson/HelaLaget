@@ -17,6 +17,7 @@ import type removeParticipant from '../../server/functions/matches/removePartici
 import type removeParticipants from '../../server/functions/matches/removeParticipants'
 import type saveMatchEvent from '../../server/functions/matches/saveMatchEvent'
 import type setMatchClock from '../../server/functions/matches/setMatchClock'
+import type setMatchMuted from '../../server/functions/matches/setMatchMuted'
 import type syncParticipantsFromCup from '../../server/functions/matches/syncParticipantsFromCup'
 import type updateMatch from '../../server/functions/matches/updateMatch'
 import type updateMatchFogisRegistered from '../../server/functions/matches/updateMatchFogisRegistered'
@@ -104,6 +105,11 @@ export const useSetMatchClock = createBackendHook<
   Parameters<typeof setMatchClock>[0]['params'],
   Awaited<ReturnType<typeof setMatchClock>>
 >('matches/setMatchClock')
+
+export const useSetMatchMuted = createBackendHook<
+  Parameters<typeof setMatchMuted>[0]['params'],
+  Awaited<ReturnType<typeof setMatchMuted>>
+>('matches/setMatchMuted')
 
 export const useSyncParticipantsFromCup = createBackendHook<
   Parameters<typeof syncParticipantsFromCup>[0]['params'],
