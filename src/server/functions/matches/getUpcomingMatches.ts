@@ -1,4 +1,5 @@
 import { db } from '@/server/db'
+import { NOW_WALLCLOCK } from '@/server/attendance'
 import type { User } from '@/server/types'
 
 type Params = {
@@ -25,20 +26,37 @@ export default async function getUpcomingMatches(req: { params: Params; user: Us
     cup: number | null
     cupphase: string | null
     fogisregistered: boolean
+    ourgoals: number
+    theirgoals: number
+    periods: number | null
+    clock_started_at: string | null
+    clock_period: number | null
+    clock_offset_minutes: number | null
+    clock_period_start_minutes: number | null
+    server_now: string
+    live: boolean
   }>(
     `SELECT
       m.id, m.matchtype, m.date, m.homeaway, m.indooroutdoor, m.outcome,
       m.status, m.location, m.notes, m.teamname, m.cup, m.cupphase, m.fogisregistered,
       t.team AS opponent,
       t.imgurl AS opponent_img,
-      l.name AS league_name
+      l.name AS league_name,
+      COALESCE(m.ourgoals, 0)::int AS ourgoals, COALESCE(m.theirgoals, 0)::int AS theirgoals, m.periods,
+      m.clock_started_at, m.clock_period, m.clock_offset_minutes, m.clock_period_start_minutes,
+      now() AS server_now,
+      (m.status::text NOT IN ('Avslutad', 'Registrerad i Fogis') AND (
+        (m.clock_started_at IS NOT NULL AND m.clock_started_at > now() - interval '6 hours')
+        OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours'))) AS live
     FROM matches m
     LEFT JOIN teams t ON t.id = m.vs
     LEFT JOIN leagues l ON l.id = m.league
-    WHERE m.date >= NOW()
-      AND m.date <= NOW() + INTERVAL '7 days'
+    -- Kommande veckan, plus matcher som pågår just nu (de visas först med resultat och klocka)
+    WHERE ((m.date >= ${NOW_WALLCLOCK} AND m.date <= ${NOW_WALLCLOCK} + INTERVAL '7 days') OR (m.status::text NOT IN ('Avslutad', 'Registrerad i Fogis') AND (
+        (m.clock_started_at IS NOT NULL AND m.clock_started_at > now() - interval '6 hours')
+        OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours'))))
       AND NOT (m.fogisregistered = true AND m.matchtype = 'Serie')
-    ORDER BY m.date ASC
+    ORDER BY live DESC, m.date ASC
     LIMIT $1`,
     [limit]
   )

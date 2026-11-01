@@ -1,4 +1,5 @@
 import { db } from '@/server/db'
+import { NOW_WALLCLOCK } from '@/server/attendance'
 import type { User } from '@/server/types'
 
 type Params = {
@@ -33,6 +34,11 @@ export default async function (req: { params: Params; user: User }) {
       t.team AS opponent,
       t.imgurl AS opponent_img,
       l.name AS league_name,
+      m.periods, m.clock_started_at, m.clock_period, m.clock_offset_minutes, m.clock_period_start_minutes,
+      now() AS server_now,
+      (m.status::text NOT IN ('Avslutad', 'Registrerad i Fogis') AND (
+        (m.clock_started_at IS NOT NULL AND m.clock_started_at > now() - interval '6 hours')
+        OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours'))) AS live,
       (
         SELECT COUNT(*)
         FROM participantsmatches pm

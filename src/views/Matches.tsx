@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import LiveScore, { useLiveRefresh } from '../components/LiveScore'
 import { useGetMatches } from '../hooks/backend/matches'
 import { usePersistentState } from '../hooks/usePersistentState'
 import { Search, MapPin, ChevronRight, Home, Plane, Plus } from 'lucide-react'
@@ -30,6 +31,13 @@ interface Match {
   opponent_img: string | null
   league_name: string | null
   players_coming: string
+  periods?: number | null
+  clock_started_at?: string | null
+  clock_period?: number | null
+  clock_offset_minutes?: number | null
+  clock_period_start_minutes?: number | null
+  server_now?: string
+  live?: boolean
 }
 
 const TYPE_FILTERS = ['Alla', 'Serie', 'Cup', 'Träning']
@@ -89,6 +97,7 @@ export default function Matches() {
   useEffect(() => { trigger({ limit: 300 }) }, [])
 
   const matches = data as unknown as Match[] | undefined
+  useLiveRefresh(!!matches?.some((m) => m.live), () => { trigger({ limit: 300 }).catch(() => {}) })
 
   // Summary stats
   const played = (matches ?? []).filter(m => m.status === 'Avslutad')
@@ -124,6 +133,8 @@ export default function Matches() {
 
   // Sort: coming = ascending (earliest first), recent/all = descending (newest first)
   const sorted = [...filtered].sort((a, b) => {
+    // Pågående matcher alltid först
+    if (!!a.live !== !!b.live) return a.live ? -1 : 1
     const diff = new Date(a.date).getTime() - new Date(b.date).getTime()
     return timeFilter === 'coming' ? diff : -diff
   })
@@ -227,7 +238,7 @@ export default function Matches() {
 
       {/* List */}
       <div className="px-4 py-3 flex flex-col gap-4">
-        {loading ? (
+        {loading && !matches ? (
           <div className="flex flex-col gap-2 mt-2">
             {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className="bg-card rounded-xl h-20 animate-pulse" />
@@ -249,7 +260,7 @@ export default function Matches() {
                     <button
                       key={m.id}
                       onClick={() => router.push(`/matches/${m.id}`)}
-                      className="w-full text-left bg-primary/10 border border-primary/20 rounded-xl px-3 py-2.5 flex flex-col gap-1.5"
+                      className={`w-full text-left rounded-xl px-3 py-2.5 flex flex-col gap-1.5 border ${m.live ? 'bg-red-50 border-red-300 dark:bg-red-950/30 dark:border-red-900' : 'bg-primary/10 border-primary/20'}`}
                     >
                       {/* Row 1: opponent + result/arrow */}
                       <div className="flex items-center justify-between gap-2">
@@ -297,6 +308,9 @@ export default function Matches() {
                         </div>
 
                         {/* Score */}
+                        {m.live ? (
+                          <LiveScore m={m} />
+                        ) : (
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <div className="text-right">
                             <div className={`text-base font-bold tabular-nums ${isPlayed ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -311,6 +325,7 @@ export default function Matches() {
                             <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                           )}
                         </div>
+                        )}
                       </div>
 
                       {/* Row 2: extra info */}

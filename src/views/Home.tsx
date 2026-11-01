@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import LiveScore, { useLiveRefresh } from '../components/LiveScore'
 import { useGetTrainings } from '../hooks/backend/trainings'
 import { useGetUpcomingMatches } from '../hooks/backend/matches'
 import { useGetUpcomingBirthdays } from '../hooks/backend/players'
@@ -66,6 +67,15 @@ interface Match {
   league_name: string | null
   cup: number | null
   cupphase: string | null
+  ourgoals?: number
+  theirgoals?: number
+  periods?: number | null
+  clock_started_at?: string | null
+  clock_period?: number | null
+  clock_offset_minutes?: number | null
+  clock_period_start_minutes?: number | null
+  server_now?: string
+  live?: boolean
 }
 
 interface Birthday {
@@ -115,6 +125,8 @@ export default function Home() {
   }, [])
 
   const typedMatches = upcomingMatches as unknown as Match[] | undefined
+  // Pågående match: hämta om resultat och klocka med jämna mellanrum
+  useLiveRefresh(!!typedMatches?.some((m) => m.live), () => { triggerMatches({ limit: 10 }).catch(() => {}) })
   const birthdays = birthdaysData as unknown as Birthday[] | undefined
 
   const now = new Date()
@@ -204,7 +216,7 @@ export default function Home() {
               Se alla <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          {matchesLoading ? (
+          {matchesLoading && !typedMatches ? (
             <div className="flex flex-col gap-2">
               {[1, 2, 3].map(i => <div key={i} className="bg-card rounded-xl h-16 animate-pulse" />)}
             </div>
@@ -218,7 +230,7 @@ export default function Home() {
                   <button
                     key={m.id}
                     onClick={() => router.push(`/matches/${m.id}`)}
-                    className="w-full text-left bg-primary/10 border border-primary/20 rounded-xl px-3 py-2.5 flex flex-col gap-1.5"
+                    className={`w-full text-left rounded-xl px-3 py-2.5 flex flex-col gap-1.5 border ${m.live ? 'bg-red-50 border-red-300 dark:bg-red-950/30 dark:border-red-900' : 'bg-primary/10 border-primary/20'}`}
                   >
                     {/* Row 1: opponent + arrow */}
                     <div className="flex items-center justify-between gap-2">
@@ -256,7 +268,7 @@ export default function Home() {
                           </div>
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                      {m.live ? <LiveScore m={m} /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
                     </div>
 
                     {/* Row 2: extra info */}
