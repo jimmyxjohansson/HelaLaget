@@ -17,6 +17,8 @@ import {
 } from '../lib/shadcn/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger } from '../lib/shadcn/tabs'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
+import GenderBadge from '../components/GenderBadge'
+import { isMixed } from '../utils/gender'
 import GroupDialog from './ui/GroupDialog'
 import { GROUP_DEFAULT_RANK, TRAINING_GROUPS, groupShort, groupTab } from '../utils/trainingGroups'
 import type { GroupResult } from '../utils/groups'
@@ -44,6 +46,7 @@ interface Participant {
   group_name: string | null
   grouprank: string | null
   goalkeeper?: boolean
+  gender?: string | null
 }
 
 interface TrainingInfo {
@@ -96,6 +99,7 @@ export default function TrainingGroups() {
   const result = data as unknown as GroupsData | undefined
   const training = result?.training ?? null
   const participants = (result?.participants ?? []).filter(p => VISIBLE_STATUSES.has(p.status))
+  const mixed = isMixed(participants)
 
   // Bucket participants by group
   const buckets = useMemo(() => {
@@ -421,6 +425,7 @@ export default function TrainingGroups() {
                         onToggleSelect={() => toggleSelect(p.player_id)}
                         onMoveTo={(g) => moveOneTo(p.player_id, g)}
                         disabled={saving || savingRank}
+                        mixed={mixed}
                       />
                     ))}
                   </div>
@@ -536,9 +541,10 @@ interface RowProps {
   onToggleSelect: () => void
   onMoveTo: (group: string | null) => void
   disabled: boolean
+  mixed?: boolean
 }
 
-function ParticipantRow({ participant, selected, onToggleSelect, onMoveTo, disabled }: RowProps) {
+function ParticipantRow({ participant, selected, onToggleSelect, onMoveTo, disabled, mixed }: RowProps) {
   const p = participant
   const statusLow = p.status?.toLowerCase() ?? ''
   const isKallad = statusLow.includes('kallad')
@@ -564,7 +570,10 @@ function ParticipantRow({ participant, selected, onToggleSelect, onMoveTo, disab
         onClick={onToggleSelect}
         className="flex flex-col min-w-0 flex-1 text-left"
       >
-        <span className="text-sm font-medium text-foreground truncate">{p.shortname}</span>
+        <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+          <span className="truncate">{p.shortname}</span>
+          {mixed && <GenderBadge gender={p.gender} />}
+        </span>
       </button>
       {/* Grupp per rad: en lista i stället för nio knappar, så att raden får plats i mobilen */}
       <select

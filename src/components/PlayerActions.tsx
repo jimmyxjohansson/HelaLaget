@@ -14,7 +14,7 @@ import DatePicker from './DatePicker'
 export default function PlayerActions({ onChanged }: { onChanged: () => void }) {
   const [mode, setMode] = useState<'new' | 'org' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState({ firstname: '', lastname: '', number: '', birthdate: '' })
+  const [form, setForm] = useState({ firstname: '', lastname: '', number: '', birthdate: '', gender: '' })
   const [selected, setSelected] = useState<number[]>([])
   const [search, setSearch] = useState('')
   const create = useCreatePlayer()
@@ -24,7 +24,7 @@ export default function PlayerActions({ onChanged }: { onChanged: () => void }) 
   function close() {
     setMode(null)
     setError(null)
-    setForm({ firstname: '', lastname: '', number: '', birthdate: '' })
+    setForm({ firstname: '', lastname: '', number: '', birthdate: '', gender: '' })
     setSelected([])
     setSearch('')
   }
@@ -38,6 +38,7 @@ export default function PlayerActions({ onChanged }: { onChanged: () => void }) 
           lastname: form.lastname || null,
           number: form.number ? Number(form.number) : null,
           birthdate: form.birthdate || null,
+          gender: form.gender || null,
         })
       } else {
         await add.trigger({ playerIds: selected })
@@ -103,6 +104,17 @@ export default function PlayerActions({ onChanged }: { onChanged: () => void }) 
                 <div className="flex-1 flex flex-col gap-1.5">
                   <Label htmlFor="np-birth">Födelsedatum</Label>
                   <DatePicker id="np-birth" value={form.birthdate} onChange={(v) => setForm({ ...form, birthdate: v })} fromYear={new Date().getFullYear() - 80} toYear={new Date().getFullYear()} placeholder="Välj" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Kön</Label>
+                <div className="flex gap-1 rounded-lg bg-muted p-1">
+                  {['Pojke', 'Flicka'].map((g) => (
+                    <button key={g} type="button" onClick={() => setForm({ ...form, gender: form.gender === g ? '' : g })}
+                      className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium ${form.gender === g ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>
+                      {g}
+                    </button>
+                  ))}
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">Fler uppgifter, som position och bild, fyller du i på spelarens sida.</p>

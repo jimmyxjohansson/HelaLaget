@@ -21,6 +21,7 @@ type Params = {
   winger: boolean
   striker: boolean
   goalkeeper: boolean
+  gender?: string | null
 }
 
 export default async function updatePlayer(req: { params: Params; user: User }) {
@@ -44,7 +45,8 @@ export default async function updatePlayer(req: { params: Params; user: User }) 
       winger = $15,
       striker = $16,
       goalkeeper = $17,
-      img = $18
+      img = $18,
+      gender = $20
     WHERE id = $19
     RETURNING id`,
     [
@@ -67,6 +69,7 @@ export default async function updatePlayer(req: { params: Params; user: User }) 
       p.goalkeeper,
       p.img || null,
       p.id,
+      p.gender === 'Pojke' || p.gender === 'Flicka' ? p.gender : null,
     ]
   )
   return result.data[0]

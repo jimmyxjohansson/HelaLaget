@@ -1,5 +1,7 @@
 'use client'
 
+import GenderBadge from '../../components/GenderBadge'
+import { byGender, genderSummary } from '../../utils/gender'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -41,6 +43,10 @@ type Props = {
   onSelect: (id: number | null) => void
   from: string | null
   playerStatuses: string[]
+  /** Valda kön (spelare utan angivet kön visas alltid) */
+  genders: string[]
+  /** Laget har både pojkar och flickor: visa P/F */
+  mixed: boolean
   refreshKey: number
   /** Något ändrades: ladda om alla kolumner och listor */
   onChanged: () => void
@@ -53,7 +59,7 @@ type Props = {
 
 /** En kolumn i planeringen: välj match/cup, sätt svar, lägg till och flytta spelare. */
 export default function SlotColumn(props: Props) {
-  const { kind, index, eventId, from, playerStatuses, refreshKey, onChanged } = props
+  const { kind, index, eventId, from, playerStatuses, genders, mixed, refreshKey, onChanged } = props
   const slot = useGetPlanningSlot()
   const candidates = useGetPlanningCandidates()
   const addPlayers = useAddPlanningPlayers()
@@ -93,7 +99,7 @@ export default function SlotColumn(props: Props) {
       : k === 'rank' ? rankIndex(p.rank)
         : k === 'status' ? answerIndex(p.status)
           : percent(p.coming, p.total))
-  const cands = eventId ? (candidates.data ?? []) : []
+  const cands = eventId ? byGender(candidates.data ?? [], genders) : []
 
   async function run(action: () => Promise<unknown>, done?: string) {
     setBusy(true)
@@ -286,7 +292,7 @@ export default function SlotColumn(props: Props) {
                 disabled={players.length === 0}
               >
                 <VisualCheckbox checked={allSelected} />
-                Kallade ({players.length})
+                Kallade ({players.length}{mixed && genderSummary(players) ? ` · ${genderSummary(players)}` : ''})
               </button>
               {(busy || slot.loading) && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
             </div>
@@ -379,6 +385,7 @@ export default function SlotColumn(props: Props) {
                             <span className="ml-1 text-[10px] text-muted-foreground">({p.playerstatus})</span>
                           )}
                         </span>
+                        {mixed && <GenderBadge gender={p.gender} />}
                         {p.reason && (
                           <span title={p.reason} className="shrink-0">
                             <MessageSquare className="h-3 w-3 text-muted-foreground" aria-label={p.reason} />
@@ -474,6 +481,7 @@ export default function SlotColumn(props: Props) {
             </div>
             <CandidateList
               rows={cands}
+              mixed={mixed}
               selected={selectedCandidates}
               onToggle={(id) => setSelectedCandidates((s) => toggle(s, id))}
             />
@@ -489,6 +497,7 @@ type CandidateRow = {
   shortname: string | null
   number: number | null
   rank: string | null
+  gender?: string | null
   backbone: string | null
   status: string | null
   canGoalkeeper: boolean
@@ -503,8 +512,10 @@ export function CandidateList({
   rows,
   selected,
   onToggle,
+  mixed = false,
 }: {
   rows: CandidateRow[]
+  mixed?: boolean
   selected: Set<number>
   onToggle: (id: number) => void
 }) {
@@ -543,6 +554,7 @@ export function CandidateList({
               <span className="min-w-0 flex-1 truncate">
                 {p.shortname}
                 {p.status && p.status !== 'Aktiv' && <span className="ml-1 text-[10px] text-muted-foreground">({p.status})</span>}
+                {mixed && p.gender && <span className="ml-1 inline-block align-middle"><GenderBadge gender={p.gender} /></span>}
                 {p.canGoalkeeper && (
                   <span className="ml-1 rounded bg-sky-100 px-1 text-[10px] font-semibold text-sky-700 dark:bg-sky-950 dark:text-sky-300"
                     title="Har positionen Målvakt">MV</span>

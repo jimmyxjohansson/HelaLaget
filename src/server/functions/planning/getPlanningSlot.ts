@@ -40,6 +40,7 @@ export type SlotPlayer = {
   number: number | null
   birthdate: string | null
   rank: string | null
+  gender: string | null
   playerstatus: string | null
   status: string | null
   reason: string | null
@@ -96,7 +97,7 @@ export default async function getPlanningSlot(req: { params: Params; user: User 
   const { data: players } = await db.query<SlotPlayer>(
     `SELECT x.id, x.player, p.shortname,
             NULLIF(trim(concat_ws(' ', p.firstname, p.lastname)), '') AS fullname,
-            p.number, p.birthdate, p.rank::text AS rank, p.status::text AS playerstatus,
+            p.number, p.birthdate, p.rank::text AS rank, p.gender, p.status::text AS playerstatus,
             x.status::text AS status, x.reason, x.position::text AS position,
             COALESCE(p.goalkeeper, false) AS "canGoalkeeper",
             COALESCE(a.coming, 0) AS coming, COALESCE(a.total, 0) AS total

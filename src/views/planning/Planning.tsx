@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ClipboardList, Image as ImageIcon, SlidersHorizontal, Users } from 'lucide-react'
 import { useGetPlanningEvents } from '../../hooks/backend/planning'
+import { useGetSquadGenders } from '../../hooks/backend/players'
+import { GENDERS, GENDER_PLURAL } from '../../utils/gender'
 import { usePersistentState } from '../../hooks/usePersistentState'
 import { AttendanceStatsButton } from '../../components/AttendanceStatsButton'
 import SquadLogo from '../../components/SquadLogo'
@@ -33,6 +35,7 @@ export default function Planning() {
   const [playerStatuses, setPlayerStatuses] = usePersistentState<string[]>('hl-plan-pstatus', ['Aktiv', 'Aktiv, ej matchklar'])
   const [matchSlots, setMatchSlots] = usePersistentState<Slots>(`hl-plan-slots-match-${sid}`, EMPTY)
   const [cupSlots, setCupSlots] = usePersistentState<Slots>(`hl-plan-slots-cup-${sid}`, EMPTY)
+  const [genders, setGenders] = usePersistentState<string[]>('hl-plan-genders', [...GENDERS])
   const [mobileSlot, setMobileSlot] = useState(0)
   const [refreshKey, setRefreshKey] = useState(0)
   const [answers, setAnswers] = useState<{ id: number; title: string } | null>(null)
@@ -41,6 +44,14 @@ export default function Planning() {
   const [totalOpen, setTotalOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const events = useGetPlanningEvents()
+  const squadGenders = useGetSquadGenders()
+  useEffect(() => {
+    squadGenders.trigger().catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  // Valen om kön visas bara när laget har både pojkar och flickor
+  const mixed = !!squadGenders.data?.mixed
+  const genderFilter = mixed ? genders : [...GENDERS]
 
   const slots = kind === 'match' ? matchSlots : cupSlots
   const setSlots = kind === 'match' ? setMatchSlots : setCupSlots
@@ -145,6 +156,16 @@ export default function Planning() {
               </button>
             ))}
           </div>
+          {mixed && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Kön</span>
+              {GENDERS.map((g) => (
+                <button key={g} type="button" onClick={() => setGenders(toggle(genders, g))} className={chip(genders.includes(g))}>
+                  {GENDER_PLURAL[g]}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Ej kallade</span>
             {PLAYER_STATUSES.map((s) => (
@@ -185,6 +206,8 @@ export default function Planning() {
               onSelect={(v) => setSlots(slots.map((s, j) => (j === i ? v : s)))}
               from={from}
               playerStatuses={playerStatuses}
+              genders={genderFilter}
+              mixed={mixed}
               refreshKey={refreshKey}
               onChanged={() => setRefreshKey((k) => k + 1)}
               prev={neighbor(i - 1)}
@@ -200,7 +223,7 @@ export default function Planning() {
       <SummaryDialog kind={kind} eventIds={filled.map((s) => s.id)} open={summaryOpen} onClose={() => setSummaryOpen(false)} />
       <OverviewDialog kind={kind} eventIds={filled.map((s) => s.id)} open={overviewOpen} from={from} months={months}
         onClose={() => setOverviewOpen(false)} />
-      <TotalDialog kind={kind} slots={filled} open={totalOpen} from={from} playerStatuses={playerStatuses}
+      <TotalDialog kind={kind} slots={filled} open={totalOpen} from={from} playerStatuses={playerStatuses} genders={genderFilter} mixed={mixed}
         onClose={() => setTotalOpen(false)} onChanged={() => setRefreshKey((k) => k + 1)} />
     </div>
   )

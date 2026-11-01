@@ -6,7 +6,16 @@ export { GOALKEEPER_GROUP }
 
 export type GroupMethod = 'rank' | 'rank-equal' | 'random-balanced' | 'random'
 
-export type GroupPlayer = { player_id: number; rank: string | null; goalkeeper?: boolean | null }
+export type GroupPlayer = { player_id: number; rank: string | null; goalkeeper?: boolean | null; gender?: string | null }
+
+/** Hur kön tas med: inte alls, jämnt fördelat i alla grupper, eller pojkar och flickor i egna grupper. */
+export type GenderMode = 'ignore' | 'balanced' | 'separate'
+
+export const GENDER_MODES: { value: GenderMode; label: string; help: string }[] = [
+  { value: 'ignore', label: 'Ingen hänsyn', help: 'Kön påverkar inte indelningen.' },
+  { value: 'balanced', label: 'Blandat, jämnt', help: 'Ungefär lika många pojkar och flickor i varje grupp.' },
+  { value: 'separate', label: 'Pojkar och flickor var för sig', help: 'Grupperna delas mellan pojkar och flickor efter hur många de är.' },
+]
 
 export type GroupCount = 2 | 3 | 4 | 5 | 6 | 7 | 8
 
@@ -19,6 +28,8 @@ export type GroupOptions = {
   groups: GroupCount
   /** Målvakter i en egen grupp, Målvakter */
   separateGoalkeepers: boolean
+  /** Hur kön tas med (standard: ingen hänsyn) */
+  gender?: GenderMode
 }
 
 export type GroupResult = {
@@ -91,16 +102,22 @@ function byRank<T extends GroupPlayer>(list: T[], random: () => number): T[] {
   return shuffle(list, random).sort((a, b) => rankIndex(a.rank) - rankIndex(b.rank))
 }
 
-export function makeGroups(players: GroupPlayer[], opts: GroupOptions, random: () => number = Math.random): GroupResult {
-  const n = opts.groups
-  const separate = opts.separateGoalkeepers
-  const keepers = separate ? players.filter((p) => p.goalkeeper) : []
-  const field = separate ? players.filter((p) => !p.goalkeeper) : players
-  const buckets: number[][] = Array.from({ length: n }, () => [])
+type Buckets = { ids: number[]; grouprank: string | null }[]
 
-  if (opts.method === 'rank') {
-    for (const p of byRank(field, random)) buckets[rankTier(p.rank, n)].push(p.player_id)
-  } else if (opts.method === 'rank-equal') {
+/** Dela utespelarna i n grupper med vald metod. */
+function split(field: GroupPlayer[], n: number, method: GroupMethod, random: () => number, balanceGender: boolean): Buckets {
+  if (n <= 0) return []
+  if (n === 1) {
+    const best = field.map((p) => p.rank).sort((a, b) => rankIndex(a) - rankIndex(b))[0]
+    return [{ ids: byRank(field, random).map((p) => p.player_id), grouprank: method === 'rank' || method === 'rank-equal' ? (best ? best.toUpperCase() : null) : null }]
+  }
+  const count = n as GroupCount
+  const buckets: number[][] = Array.from({ length: n }, () => [])
+  const genderOf = new Map(field.map((p) => [p.player_id, p.gender ?? null]))
+
+  if (method === 'rank') {
+    for (const p of byRank(field, random)) buckets[rankTier(p.rank, count)].push(p.player_id)
+  } else if (method === 'rank-equal') {
     // Sammanhängande bitar av rank-ordningen; de första grupperna får en extra vid udda antal
     const sorted = byRank(field, random)
     let start = 0
@@ -109,28 +126,66 @@ export function makeGroups(players: GroupPlayer[], opts: GroupOptions, random: (
       buckets[g] = sorted.slice(start, start + size).map((p) => p.player_id)
       start += size
     }
-  } else if (opts.method === 'random-balanced') {
-    // Rank för rank till den minsta gruppen: jämn storlek och jämn rankfördelning
-    for (const p of byRank(field, random)) {
-      const min = Math.min(...buckets.map((b) => b.length))
-      const smallest = buckets.map((b, i) => (b.length === min ? i : -1)).filter((i) => i >= 0)
-      buckets[smallest[Math.floor(random() * smallest.length)]].push(p.player_id)
-    }
   } else {
-    shuffle(field, random).forEach((p, i) => buckets[i % n].push(p.player_id))
+    // Slumpat: till den minsta gruppen, och vid jämn storlek den med minst av samma kön.
+    // Slumpat med jämn rank går rank för rank; helt slumpat i slumpad ordning.
+    let order = method === 'random-balanced' ? byRank(field, random) : shuffle(field, random)
+    if (balanceGender) {
+      // Kön för kön (inom könet: rank- eller slumpordning), så att båda sprids jämnt
+      const g = (p: GroupPlayer) => (p.gender === 'Pojke' ? 0 : p.gender === 'Flicka' ? 1 : 2)
+      order = [...order].sort((a, b) => g(a) - g(b))
+    }
+    for (const p of order) {
+      const min = Math.min(...buckets.map((b) => b.length))
+      let cands = buckets.map((b, i) => (b.length === min ? i : -1)).filter((i) => i >= 0)
+      if (balanceGender && p.gender) {
+        const same = (i: number) => buckets[i].filter((id) => genderOf.get(id) === p.gender).length
+        const fewest = Math.min(...cands.map(same))
+        cands = cands.filter((i) => same(i) === fewest)
+      }
+      buckets[cands[Math.floor(random() * cands.length)]].push(p.player_id)
+    }
   }
 
   // Gruppens nivå: nivåns bästa rank (Efter rank) eller bästa spelarens rank (lika stora)
   const byIdRank = new Map(field.map((p) => [p.player_id, p.rank]))
-  const groupRank = (ids: number[], i: number) => {
-    if (opts.method === 'rank') return RANKS[TIER_STARTS[n][i]]
-    if (opts.method === 'rank-equal') {
+  return buckets.map((ids, i) => {
+    let grouprank: string | null = null
+    if (method === 'rank') grouprank = RANKS[TIER_STARTS[count][i]]
+    else if (method === 'rank-equal') {
       const best = ids.map((id) => byIdRank.get(id) ?? null).sort((a, b) => rankIndex(a) - rankIndex(b))[0]
-      return best ? best.toUpperCase() : null
+      grouprank = best ? best.toUpperCase() : null
     }
-    return null
+    return { ids, grouprank }
+  })
+}
+
+export function makeGroups(players: GroupPlayer[], opts: GroupOptions, random: () => number = Math.random): GroupResult {
+  const n = opts.groups
+  const separate = opts.separateGoalkeepers
+  const keepers = separate ? players.filter((p) => p.goalkeeper) : []
+  const field = separate ? players.filter((p) => !p.goalkeeper) : players
+  const mode = opts.gender ?? 'ignore'
+
+  let buckets: Buckets
+  if (mode === 'separate') {
+    // Grupperna fördelas mellan pojkar och flickor efter antal (minst en var om båda finns).
+    // Spelare utan angivet kön följer med den största gruppen.
+    const boys = field.filter((p) => p.gender === 'Pojke')
+    const girls = field.filter((p) => p.gender === 'Flicka')
+    const unknown = field.filter((p) => p.gender !== 'Pojke' && p.gender !== 'Flicka')
+    if (boys.length >= girls.length) boys.push(...unknown)
+    else girls.push(...unknown)
+    const total = boys.length + girls.length
+    let nb = total ? Math.round((n * boys.length) / total) : n
+    if (boys.length && girls.length) nb = Math.min(n - 1, Math.max(1, nb))
+    else nb = boys.length ? n : 0
+    buckets = [...split(boys, nb, opts.method, random, false), ...split(girls, n - nb, opts.method, random, false)]
+  } else {
+    buckets = split(field, n, opts.method, random, mode === 'balanced')
   }
-  const result: GroupResult = buckets.map((ids, i) => ({ name: `Grupp ${i + 1}`, grouprank: groupRank(ids, i), playerIds: ids }))
+
+  const result: GroupResult = buckets.map((b, i) => ({ name: `Grupp ${i + 1}`, grouprank: b.grouprank, playerIds: b.ids }))
   if (keepers.length) {
     result.push({ name: GOALKEEPER_GROUP, grouprank: null, playerIds: keepers.map((p) => p.player_id), goalkeepers: true })
   }

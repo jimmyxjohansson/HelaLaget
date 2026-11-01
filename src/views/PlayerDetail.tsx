@@ -67,6 +67,7 @@ interface PlayerData {
   memberid: number | null
   foot: string | null
   comment: string | null
+  gender: string | null
   sessions_attended: string
   total_sessions: string
 }
@@ -151,6 +152,7 @@ export default function PlayerDetail() {
         winger: form.winger,
         striker: form.striker,
         goalkeeper: form.goalkeeper,
+        gender: form.gender,
       })
       setEditing(false)
       setSaved(true)
@@ -392,6 +394,18 @@ export default function PlayerDetail() {
                   </div>
                 </div>
 
+                <div className="flex flex-col gap-1">
+                  <Label className="text-xs text-muted-foreground">Kön</Label>
+                  <div className="flex gap-1 rounded-lg bg-muted p-1">
+                    {['Pojke', 'Flicka'].map(g => (
+                      <button key={g} type="button" onClick={() => setField('gender', form.gender === g ? null : g)}
+                        className={`flex-1 rounded-md px-3 py-1 text-sm font-medium ${form.gender === g ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Profile image */}
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-xs text-muted-foreground">Profilbild</Label>
@@ -502,6 +516,7 @@ export default function PlayerDetail() {
                   <InfoRow label="Födelsedag" value={player?.birthdate ? player.birthdate.slice(0, 10) : null} />
                   <InfoRow label="Nivå" value={player?.rank ?? null} />
                   <InfoRow label="Fot" value={player?.foot ?? null} />
+                  <InfoRow label="Kön" value={player?.gender ?? null} />
                 </div>
 
                 {/* Positions */}

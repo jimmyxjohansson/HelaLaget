@@ -19,6 +19,7 @@ export type Candidate = {
   shortname: string | null
   number: number | null
   rank: string | null
+  gender: string | null
   backbone: string | null
   status: string | null
   /** Har positionen Målvakt på spelarkortet */
@@ -40,7 +41,7 @@ export default async function getPlanningCandidates(req: { params: Params; user:
   const statuses = (req.params.playerStatuses ?? []).filter((s) => typeof s === 'string')
 
   const { data } = await db.query<Candidate>(
-    `SELECT p.id, p.shortname, p.number, p.rank::text AS rank, p.backbone::text AS backbone, p.status::text AS status,
+    `SELECT p.id, p.shortname, p.number, p.rank::text AS rank, p.gender, p.backbone::text AS backbone, p.status::text AS status,
             COALESCE(p.goalkeeper, false) AS "canGoalkeeper",
             COALESCE(a.coming, 0) AS coming, COALESCE(a.total, 0) AS total,
             ((now() AT TIME ZONE 'Europe/Stockholm')::date - lm.last::date) AS lastmatch,

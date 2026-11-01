@@ -95,6 +95,7 @@ import players_getOrganizationPlayers from './functions/players/getOrganizationP
 import players_getPlayer from './functions/players/getPlayer'
 import players_getPlayerStats from './functions/players/getPlayerStats'
 import players_getPlayers from './functions/players/getPlayers'
+import players_getSquadGenders from './functions/players/getSquadGenders'
 import players_getUpcomingBirthdays from './functions/players/getUpcomingBirthdays'
 import players_removePlayerFromSquad from './functions/players/removePlayerFromSquad'
 import players_updatePlayer from './functions/players/updatePlayer'
@@ -232,6 +233,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'players/getPlayer': { handler: players_getPlayer, access: 'viewer' },
   'players/getPlayerStats': { handler: players_getPlayerStats, access: 'viewer' },
   'players/getPlayers': { handler: players_getPlayers, access: 'viewer' },
+  'players/getSquadGenders': { handler: players_getSquadGenders, access: 'viewer' },
   'players/getUpcomingBirthdays': { handler: players_getUpcomingBirthdays, access: 'viewer' },
   'players/removePlayerFromSquad': { handler: players_removePlayerFromSquad, access: 'leader' },
   'players/updatePlayer': { handler: players_updatePlayer, access: 'leader' },

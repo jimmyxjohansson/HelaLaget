@@ -6,6 +6,7 @@ import { useAddPlanningPlayers, useGetPlanningCandidates } from '../../hooks/bac
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
 import { CandidateList } from './SlotColumn'
 import { answerHex, type Kind } from './shared'
+import { byGender, genderSummary } from '../../utils/gender'
 
 /** Spelare som inte är kallade till någon av kolumnernas matcher/cuper. */
 export default function TotalDialog({
@@ -14,6 +15,8 @@ export default function TotalDialog({
   open,
   from,
   playerStatuses,
+  genders,
+  mixed,
   onClose,
   onChanged,
 }: {
@@ -22,6 +25,8 @@ export default function TotalDialog({
   open: boolean
   from: string | null
   playerStatuses: string[]
+  genders: string[]
+  mixed: boolean
   onClose: () => void
   onChanged: () => void
 }) {
@@ -56,13 +61,13 @@ export default function TotalDialog({
     }
   }
 
-  const rows = candidates.data ?? []
+  const rows = byGender(candidates.data ?? [], genders)
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[85vh] w-[calc(100vw-1rem)] max-w-[520px] overflow-y-auto px-4">
         <DialogHeader>
-          <DialogTitle>Ej kallade till någon {kind === 'match' ? 'match' : 'cup'} ({rows.length})</DialogTitle>
+          <DialogTitle>Ej kallade till någon {kind === 'match' ? 'match' : 'cup'} ({rows.length}{mixed && genderSummary(rows) ? ` · ${genderSummary(rows)}` : ''})</DialogTitle>
         </DialogHeader>
         <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1.5 bg-background pb-2">
           {slots.length === 0 ? (
@@ -86,7 +91,7 @@ export default function TotalDialog({
         {candidates.loading && rows.length === 0 ? (
           <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
         ) : (
-          <CandidateList rows={rows} selected={selected}
+          <CandidateList rows={rows} selected={selected} mixed={mixed}
             onToggle={(id) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })} />
         )}
       </DialogContent>
