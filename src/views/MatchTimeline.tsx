@@ -239,7 +239,8 @@ export default function MatchTimeline() {
   const elapsedSeconds = Math.floor(elapsedMs / 1000)
   const periodElapsedSeconds = timer ? (timer.offsetMinutes - timer.periodStartMinutes) * 60 + elapsedSeconds : 0
   const totalSeconds = timer ? timer.offsetMinutes * 60 + elapsedSeconds : 0
-  const currentMinute = timer ? Math.floor(totalSeconds / 60) : null
+  // Matchminut som i en livesändning: 23:04 är 24'
+  const currentMinute = timer ? Math.floor(totalSeconds / 60) + 1 : null
   const currentSecond = totalSeconds % 60
 
   // Period progress: elapsed counting up, remaining counting down.
@@ -769,11 +770,11 @@ export default function MatchTimeline() {
                   // Period this event belongs to, and whether it opens a new period
                   // block in the descending (newest-first) list.
                   const eventPeriod = playtime && e.minute != null
-                    ? Math.min(periodCount, Math.floor(e.minute / playtime) + 1)
+                    ? Math.min(periodCount, Math.max(1, Math.floor((e.minute - 1) / playtime) + 1))
                     : 1
                   const prev = orderedEvents[i - 1]
                   const prevPeriod = prev && playtime && prev.minute != null
-                    ? Math.min(periodCount, Math.floor(prev.minute / playtime) + 1)
+                    ? Math.min(periodCount, Math.max(1, Math.floor((prev.minute - 1) / playtime) + 1))
                     : null
                   const showDivider = periodCount > 1 && eventPeriod !== prevPeriod
 
