@@ -11,6 +11,7 @@ import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../lib/shadcn/select'
 import DatePicker from '../components/DatePicker'
+import { canEdit } from '../lib/squad-store'
 import PlayerStats, { StatsSummary } from './player/PlayerStats'
 import { cn } from '../lib/shadcn/utils'
 
@@ -113,6 +114,16 @@ export default function PlayerDetail() {
 
   useEffect(() => {
     if (player) setForm({ ...player })
+  }, [player])
+
+  // Från spelarlistans Redigera-knapp (?edit=1): öppna redigeringen direkt
+  const autoEdit = useRef(searchParams.get('edit') === '1')
+  useEffect(() => {
+    if (player && autoEdit.current && canEdit()) {
+      autoEdit.current = false
+      handleEdit()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player])
 
   function handleEdit() {
@@ -263,7 +274,7 @@ export default function PlayerDetail() {
                   )}
                 </div>
               </div>
-              {!editing && (
+              {!editing && canEdit() && (
                 <button
                   onClick={handleEdit}
                   className="flex-shrink-0 p-2 rounded-lg hover:bg-muted transition-colors"

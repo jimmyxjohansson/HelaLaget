@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGetPlayers } from '../hooks/backend/players'
 import { usePersistentState } from '../hooks/usePersistentState'
-import { Search, User, Trophy, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react'
+import { Search, User, Trophy, ChevronRight, ArrowUp, ArrowDown, Pencil } from 'lucide-react'
+import { cn } from '../lib/shadcn/utils'
+import GenderBadge from '../components/GenderBadge'
+import { isMixed } from '../utils/gender'
 import { rankStyle } from '../utils/rankColors'
 import PlayerActions from '../components/PlayerActions'
 import { canEdit } from '../lib/squad-store'
@@ -27,6 +30,45 @@ interface Player {
   rank: string | null
   sessions_attended: string
   total_sessions: string
+  birthdate: string | null
+  foot: string | null
+  gender: string | null
+  matches: number
+  goals: number
+  assists: number
+  saves: number
+}
+
+const POSITIONS: { key: keyof Player; short: string; label: string }[] = [
+  { key: 'goalkeeper', short: 'MV', label: 'Målvakt' },
+  { key: 'defender', short: 'B', label: 'Försvarare' },
+  { key: 'defensivemidfielder', short: 'DM', label: 'Defensiv mittfältare' },
+  { key: 'offensivemidfielder', short: 'OM', label: 'Offensiv mittfältare' },
+  { key: 'winger', short: 'Y', label: 'Ytter' },
+  { key: 'striker', short: 'A', label: 'Anfallare' },
+]
+
+/** Ålder i hela år från födelsedatum (ÅÅÅÅ-MM-DD). */
+function age(birthdate: string | null) {
+  if (!birthdate) return null
+  const [y, m, d] = birthdate.slice(0, 10).split('-').map(Number)
+  if (!y) return null
+  const now = new Date()
+  let a = now.getFullYear() - y
+  if (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d)) a--
+  return a
+}
+
+function Positions({ p, className }: { p: Player; className?: string }) {
+  const list = POSITIONS.filter((x) => p[x.key])
+  if (list.length === 0) return <span className={cn('text-muted-foreground', className)}>–</span>
+  return (
+    <span className={cn('inline-flex flex-wrap gap-1', className)}>
+      {list.map((x) => (
+        <span key={x.short} title={x.label} className="rounded bg-primary/10 px-1 text-[10px] font-semibold text-primary">{x.short}</span>
+      ))}
+    </span>
+  )
 }
 
 function pct(attended: string, total: string) {
@@ -45,6 +87,8 @@ const SORT_OPTIONS = [
   { value: 'name', label: 'Namn' },
   { value: 'rank', label: 'Rank' },
   { value: 'pct', label: 'Närvaro %' },
+  { value: 'matches', label: 'Matcher' },
+  { value: 'goals', label: 'Mål' },
 ]
 
 type SortDir = 'asc' | 'desc'
@@ -53,6 +97,11 @@ const DEFAULT_SORT_DIR: Record<string, SortDir> = {
   name: 'asc',
   rank: 'asc',
   pct: 'desc',
+  number: 'asc',
+  age: 'asc',
+  matches: 'desc',
+  goals: 'desc',
+  assists: 'desc',
 }
 
 const RANK_ORDER = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D', 'X']
@@ -125,7 +174,12 @@ export default function Players() {
   }
 
   const players = data as unknown as Player[] | undefined
+  const editor = canEdit()
+  const mixed = isMixed(players ?? [])
+  const open = (id: number) => router.push(`/players/${id}?months=${timeFilter}`)
+  const edit = (id: number) => router.push(`/players/${id}?months=${timeFilter}&edit=1`)
 
+  const anySaves = (players ?? []).some((p) => p.saves > 0)
   const filtered = (players ?? [])
     .filter(p => {
       if (statusFilter.length > 0 && !statusFilter.includes(p.status)) return false
@@ -148,6 +202,17 @@ export default function Players() {
         if (p !== 0) return p
         return a.firstname.localeCompare(b.firstname, 'sv')
       }
+      const num = (f: (p: Player) => number | null) => {
+        const va = f(a), vb = f(b)
+        if (va == null && vb != null) return 1
+        if (vb == null && va != null) return -1
+        return ((va ?? 0) - (vb ?? 0)) * dir || a.firstname.localeCompare(b.firstname, 'sv')
+      }
+      if (sort === 'number') return num((p) => p.number)
+      if (sort === 'age') return num((p) => age(p.birthdate))
+      if (sort === 'matches') return num((p) => p.matches)
+      if (sort === 'goals') return num((p) => p.goals)
+      if (sort === 'assists') return num((p) => p.assists)
       if (sort === 'pct') {
         const p = pct(a.sessions_attended, a.total_sessions) - pct(b.sessions_attended, b.total_sessions)
         if (p !== 0) return p * dir
@@ -165,7 +230,7 @@ export default function Players() {
             <SquadLogo />
             <div className="min-w-0">
               <h1 className="text-xl font-bold">Spelare</h1>
-              <p className="text-team-accent/70 text-sm">{filtered.length} spelare</p>
+              <p className="text-team-accent/70 text-sm">{filtered.length} spelare<span className="hidden sm:inline"> · närvaro och matcher {TIME_FILTERS.find((t) => t.value === timeFilter)?.label === 'Alla' ? 'totalt' : `senaste ${TIME_FILTERS.find((t) => t.value === timeFilter)?.label ?? ''}`}</span></p>
             </div>
           </div>
           {canEdit() && <PlayerActions onChanged={() => trigger({ months: timeFilter })} />}
@@ -257,7 +322,7 @@ export default function Players() {
 
       {/* Player list */}
       <div className="px-4 py-3">
-        {loading ? (
+        {loading && !players ? (
           <div className="flex flex-col gap-2">
             {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className="bg-card rounded-xl h-16 animate-pulse" />
@@ -266,71 +331,159 @@ export default function Players() {
         ) : filtered.length === 0 ? (
           <p className="text-center text-muted-foreground py-10 text-sm">Inga spelare hittades</p>
         ) : (
-          <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
-            {filtered.map((p, idx) => {
-              const attendPct = pct(p.sessions_attended, p.total_sessions)
-              return (
-                <div key={p.id} onClick={() => router.push(`/players/${p.id}?months=${timeFilter}`)} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors active:bg-muted/70">
-                  {/* Rank */}
-                  {sort === 'pct' && (
-                    <div className="w-5 text-center flex-shrink-0">
-                      {idx === 0 ? (
-                        <Trophy className="w-4 h-4 text-yellow-500" />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{idx + 1}</span>
-                      )}
-                    </div>
-                  )}
-                  {/* Avatar */}
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {p.img ? (
-                      <img src={p.img} alt={p.shortname} className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-4 h-4 text-muted-foreground" />
+          <>
+            {/* Dator: tabell med fler kolumner */}
+            <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <Th label="Nr" field="number" sort={sort} dir={sortDir} onSort={handleSort} className="w-12 pl-4" />
+                    <Th label="Spelare" field="name" sort={sort} dir={sortDir} onSort={handleSort} />
+                    <Th label="Rank" field="rank" sort={sort} dir={sortDir} onSort={handleSort} />
+                    <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
+                    <Th label="Ålder" field="age" sort={sort} dir={sortDir} onSort={handleSort} />
+                    <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Positioner</th>
+                    <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Fot</th>
+                    <Th label="Närvaro" field="pct" sort={sort} dir={sortDir} onSort={handleSort} align="right" />
+                    <Th label="Matcher" field="matches" sort={sort} dir={sortDir} onSort={handleSort} align="right" />
+                    <Th label="Mål" field="goals" sort={sort} dir={sortDir} onSort={handleSort} align="right" />
+                    <Th label="Assist" field="assists" sort={sort} dir={sortDir} onSort={handleSort} align="right" />
+                    {anySaves && <th className="px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Rädd.</th>}
+                    {editor && <th className="w-24 pr-4" />}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filtered.map((p) => {
+                    const attendPct = pct(p.sessions_attended, p.total_sessions)
+                    const a = age(p.birthdate)
+                    return (
+                      <tr key={p.id} onClick={() => open(p.id)} className="cursor-pointer hover:bg-muted/40">
+                        <td className="py-2 pl-4 pr-2 tabular-nums text-muted-foreground">{p.number || '–'}</td>
+                        <td className="px-2 py-2">
+                          <div className="flex items-center gap-2.5">
+                            <Avatar p={p} />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="truncate font-medium">{p.shortname}</span>
+                                {mixed && <GenderBadge gender={p.gender} />}
+                              </div>
+                              <div className="truncate text-xs text-muted-foreground">{p.firstname} {p.lastname}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-2 py-2">
+                          {p.rank ? <span className="rounded px-1.5 py-0.5 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span> : <span className="text-muted-foreground">–</span>}
+                        </td>
+                        <td className="px-2 py-2">
+                          <span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_BADGE[p.status] ?? 'bg-muted text-muted-foreground'}`}>{p.status}</span>
+                        </td>
+                        <td className="px-2 py-2 tabular-nums" title={p.birthdate ?? undefined}>{a != null ? `${a} år` : '–'}</td>
+                        <td className="px-2 py-2"><Positions p={p} /></td>
+                        <td className="px-2 py-2 text-muted-foreground">{p.foot || '–'}</td>
+                        <td className="px-2 py-2 text-right">
+                          <span className={`font-semibold tabular-nums ${pctColor(attendPct)}`}>{attendPct}%</span>
+                          <span className="block text-[11px] tabular-nums text-muted-foreground">{p.sessions_attended} av {p.total_sessions}</span>
+                        </td>
+                        <td className="px-2 py-2 text-right tabular-nums">{p.matches}</td>
+                        <td className="px-2 py-2 text-right tabular-nums font-medium">{p.goals}</td>
+                        <td className="px-2 py-2 text-right tabular-nums">{p.assists}</td>
+                        {anySaves && <td className="px-2 py-2 text-right tabular-nums">{p.saves || ''}</td>}
+                        {editor && (
+                          <td className="py-2 pl-2 pr-4 text-right">
+                            <button type="button" onClick={(e) => { e.stopPropagation(); edit(p.id) }}
+                              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-muted">
+                              <Pencil className="h-3.5 w-3.5" /> Redigera
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobil: kort med tre rader information */}
+            <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden md:hidden">
+              {filtered.map((p, idx) => {
+                const attendPct = pct(p.sessions_attended, p.total_sessions)
+                const a = age(p.birthdate)
+                return (
+                  <div key={p.id} onClick={() => open(p.id)} className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-muted/40 transition-colors active:bg-muted/70">
+                    {sort === 'pct' && (
+                      <div className="w-5 text-center flex-shrink-0">
+                        {idx === 0 ? <Trophy className="w-4 h-4 text-yellow-500" /> : <span className="text-xs text-muted-foreground">{idx + 1}</span>}
+                      </div>
                     )}
-                  </div>
-                  {/* Info */}
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-foreground truncate">{p.shortname}</span>
-                      {p.rank && (
-                        <span
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
-                          style={rankStyle(p.rank)}
-                        >
-                          {p.rank}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{p.sessions_attended} av {p.total_sessions}</span>
-                      {p.status && p.status !== 'Aktiv' && (
-                        <span className={`rounded px-1.5 py-0.5 font-medium ${STATUS_BADGE[p.status] ?? 'bg-muted text-muted-foreground'}`}>{p.status}</span>
-                      )}
-                    </div>
-                  </div>
-                  {/* Attendance pct */}
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <div className="flex flex-col items-end">
-                      <span className={`text-sm font-bold ${pctColor(attendPct)}`}>{attendPct}%</span>
-                      <div className="w-14 h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${
-                            attendPct >= 75 ? 'bg-green-500' :
-                            attendPct >= 50 ? 'bg-orange-400' : 'bg-red-400'
-                          }`}
-                          style={{ width: `${attendPct}%` }}
-                        />
+                    <Avatar p={p} big />
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-sm font-medium text-foreground">{p.shortname}</span>
+                        {p.rank && <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
+                        {mixed && <GenderBadge gender={p.gender} />}
+                        {p.status && p.status !== 'Aktiv' && (
+                          <span className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_BADGE[p.status] ?? 'bg-muted text-muted-foreground'}`}>{p.status}</span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+                        <span className="truncate">{p.firstname} {p.lastname}</span>
+                        {a != null && <span>· {a} år</span>}
+                        {POSITIONS.some((x) => p[x.key]) && <Positions p={p} />}
+                      </div>
+                      <div className="text-xs tabular-nums text-muted-foreground">
+                        {p.matches} matcher · {p.goals} mål · {p.assists} ass{p.saves ? ` · ${p.saves} rädd` : ''}
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+                      <span className="flex flex-col items-end leading-tight">
+                        <span className={`text-sm font-bold ${pctColor(attendPct)}`}>{attendPct}%</span>
+                        <span className="text-[10px] tabular-nums text-muted-foreground">{p.sessions_attended}/{p.total_sessions}</span>
+                      </span>
+                      {editor ? (
+                        <button type="button" onClick={(e) => { e.stopPropagation(); edit(p.id) }} aria-label={`Redigera ${p.shortname}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-md border border-border hover:bg-muted">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
+  )
+}
+
+function Avatar({ p, big }: { p: Player; big?: boolean }) {
+  return (
+    <div className={cn('relative flex-shrink-0', big ? 'h-10 w-10' : 'h-8 w-8')}>
+      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-muted">
+        {p.img ? <img src={p.img} alt={p.shortname} className="h-full w-full object-cover" /> : <User className="h-4 w-4 text-muted-foreground" />}
+      </div>
+      {big && p.number ? (
+        <span className="absolute -bottom-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full border border-card bg-primary px-0.5 text-[9px] font-bold text-primary-foreground">{p.number}</span>
+      ) : null}
+    </div>
+  )
+}
+
+function Th({ label, field, sort, dir, onSort, align, className }: {
+  label: string; field: string; sort: string; dir: SortDir; onSort: (f: string) => void; align?: 'right'; className?: string
+}) {
+  const active = sort === field
+  return (
+    <th className={cn('px-2 py-2', className)}>
+      <button type="button" onClick={() => onSort(field)}
+        className={cn('flex items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wide', align === 'right' && 'ml-auto',
+          active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+        {label}
+        {active && (dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
+      </button>
+    </th>
   )
 }
