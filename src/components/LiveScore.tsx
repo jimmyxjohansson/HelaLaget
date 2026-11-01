@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { clockSeconds, formatClock, runningClock, type StoredClock } from '../utils/matchClock'
+import { clockSeconds, formatMinute, runningClock, type StoredClock } from '../utils/matchClock'
 
 export type LiveMatch = StoredClock & {
   live?: boolean
@@ -41,7 +41,7 @@ export default function LiveScore({ m, size = 'md' }: { m: LiveMatch; size?: 'sm
         </span>
         {clock ? (
           <>
-            {formatClock(clockSeconds(clock, now))}
+            {formatMinute(clockSeconds(clock, now))}
             {periods > 1 && <span className="font-medium opacity-80">P{clock.period}</span>}
           </>
         ) : (

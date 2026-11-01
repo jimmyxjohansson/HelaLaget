@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { clockSeconds, formatClock, type RunningClock } from '../utils/matchClock'
+import { clockSeconds, formatMinute, type RunningClock } from '../utils/matchClock'
 
 /** Tickande matchklocka, t.ex. i matchens sidhuvud. */
 export default function LiveMatchClock({ clock, periods }: { clock: RunningClock; periods: number }) {
@@ -16,7 +16,7 @@ export default function LiveMatchClock({ clock, periods }: { clock: RunningClock
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
         <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
       </span>
-      {formatClock(clockSeconds(clock, now))}
+      {formatMinute(clockSeconds(clock, now))}
       {periods > 1 && <span className="font-medium text-team-accent/70">· P{clock.period}</span>}
     </span>
   )

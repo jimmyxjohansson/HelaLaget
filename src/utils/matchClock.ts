@@ -46,3 +46,8 @@ export function clockSeconds(c: RunningClock, now = Date.now()) {
 export function formatClock(totalSeconds: number) {
   return `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`
 }
+
+/** Matchminut som i en livesändning: 00:00–00:59 är 1', 23:00–23:59 är 24'. */
+export function formatMinute(totalSeconds: number) {
+  return `${Math.floor(Math.max(0, totalSeconds) / 60) + 1}'`
+}
