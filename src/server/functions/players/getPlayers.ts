@@ -30,6 +30,9 @@ export default async function getPlayers(req: { params: Params; user: User }) {
     birthdate: string | null
     foot: string | null
     gender: string | null
+    shirt_size: string | null
+    shorts_size: string | null
+    sock_size: string | null
     matches: number
     goals: number
     assists: number
@@ -41,6 +44,7 @@ export default async function getPlayers(req: { params: Params; user: User }) {
       COUNT(CASE WHEN pt.status::text IN ${ATTENDED_STATUSES} AND t.id IS NOT NULL THEN 1 END) AS sessions_attended,
       COUNT(t.id) AS total_sessions,
       p.birthdate::text AS birthdate, p.foot::text AS foot, p.gender,
+      p.shirt_size, p.shorts_size, p.sock_size,
       COALESCE(ms.matches, 0)::int AS matches, COALESCE(ms.goals, 0)::int AS goals,
       COALESCE(ms.assists, 0)::int AS assists, COALESCE(ms.saves, 0)::int AS saves
     FROM players p

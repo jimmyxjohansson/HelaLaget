@@ -69,6 +69,9 @@ interface PlayerData {
   foot: string | null
   comment: string | null
   gender: string | null
+  shirt_size: string | null
+  shorts_size: string | null
+  sock_size: string | null
   sessions_attended: string
   total_sessions: string
 }
@@ -164,6 +167,9 @@ export default function PlayerDetail() {
         striker: form.striker,
         goalkeeper: form.goalkeeper,
         gender: form.gender,
+        shirt_size: form.shirt_size,
+        shorts_size: form.shorts_size,
+        sock_size: form.sock_size,
       })
       setEditing(false)
       setSaved(true)
@@ -417,6 +423,18 @@ export default function PlayerDetail() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-3 gap-3">
+                  {([['shirt_size', 'Tröja', 'sizes-wear'], ['shorts_size', 'Shorts', 'sizes-wear'], ['sock_size', 'Strumpor', 'sizes-socks']] as const).map(([key, label, list]) => (
+                    <div key={key} className="flex flex-col gap-1">
+                      <Label className="text-xs text-muted-foreground">{label}</Label>
+                      <Input value={form[key] ?? ''} list={list} maxLength={12} placeholder="–"
+                        onChange={e => setField(key, e.target.value || null)} className="h-9 text-sm" />
+                    </div>
+                  ))}
+                  <datalist id="sizes-wear">{['116', '128', '140', '152', '164', '176', 'XS', 'S', 'M', 'L', 'XL'].map(v => <option key={v} value={v} />)}</datalist>
+                  <datalist id="sizes-socks">{['27–30', '31–34', '35–38', '39–42', '43–46'].map(v => <option key={v} value={v} />)}</datalist>
+                </div>
+
                 {/* Profile image */}
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-xs text-muted-foreground">Profilbild</Label>
@@ -528,6 +546,9 @@ export default function PlayerDetail() {
                   <InfoRow label="Nivå" value={player?.rank ?? null} />
                   <InfoRow label="Fot" value={player?.foot ?? null} />
                   <InfoRow label="Kön" value={player?.gender ?? null} />
+                  <InfoRow label="Tröja" value={player?.shirt_size ?? null} />
+                  <InfoRow label="Shorts" value={player?.shorts_size ?? null} />
+                  <InfoRow label="Strumpor" value={player?.sock_size ?? null} />
                 </div>
 
                 {/* Positions */}

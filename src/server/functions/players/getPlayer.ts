@@ -33,6 +33,9 @@ export default async function getPlayer(req: { params: Params; user: User }) {
     foot: string | null
     comment: string | null
     gender: string | null
+    shirt_size: string | null
+    shorts_size: string | null
+    sock_size: string | null
     sessions_attended: string
     total_sessions: string
   }>(
