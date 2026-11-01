@@ -9,60 +9,17 @@ import 'server-only'
  * oftast laget som tränar anfall, lag blå (B) försvarar, gul (N) är joker.
  */
 
-type ConeColor = 'orange' | 'yellow' | 'blue' | 'red' | 'white'
-type Team = 'A' | 'B' | 'N' | 'GK'
-type S = Record<string, unknown> & { kind: string }
+import { ball, cone, diagram, drib, gate, goalB, goalL, goalR, goalT, p, pass, run, shot, square, text, zone, type StarterDrill } from './builders'
+import { STARTER_9V9 } from './starter9v9'
+import { STARTER_3V3 } from './starter3v3'
 
-const cone = (x: number, y: number, color: ConeColor = 'orange'): S => ({ kind: 'cone', x, y, color })
-const p = (team: Team, x: number, y: number, label = ''): S => ({ kind: 'player', x, y, team, label })
-const ball = (x: number, y: number): S => ({ kind: 'ball', x, y })
-/** Mål vid vänster kortsida (nät åt vänster), höger, övre eller nedre. */
-const goalL = (x: number, y: number, size: 'small' | 'large' = 'small'): S => ({ kind: 'goal', x, y, size, rot: 270 })
-const goalR = (x: number, y: number, size: 'small' | 'large' = 'small'): S => ({ kind: 'goal', x, y, size, rot: 90 })
-const goalT = (x: number, y: number, size: 'small' | 'large' = 'small'): S => ({ kind: 'goal', x, y, size, rot: 0 })
-const goalB = (x: number, y: number, size: 'small' | 'large' = 'small'): S => ({ kind: 'goal', x, y, size, rot: 180 })
-const arrow = (style: 'pass' | 'run' | 'dribble' | 'shot') => (x1: number, y1: number, x2: number, y2: number, bend?: number): S =>
-  ({ kind: 'arrow', style, from: { x: x1, y: y1 }, to: { x: x2, y: y2 }, ...(bend ? { bend } : {}) })
-const pass = arrow('pass')
-const run = arrow('run')
-const drib = arrow('dribble')
-const shot = arrow('shot')
-const zone = (x: number, y: number, w: number, h: number, color: ConeColor = 'blue'): S => ({ kind: 'zone', x, y, w, h, color })
-const text = (x: number, y: number, t: string): S => ({ kind: 'text', x, y, text: t })
-/** Fyra koner i hörnen på en rektangel. */
-const square = (x: number, y: number, w: number, h: number, color: ConeColor = 'orange') =>
-  [cone(x, y, color), cone(x + w, y, color), cone(x, y + h, color), cone(x + w, y + h, color)]
-/** Port av två koner. */
-const gate = (x: number, y: number, vertical = false, width = 2, color: ConeColor = 'yellow') =>
-  vertical ? [cone(x, y - width / 2, color), cone(x, y + width / 2, color)] : [cone(x - width / 2, y, color), cone(x + width / 2, y, color)]
-
-function diagram(width: number, height: number, pitch: 'plain' | 'half' | 'full', ...shapes: (S | S[])[]) {
-  return { width, height, pitch, shapes: shapes.flat().map((s, i) => ({ id: `s${i + 1}`, ...s })) }
-}
-
-export type StarterDrill = {
-  key: string
-  name: string
-  summary: string
-  description: string
-  coaching: string[]
-  gameFormats: string[]
-  categories: string[]
-  durationMinutes: number
-  playersMin: number
-  playersMax: number
-  area: string
-  equipment: string
-  intensity: 'Låg' | 'Medel' | 'Hög'
-  diagram: ReturnType<typeof diagram>
-  levels: Partial<Record<'Lätt' | 'Medel' | 'Svår', { text: string; diagram?: ReturnType<typeof diagram> }>>
-}
+export type { StarterDrill }
 
 const ALL_BUT_3 = ['5v5', '7v7', '9v9', '11v11']
 const MID = ['7v7', '9v9']
 const BIG = ['9v9', '11v11']
 
-export const STARTER_DRILLS: StarterDrill[] = [
+const BASE: StarterDrill[] = [
   // ───────────── Uppvärmning ─────────────
   {
     key: 'rondo-4-1',
@@ -1149,3 +1106,5 @@ export const STARTER_DRILLS: StarterDrill[] = [
     },
   },
 ]
+
+export const STARTER_DRILLS: StarterDrill[] = [...BASE, ...STARTER_9V9, ...STARTER_3V3]

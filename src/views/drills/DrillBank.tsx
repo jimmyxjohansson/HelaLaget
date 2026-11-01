@@ -185,7 +185,7 @@ export default function DrillBank() {
             <BookOpen className="h-10 w-10 text-muted-foreground" />
             <h2 className="text-lg font-semibold">Övningsbanken är tom</h2>
             <p className="text-sm text-muted-foreground">
-              Börja med startpaketet: 40 övningar för 3 mot 3 till 11 mot 11 med ritningar och progression i tre nivåer. Ni kan ändra och lägga till egna efteråt.
+              Börja med startpaketet: 80 övningar för 3 mot 3 till 11 mot 11 med ritningar och progression i tre nivåer. Ni kan ändra och lägga till egna efteråt.
             </p>
             {editor && (
               <div className="flex flex-wrap justify-center gap-2">
