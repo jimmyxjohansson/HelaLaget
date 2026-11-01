@@ -46,5 +46,23 @@ export default async function copyTraining(req: { params: Params; user: User }) 
     )
   }
 
+  // Träningsplanen följer med
+  const { data: blocks } = await db.query<{ id: number }>(
+    `SELECT id FROM training_blocks WHERE training_id = $1 ORDER BY position, id`,
+    [trainingId],
+  )
+  for (const b of blocks) {
+    const { data: nb } = await db.query<{ id: number }>(
+      `INSERT INTO training_blocks (training_id, position, name, minutes, notes)
+       SELECT $1, position, name, minutes, notes FROM training_blocks WHERE id = $2 RETURNING id`,
+      [newId, b.id],
+    )
+    await db.query(
+      `INSERT INTO training_block_items (block_id, position, group_name, drill_id, title, level, notes)
+       SELECT $1, position, group_name, drill_id, title, level, notes FROM training_block_items WHERE block_id = $2`,
+      [nb[0].id, b.id],
+    )
+  }
+
   return { id: newId }
 }

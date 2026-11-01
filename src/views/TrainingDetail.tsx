@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useGetTrainingDetail, useUpdateAttendanceStatus, useDeleteTraining, useUpdateLeaderStatus, useGetAvailableLeaders, useAddLeaders, useRemoveLeader } from '../hooks/backend/trainings'
-import { ArrowLeft, MapPin, Pencil, X, Copy, UserPlus, Search, Trash2, ChevronDown, ChevronsUpDown, MoreVertical, CheckCircle, UserCheck, XCircle, Clock, ClipboardCheck, ClipboardX, MessageSquare, Ban, Users, ExternalLink } from 'lucide-react'
+import { ArrowLeft, MapPin, Pencil, X, Copy, UserPlus, Search, Trash2, ChevronDown, ChevronsUpDown, MoreVertical, CheckCircle, UserCheck, XCircle, Clock, ClipboardCheck, ClipboardX, MessageSquare, Ban, Users, ExternalLink, ClipboardList, ChevronRight } from 'lucide-react'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
 import { Button } from '../lib/shadcn/button'
 import { Checkbox } from '../lib/shadcn/checkbox'
@@ -14,7 +14,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../lib/shadcn/shee
 import { AttendanceStatsButton } from '../components/AttendanceStatsButton'
 import { VisualCheckbox } from '../components/VisualCheckbox'
 import TrainingForm from './ui/TrainingForm'
-import { currentSquad } from '../lib/squad-store'
+import { canEdit, currentSquad } from '../lib/squad-store'
+import { useGetTrainingPlan } from '../hooks/backend/plans'
 import DatePicker from '../components/DatePicker'
 import TimeInput from '../components/TimeInput'
 import { GROUP_DEFAULT_RANK, TRAINING_GROUPS, groupShort } from '../utils/trainingGroups'
@@ -106,6 +107,11 @@ export default function TrainingDetail() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetTrainingDetail()
+  const plan = useGetTrainingPlan()
+  useEffect(() => {
+    if (id) plan.trigger({ trainingId: Number(id) }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
   const { trigger: triggerUpdate, loading: updating } = useUpdateAttendanceStatus()
   const [editOpen, setEditOpen] = useState(false)
   const [copyOpen, setCopyOpen] = useState(false)
@@ -487,6 +493,14 @@ export default function TrainingDetail() {
               </button>
               )}
               <button
+                onClick={() => router.push(`/trainings/${id}/plan`)}
+                className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
+                aria-label="Träningsplan"
+                title="Träningsplan"
+              >
+                <ClipboardList className="w-5 h-5" />
+              </button>
+              <button
                 onClick={() => router.push(`/trainings/${id}/groups`)}
                 className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
                 aria-label="Hantera grupper"
@@ -586,6 +600,26 @@ export default function TrainingDetail() {
               <p className="text-xl font-bold text-white">{kalladCount}<span className="text-sm font-semibold opacity-75">+{leaderKalladCount}</span></p>
             </div>
           </div>
+        )}
+
+        {/* Träningsplan */}
+        {training && plan.data && (plan.data.length > 0 || canEdit()) && (
+          <button
+            type="button"
+            onClick={() => router.push(`/trainings/${id}/plan`)}
+            className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left hover:bg-muted/50"
+          >
+            <ClipboardList className="h-5 w-5 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">Träningsplan</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {plan.data.length === 0
+                  ? 'Ingen plan ännu – planera passet med övningar från övningsbanken'
+                  : `${plan.data.reduce((a, b) => a + (b.minutes ?? 0), 0)} min · ${plan.data.map((b) => b.name).join(' · ')}`}
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </button>
         )}
 
         {/* Player groups */}

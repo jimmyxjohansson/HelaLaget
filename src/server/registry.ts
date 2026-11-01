@@ -14,7 +14,11 @@ import cups_removeCupParticipants from './functions/cups/removeCupParticipants'
 import cups_updateCup from './functions/cups/updateCup'
 import cups_updateCupParticipantReason from './functions/cups/updateCupParticipantReason'
 import cups_updateCupParticipantsStatus from './functions/cups/updateCupParticipantsStatus'
+import drills_deleteDrill from './functions/drills/deleteDrill'
+import drills_getDrill from './functions/drills/getDrill'
 import drills_getDrills from './functions/drills/getDrills'
+import drills_importStarterDrills from './functions/drills/importStarterDrills'
+import drills_saveDrill from './functions/drills/saveDrill'
 import leaders_addLeadersToSquad from './functions/leaders/addLeadersToSquad'
 import leaders_createLeader from './functions/leaders/createLeader'
 import leaders_getLeaders from './functions/leaders/getLeaders'
@@ -80,6 +84,11 @@ import planning_setPlanningEventStatus from './functions/planning/setPlanningEve
 import planning_setPlanningGoalkeeper from './functions/planning/setPlanningGoalkeeper'
 import planning_setPlanningStatus from './functions/planning/setPlanningStatus'
 import planning_updatePlanningAnswer from './functions/planning/updatePlanningAnswer'
+import plans_deletePlanTemplate from './functions/plans/deletePlanTemplate'
+import plans_getPlanTemplates from './functions/plans/getPlanTemplates'
+import plans_getTrainingPlan from './functions/plans/getTrainingPlan'
+import plans_savePlanTemplate from './functions/plans/savePlanTemplate'
+import plans_saveTrainingPlan from './functions/plans/saveTrainingPlan'
 import players_addPlayersToSquad from './functions/players/addPlayersToSquad'
 import players_createPlayer from './functions/players/createPlayer'
 import players_getOrganizationPlayers from './functions/players/getOrganizationPlayers'
@@ -142,7 +151,11 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'cups/updateCup': { handler: cups_updateCup, access: 'leader' },
   'cups/updateCupParticipantReason': { handler: cups_updateCupParticipantReason, access: 'leader' },
   'cups/updateCupParticipantsStatus': { handler: cups_updateCupParticipantsStatus, access: 'leader' },
+  'drills/deleteDrill': { handler: drills_deleteDrill, access: 'leader' },
+  'drills/getDrill': { handler: drills_getDrill, access: 'viewer' },
   'drills/getDrills': { handler: drills_getDrills, access: 'viewer' },
+  'drills/importStarterDrills': { handler: drills_importStarterDrills, access: 'leader' },
+  'drills/saveDrill': { handler: drills_saveDrill, access: 'leader' },
   'leaders/addLeadersToSquad': { handler: leaders_addLeadersToSquad, access: 'leader' },
   'leaders/createLeader': { handler: leaders_createLeader, access: 'leader' },
   'leaders/getLeaders': { handler: leaders_getLeaders, access: 'viewer' },
@@ -208,6 +221,11 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'planning/setPlanningGoalkeeper': { handler: planning_setPlanningGoalkeeper, access: 'leader' },
   'planning/setPlanningStatus': { handler: planning_setPlanningStatus, access: 'leader' },
   'planning/updatePlanningAnswer': { handler: planning_updatePlanningAnswer, access: 'leader' },
+  'plans/deletePlanTemplate': { handler: plans_deletePlanTemplate, access: 'leader' },
+  'plans/getPlanTemplates': { handler: plans_getPlanTemplates, access: 'viewer' },
+  'plans/getTrainingPlan': { handler: plans_getTrainingPlan, access: 'viewer' },
+  'plans/savePlanTemplate': { handler: plans_savePlanTemplate, access: 'leader' },
+  'plans/saveTrainingPlan': { handler: plans_saveTrainingPlan, access: 'leader' },
   'players/addPlayersToSquad': { handler: players_addPlayersToSquad, access: 'leader' },
   'players/createPlayer': { handler: players_createPlayer, access: 'leader' },
   'players/getOrganizationPlayers': { handler: players_getOrganizationPlayers, access: 'leader' },

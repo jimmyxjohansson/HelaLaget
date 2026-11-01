@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Home, CalendarDays, Users, Sun, Moon, Trophy, Medal, Shield, Settings, ChevronDown, ListOrdered, CalendarRange, LogOut, BarChart3 } from 'lucide-react'
+import { Home, CalendarDays, Users, Sun, Moon, Trophy, Medal, Shield, Settings, ChevronDown, ListOrdered, CalendarRange, LogOut, BarChart3, BookOpen } from 'lucide-react'
 import { cn } from '../lib/shadcn/utils'
 import { isActivePath, signOut } from '../lib/navigation'
 import { currentSquad } from '../lib/squad-store'
@@ -27,6 +27,7 @@ const tabs = [
 const adminTabs = [
   { to: '/serier', icon: ListOrdered, label: 'Serier' },
   { to: '/players', icon: Users, label: 'Spelare' },
+  { to: '/ovningar', icon: BookOpen, label: 'Övningsbank' },
   { to: '/statistik', icon: BarChart3, label: 'Statistik' },
   { to: '/teams', icon: Shield, label: 'Lag' },
 ]
