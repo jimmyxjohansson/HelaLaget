@@ -26,6 +26,8 @@ export default async function getUpcomingMatches(req: { params: Params; user: Us
     cup: number | null
     cupphase: string | null
     fogisregistered: boolean
+    difficulty: string | null
+    matchplayers: string | null
     ourgoals: number
     theirgoals: number
     periods: number | null
@@ -39,6 +41,7 @@ export default async function getUpcomingMatches(req: { params: Params; user: Us
     `SELECT
       m.id, m.matchtype, m.date, m.homeaway, m.indooroutdoor, m.outcome,
       m.status, m.location, m.notes, m.teamname, m.cup, m.cupphase, m.fogisregistered,
+      m.difficulty::text AS difficulty, m.matchplayers::text AS matchplayers,
       t.team AS opponent,
       t.imgurl AS opponent_img,
       l.name AS league_name,
