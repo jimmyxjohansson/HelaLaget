@@ -108,6 +108,15 @@ export default function MatchCard({ m, onClick }: { m: MatchCardData; onClick: (
               {outcomeText(m.outcome)}
             </span>
           </div>
+        ) : (m.ourgoals || m.theirgoals) ? (
+          // Mål registrerade men matchen är inte satt till Avslutad
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="flex flex-col items-end leading-tight">
+              <span className="text-base font-bold tabular-nums text-foreground">{m.ourgoals ?? 0}–{m.theirgoals ?? 0}</span>
+              <span className="text-[10px] text-muted-foreground">ej avslutad</span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </div>
         ) : (
           <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
         )}

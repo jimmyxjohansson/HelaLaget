@@ -38,7 +38,10 @@ export default async function (req: { params: Params; user: User }) {
       now() AS server_now,
       (m.status::text NOT IN ('Avslutad', 'Registrerad i Fogis') AND (
         (m.clock_started_at IS NOT NULL AND m.clock_started_at > now() - interval '6 hours')
-        OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours'))) AS live,
+        OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours')
+        -- Mål registrerade i dag på en match som inte är avslutad: den pågår
+        OR (COALESCE(m.ourgoals, 0) + COALESCE(m.theirgoals, 0) > 0 AND m.date <= ${NOW_WALLCLOCK}
+            AND (m.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Stockholm')::date))) AS live,
       (
         SELECT COUNT(*)
         FROM participantsmatches pm

@@ -50,14 +50,20 @@ export default async function getUpcomingMatches(req: { params: Params; user: Us
       now() AS server_now,
       (m.status::text NOT IN ('Avslutad', 'Registrerad i Fogis') AND (
         (m.clock_started_at IS NOT NULL AND m.clock_started_at > now() - interval '6 hours')
-        OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours'))) AS live
+        OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours')
+        -- Mål registrerade i dag på en match som inte är avslutad: den pågår
+        OR (COALESCE(m.ourgoals, 0) + COALESCE(m.theirgoals, 0) > 0 AND m.date <= ${NOW_WALLCLOCK}
+            AND (m.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Stockholm')::date))) AS live
     FROM matches m
     LEFT JOIN teams t ON t.id = m.vs
     LEFT JOIN leagues l ON l.id = m.league
     -- Kommande veckan, plus matcher som pågår just nu (de visas först med resultat och klocka)
     WHERE ((m.date >= ${NOW_WALLCLOCK} AND m.date <= ${NOW_WALLCLOCK} + INTERVAL '7 days') OR (m.status::text NOT IN ('Avslutad', 'Registrerad i Fogis') AND (
         (m.clock_started_at IS NOT NULL AND m.clock_started_at > now() - interval '6 hours')
-        OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours'))))
+        OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours')
+        -- Mål registrerade i dag på en match som inte är avslutad: den pågår
+        OR (COALESCE(m.ourgoals, 0) + COALESCE(m.theirgoals, 0) > 0 AND m.date <= ${NOW_WALLCLOCK}
+            AND (m.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Stockholm')::date))))
       AND NOT (m.fogisregistered = true AND m.matchtype = 'Serie')
     ORDER BY live DESC, m.date ASC
     LIMIT $1`,
