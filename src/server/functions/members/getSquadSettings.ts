@@ -14,14 +14,13 @@ export default async function getSquadSettings(req: { params: Params; user: User
     accentColor: string
     logoUrl: string | null
     planningUrl: string | null
-    trainingAppUrl: string | null
     joinCode: string
     svenskalagIcalUrl: string | null
     svenskalagUrl: string | null
   }>(
     `SELECT s.id, s.name, o.name AS "organizationName", s.primary_color AS "primaryColor",
        s.accent_color AS "accentColor", s.logo_url AS "logoUrl", s.planning_url AS "planningUrl",
-       s.training_app_url AS "trainingAppUrl", s.join_code AS "joinCode",
+       s.join_code AS "joinCode",
        s.svenskalag_ical_url AS "svenskalagIcalUrl", s.svenskalag_url AS "svenskalagUrl"
      FROM squads s JOIN organizations o ON o.id = s.organization_id
      WHERE s.id = $1`,

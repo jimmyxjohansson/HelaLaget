@@ -19,7 +19,6 @@ export type Membership = {
   accentColor: string
   logoUrl: string | null
   planningUrl: string | null
-  trainingAppUrl: string | null
   /** Lagets sida på Svenskalag */
   svenskalagUrl: string | null
 }
@@ -41,7 +40,7 @@ export default async function getMe(req: { params: Params; user: User }) {
          CASE WHEN sa.is_super OR oa.user_id IS NOT NULL THEN 'admin' ELSE m.role::text END AS role,
          CASE WHEN sa.is_super OR oa.user_id IS NOT NULL THEN 'approved' ELSE m.status::text END AS status,
          s.primary_color AS "primaryColor", s.accent_color AS "accentColor", s.logo_url AS "logoUrl",
-         s.planning_url AS "planningUrl", s.training_app_url AS "trainingAppUrl",
+         s.planning_url AS "planningUrl",
          s.svenskalag_url AS "svenskalagUrl"
        FROM squads s
        JOIN organizations o ON o.id = s.organization_id

@@ -73,7 +73,6 @@ export default function SquadSettings() {
     accentColor: '#FFCF08',
     logoUrl: '',
     planningUrl: '',
-    trainingAppUrl: '',
     svenskalagIcalUrl: '',
     svenskalagUrl: '',
   })
@@ -123,7 +122,6 @@ export default function SquadSettings() {
             accentColor: s.accentColor,
             logoUrl: s.logoUrl ?? '',
             planningUrl: s.planningUrl ?? '',
-            trainingAppUrl: s.trainingAppUrl ?? '',
             svenskalagIcalUrl: s.svenskalagIcalUrl ?? '',
             svenskalagUrl: s.svenskalagUrl ?? '',
           })
@@ -380,15 +378,6 @@ export default function SquadSettings() {
               placeholder="…eller klistra in en länk till bilden"
               onChange={(e) => { setForm({ ...form, logoUrl: e.target.value }); setLogoFailed(false) }}
               className="text-xs"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sq-train">Länk till träningsapp (valfritt, {'{id}'} ersätts med träningens id)</Label>
-            <Input
-              id="sq-train"
-              value={form.trainingAppUrl}
-              placeholder="https://…#trainingid={id}"
-              onChange={(e) => setForm({ ...form, trainingAppUrl: e.target.value })}
             />
           </div>
           <div className="flex flex-col gap-1.5">

@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../lib/shadcn/shee
 import { AttendanceStatsButton } from '../components/AttendanceStatsButton'
 import { VisualCheckbox } from '../components/VisualCheckbox'
 import TrainingForm from './ui/TrainingForm'
-import { canEdit, currentSquad } from '../lib/squad-store'
+import { canEdit } from '../lib/squad-store'
 import { useGetTrainingPlan } from '../hooks/backend/plans'
 import DatePicker from '../components/DatePicker'
 import TimeInput from '../components/TimeInput'
@@ -485,16 +485,6 @@ export default function TrainingDetail() {
           {training && (
             <div className="flex items-center gap-2">
               <AttendanceStatsButton />
-              {currentSquad()?.trainingAppUrl && (
-              <button
-                onClick={() => window.open(currentSquad()!.trainingAppUrl!.replace('{id}', String(id)), '_blank', 'noopener,noreferrer')}
-                className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
-                aria-label="Öppna i träningsappen"
-                title="Öppna i träningsappen"
-              >
-                <ExternalLink className="w-5 h-5" />
-              </button>
-              )}
               <button
                 onClick={() => router.push(`/trainings/${id}/plan`)}
                 className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"

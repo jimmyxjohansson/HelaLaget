@@ -11,7 +11,6 @@ type Params = {
   accentColor: string
   logoUrl?: string | null
   planningUrl?: string | null
-  trainingAppUrl?: string | null
   /** Lagets kalenderlänk från Svenskalag (webcal:// eller https://). */
   svenskalagIcalUrl?: string | null
   /** Lagets sida på Svenskalag, visas i menyn under Mina lag. */
@@ -32,7 +31,7 @@ export default async function updateSquadSettings(req: { params: Params; user: U
   let siteUrl = p.svenskalagUrl?.trim() || null
   if (siteUrl && !/^https?:\/\//i.test(siteUrl)) siteUrl = `https://${siteUrl}`
   if (siteUrl) siteUrl = siteUrl.replace(/^http:\/\//i, 'https://')
-  if (![p.logoUrl, p.planningUrl, p.trainingAppUrl, siteUrl].every(URL_OR_EMPTY)) {
+  if (![p.logoUrl, p.planningUrl, siteUrl].every(URL_OR_EMPTY)) {
     throw new AccessError('Länkar måste börja med https://', 400)
   }
   let feedUrl: string | null = null
@@ -45,8 +44,8 @@ export default async function updateSquadSettings(req: { params: Params; user: U
   }
   await adminDb.query(
     `UPDATE squads SET name = $2, primary_color = $3, accent_color = $4,
-       logo_url = $5, planning_url = $6, training_app_url = $7, svenskalag_ical_url = $8,
-       svenskalag_url = $9
+       logo_url = $5, planning_url = $6, svenskalag_ical_url = $7,
+       svenskalag_url = $8
      WHERE id = $1`,
     [
       req.squad!.squadId,
@@ -55,7 +54,6 @@ export default async function updateSquadSettings(req: { params: Params; user: U
       p.accentColor,
       p.logoUrl || null,
       p.planningUrl || null,
-      p.trainingAppUrl || null,
       feedUrl,
       siteUrl,
     ],
