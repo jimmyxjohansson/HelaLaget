@@ -336,7 +336,7 @@ export default function Trainings() {
                           { p: t.p_ej,         l: t.l_ej,         color: '#FF0000' },
                           { p: t.p_kallad,     l: t.l_kallad,     color: '#9333ea' },
                         ].map((s, i) => (
-                          <span key={i} className="text-xs font-bold text-white rounded px-1.5 py-0.5 text-center" style={{ backgroundColor: s.color }}>
+                          <span key={i} className="text-xs font-bold text-white rounded px-1.5 py-0.5 text-center" style={{ backgroundColor: s.color, opacity: !Number(s.p) && !Number(s.l) ? 0.35 : undefined }}>
                             {s.p}<span className="opacity-75">+{s.l}</span>
                           </span>
                         ))}

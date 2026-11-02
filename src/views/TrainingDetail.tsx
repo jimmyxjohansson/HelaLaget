@@ -587,16 +587,16 @@ export default function TrainingDetail() {
         {/* Attendance summary */}
         {training && (
           <div className="grid grid-cols-4 gap-2">
-            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#008000' }}>
+            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#008000', opacity: !presentCount && !leaderPresentCount ? 0.35 : undefined }}>
               <p className="text-xl font-bold text-white">{presentCount}<span className="text-sm font-semibold opacity-75">+{leaderPresentCount}</span></p>
             </div>
-            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#0000FF' }}>
+            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#0000FF', opacity: !anmaldCount && !leaderAnmaldCount ? 0.35 : undefined }}>
               <p className="text-xl font-bold text-white">{anmaldCount}<span className="text-sm font-semibold opacity-75">+{leaderAnmaldCount}</span></p>
             </div>
-            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#FF0000' }}>
+            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#FF0000', opacity: !ejNarvarandeCount && !leaderEjNarvarandeCount ? 0.35 : undefined }}>
               <p className="text-xl font-bold text-white">{ejNarvarandeCount}<span className="text-sm font-semibold opacity-75">+{leaderEjNarvarandeCount}</span></p>
             </div>
-            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#9333ea' }}>
+            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#9333ea', opacity: !kalladCount && !leaderKalladCount ? 0.35 : undefined }}>
               <p className="text-xl font-bold text-white">{kalladCount}<span className="text-sm font-semibold opacity-75">+{leaderKalladCount}</span></p>
             </div>
           </div>
