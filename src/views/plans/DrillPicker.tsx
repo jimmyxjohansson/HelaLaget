@@ -1,10 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Search, SlidersHorizontal } from 'lucide-react'
+import { Info, Search, SlidersHorizontal } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
 import { cn } from '../../lib/shadcn/utils'
 import { DrillCard, DrillFilters, filterDrills, useDrillFilters, type DrillListItem } from '../drills/DrillBank'
+import DrillPreview from '../drills/DrillPreview'
 
 /** Välj en övning ur banken, med samma filter som övningsbanken. */
 export default function DrillPicker({ open, drills, onClose, onPick }: {
@@ -17,6 +18,7 @@ export default function DrillPicker({ open, drills, onClose, onPick }: {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const list = drills ?? []
   const shown = useMemo(() => filterDrills(list, f), [list, f])
+  const [preview, setPreview] = useState<DrillListItem | null>(null)
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -45,10 +47,28 @@ export default function DrillPicker({ open, drills, onClose, onPick }: {
             <p className="py-8 text-center text-sm text-muted-foreground">Inga övningar matchar filtret.</p>
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {shown.map((d) => <DrillCard key={d.id} d={d} compact onClick={() => onPick(d)} />)}
+              {shown.map((d) => (
+                <div key={d.id} className="relative">
+                  <DrillCard d={d} compact onClick={() => onPick(d)} />
+                  <button
+                    type="button"
+                    onClick={() => setPreview(d)}
+                    aria-label={`Visa hela övningen ${d.name}`}
+                    title="Visa hela övningen"
+                    className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm ring-1 ring-border hover:bg-background"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
+        <DrillPreview
+          drillId={preview?.id ?? null}
+          onClose={() => setPreview(null)}
+          onPick={() => { if (preview) { const d = preview; setPreview(null); onPick(d) } }}
+        />
       </DialogContent>
     </Dialog>
   )

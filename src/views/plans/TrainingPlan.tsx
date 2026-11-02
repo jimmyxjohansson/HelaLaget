@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ChevronDown, ClipboardList, Clock, ExternalLink,
-  LayoutTemplate, Loader2, Pencil, Plus, Send, Trash2, X,
+  Info, LayoutTemplate, Loader2, Pencil, Plus, Send, Trash2, X,
 } from 'lucide-react'
 import { useGetTrainingDetail } from '../../hooks/backend/trainings'
 import { useGetDrills } from '../../hooks/backend/drills'
@@ -20,6 +20,7 @@ import { BLOCK_NAMES, LEVEL_COLOR } from '../../utils/drills'
 import { TRAINING_GROUPS } from '../../utils/trainingGroups'
 import { DrillFacts } from '../drills/shared'
 import DrillPicker from './DrillPicker'
+import DrillPreview from '../drills/DrillPreview'
 import type { DrillListItem } from '../drills/DrillBank'
 
 /** Det vi behöver veta om en övning i planen. */
@@ -80,6 +81,7 @@ export default function TrainingPlan() {
   const savePlan = useSaveTrainingPlan()
   const [blocks, setBlocks] = useState<Block[]>([])
   const [editing, setEditing] = useState(false)
+  const [previewId, setPreviewId] = useState<number | null>(null)
   const notify = useNotifyTrainingPlan()
   const [notice, setNotice] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
@@ -279,6 +281,7 @@ export default function TrainingPlan() {
                 onRemoveItem={(ik) => updateBlock(b.key, { items: b.items.filter((i) => i.key !== ik) })}
                 onAddItem={() => addItem(b)}
                 onPick={(ik) => { setPicker({ block: b.key, item: ik }); if (!drills.data) drills.trigger().catch(() => {}) }}
+                onInfo={setPreviewId}
                 onMove={(dir) => move(bi, dir)}
                 onRemove={() => change((bs) => bs.filter((x) => x.key !== b.key))}
               />
@@ -321,6 +324,7 @@ export default function TrainingPlan() {
         </div>
       )}
 
+      <DrillPreview drillId={previewId} onClose={() => setPreviewId(null)} />
       <DrillPicker open={!!picker} drills={drills.data} onClose={() => setPicker(null)} onPick={pick} />
       <TemplatesDialog open={templatesOpen} onClose={() => setTemplatesOpen(false)} current={payload()} onApply={applyTemplate} />
     </div>
@@ -329,7 +333,7 @@ export default function TrainingPlan() {
 
 /* ───────────── Redigering ───────────── */
 
-function BlockEditor({ b, start, first, last, groups, groupCount, onChange, onItem, onRemoveItem, onAddItem, onPick, onMove, onRemove }: {
+function BlockEditor({ b, start, first, last, groups, groupCount, onChange, onItem, onRemoveItem, onAddItem, onPick, onInfo, onMove, onRemove }: {
   b: Block
   start: string | null
   first: boolean
@@ -341,6 +345,7 @@ function BlockEditor({ b, start, first, last, groups, groupCount, onChange, onIt
   onRemoveItem: (key: string) => void
   onAddItem: () => void
   onPick: (key: string) => void
+  onInfo: (drillId: number) => void
   onMove: (dir: -1 | 1) => void
   onRemove: () => void
 }) {
@@ -382,6 +387,7 @@ function BlockEditor({ b, start, first, last, groups, groupCount, onChange, onIt
                     <p className="truncate text-sm font-medium">{i.drill.name}</p>
                     <p className="text-xs text-muted-foreground">{i.drill.durationMinutes ? `${i.drill.durationMinutes} min` : ''}</p>
                   </div>
+                  <button type="button" onClick={() => i.drill && onInfo(i.drill.id)} className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Visa hela övningen" title="Visa hela övningen"><Info className="h-4 w-4" /></button>
                   <button type="button" onClick={() => onPick(i.key)} className="rounded-md px-2 py-1 text-xs text-primary hover:bg-muted">Byt</button>
                   <button type="button" onClick={() => onItem(i.key, { drill: null, drillId: null })} className="rounded-md p-1 hover:bg-muted" aria-label="Ta bort övningen"><X className="h-4 w-4" /></button>
                 </div>
