@@ -60,6 +60,8 @@ export default function SvenskalagSvar() {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<{ changed: number; skipped: number } | null>(null)
   const [choices, setChoices] = useState<Record<string, Choice>>({})
+  // Rader där ledaren öppnat personväljaren
+  const [editing, setEditing] = useState<Set<string>>(new Set())
 
   const find = useFindSvenskalagActivity()
   const preview = usePreviewSvenskalagReplies()
@@ -127,6 +129,13 @@ export default function SvenskalagSvar() {
 
   if (!ready) return null
 
+  const saveButton = (
+    <Button onClick={save} disabled={apply.loading || selected.length === 0} className="w-full">
+      {apply.loading && <Loader2 className="w-4 h-4 animate-spin" />}
+      Spara {selected.length} svar
+    </Button>
+  )
+
   const eventPath = result ? `/${result.event.kind === 'training' ? 'trainings' : 'matches'}/${result.event.id}` : null
 
   return (
@@ -160,9 +169,10 @@ export default function SvenskalagSvar() {
                 </a>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground mt-1">
               Lästa rader: {LISTS.map((l) => `${l.label.split(',')[0]} ${payload?.lists[l.key]?.length ?? '–'}`).join(' · ')}
             </p>
+            {!saved && rows.length > 0 && <div className="mt-3">{saveButton}</div>}
           </Section>
 
           {saved ? (
@@ -191,53 +201,20 @@ export default function SvenskalagSvar() {
                 if (!list.length) return null
                 return (
                   <Section key={l.key} title={`${l.label} (${list.length})`}>
-                    <ul className="divide-y">
-                      {list.map((r) => {
-                        const choice = choices[r.key] ?? ''
-                        const changes = choice && !r.locked && r.current !== r.next
-                        return (
-                          <li key={r.key} className="py-2 flex flex-col gap-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className={`font-medium truncate ${l.tone}`}>{r.name}</div>
-                                {(r.comment || r.answered) && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {r.answered && <span className={r.time ? 'font-medium text-foreground' : ''}>{r.answered}</span>}
-                                    {r.answered && r.comment && ' · '}
-                                    {r.comment && <span className="italic">”{r.comment}”</span>}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="text-xs text-right shrink-0">
-                                {r.locked ? (
-                                  <span className="inline-flex items-center gap-1 text-muted-foreground"><Lock className="w-3 h-3" /> {r.current}</span>
-                                ) : choice ? (
-                                  changes ? (
-                                    <span><span className="text-muted-foreground">{r.current ?? 'Ny'} → </span><span className="font-medium">{r.next}</span></span>
-                                  ) : (
-                                    <span className="text-muted-foreground">{r.next}, oförändrad</span>
-                                  )
-                                ) : null}
-                              </div>
-                            </div>
-                            {!r.locked && (
-                              <select
-                                value={choice}
-                                onChange={(e) => setChoices((c) => ({ ...c, [r.key]: e.target.value }))}
-                                className={`h-8 rounded-md border bg-background px-2 text-sm ${!r.match ? 'border-amber-500' : ''}`}
-                              >
-                                <option value="">{r.match ? 'Hoppa över' : 'Hittade ingen – välj person'}</option>
-                                <optgroup label="Spelare">
-                                  {players.map((p) => <option key={`p${p.id}`} value={`player:${p.id}`}>{p.name}</option>)}
-                                </optgroup>
-                                <optgroup label="Ledare">
-                                  {leaders.map((p) => <option key={`l${p.id}`} value={`leader:${p.id}`}>{p.name}</option>)}
-                                </optgroup>
-                              </select>
-                            )}
-                          </li>
-                        )
-                      })}
+                    <ul className="-mx-1 divide-y">
+                      {list.map((r) => (
+                        <ReplyItem
+                          key={r.key}
+                          row={r}
+                          tone={l.tone}
+                          choice={choices[r.key] ?? ''}
+                          editing={editing.has(r.key)}
+                          players={players}
+                          leaders={leaders}
+                          onChoice={(v) => setChoices((c) => ({ ...c, [r.key]: v }))}
+                          onEdit={() => setEditing((e) => new Set(e).add(r.key))}
+                        />
+                      ))}
                     </ul>
                   </Section>
                 )
@@ -245,13 +222,10 @@ export default function SvenskalagSvar() {
               {rows.length > 0 && (
                 <div className="px-4 pt-2 flex flex-col gap-2">
                   <p className="text-xs text-muted-foreground">
-                    Kommentarer sparas som anledning. Klockslaget sparas bara när svaret kom samma dag som aktiviteten.
-                    Namn som du kopplar för hand kommer appen ihåg till nästa gång.
+                    Kommentarer sparas som anledning. Klockslaget sparas bara när svaret kom samma dag som aktiviteten
+                    (fetstilt). Namn som du kopplar för hand kommer appen ihåg till nästa gång.
                   </p>
-                  <Button onClick={save} disabled={apply.loading || selected.length === 0}>
-                    {apply.loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Spara {selected.length} svar
-                  </Button>
+                  {saveButton}
                 </div>
               )}
             </>
@@ -259,6 +233,89 @@ export default function SvenskalagSvar() {
         </>
       )}
     </div>
+  )
+}
+
+type Row = NonNullable<ReturnType<typeof usePreviewSvenskalagReplies>['data']>['rows'][number]
+type PersonOpt = { type: 'player' | 'leader'; id: number; name: string }
+
+/** En rad: kryssruta, namn, svarstid och kommentar, och vilken status det blir. */
+function ReplyItem({ row: r, tone, choice, editing, players, leaders, onChoice, onEdit }: {
+  row: Row
+  tone: string
+  choice: Choice
+  editing: boolean
+  players: PersonOpt[]
+  leaders: PersonOpt[]
+  onChoice: (v: Choice) => void
+  onEdit: () => void
+}) {
+  const matchValue = r.match ? `${r.match.type}:${r.match.id}` : ''
+  const chosen = [...players, ...leaders].find((p) => `${p.type}:${p.id}` === choice)
+  const showSelect = !r.locked && (!r.match || editing)
+  const changes = !!choice && !r.locked && r.current !== r.next
+  return (
+    <li className={`px-1 py-1.5 ${r.locked || (r.match && !choice) ? 'opacity-60' : ''}`}>
+      <div className="flex items-center gap-2.5">
+        <input
+          type="checkbox"
+          className="h-4 w-4 shrink-0 accent-[rgb(var(--team-primary))]"
+          checked={!!choice && !r.locked}
+          disabled={r.locked || (!r.match && !choice)}
+          onChange={(e) => onChoice(e.target.checked ? choice || matchValue : '')}
+          aria-label={`Ta med ${r.name}`}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <button
+              type="button"
+              onClick={onEdit}
+              disabled={r.locked}
+              className={`font-medium text-sm truncate text-left ${tone}`}
+              title="Byt person"
+            >
+              {r.name}
+            </button>
+            {chosen && chosen.name !== r.name && (
+              <span className="text-xs text-muted-foreground truncate">→ {chosen.name}</span>
+            )}
+          </div>
+          {(r.answered || r.comment) && (
+            <div className="text-xs text-muted-foreground truncate">
+              {r.answered && <span className={r.time ? 'font-semibold text-foreground' : ''}>{r.answered}</span>}
+              {r.answered && r.comment && ' · '}
+              {r.comment && <span className="italic">{r.comment}</span>}
+            </div>
+          )}
+        </div>
+        <div className="shrink-0 text-[11px]">
+          {r.locked ? (
+            <span className="inline-flex items-center gap-1 text-muted-foreground"><Lock className="w-3 h-3" />{r.current}</span>
+          ) : !choice ? (
+            <span className="text-muted-foreground">{r.match ? 'Hoppas över' : 'Okänd'}</span>
+          ) : changes ? (
+            <span className="rounded bg-muted px-1.5 py-0.5 font-medium">{r.next}</span>
+          ) : (
+            <span className="text-muted-foreground">Oförändrad</span>
+          )}
+        </div>
+      </div>
+      {showSelect && (
+        <select
+          value={choice}
+          onChange={(e) => onChoice(e.target.value)}
+          className={`mt-1 ml-[1.625rem] h-7 w-[calc(100%-1.625rem)] rounded-md border bg-background px-2 text-xs ${!choice ? 'border-amber-500' : ''}`}
+        >
+          <option value="">{r.match ? 'Hoppa över' : 'Hittade ingen – välj person'}</option>
+          <optgroup label="Spelare">
+            {players.map((p) => <option key={`p${p.id}`} value={`player:${p.id}`}>{p.name}</option>)}
+          </optgroup>
+          <optgroup label="Ledare">
+            {leaders.map((p) => <option key={`l${p.id}`} value={`leader:${p.id}`}>{p.name}</option>)}
+          </optgroup>
+        </select>
+      )}
+    </li>
   )
 }
 
