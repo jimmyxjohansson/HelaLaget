@@ -96,6 +96,31 @@ export async function sendToSquad(squadId: number, payload: PushPayload, exceptU
   return send(data, payload)
 }
 
+/**
+ * Skicka till lagets ledare och admin som följer laget (inte läsbehörighet),
+ * utom den som skickar. Föreningsadmin och superadmin räknas som admin.
+ * Returnerar också hur många personer som nåddes.
+ */
+export async function sendToSquadLeaders(squadId: number, payload: PushPayload, exceptUserId?: string) {
+  if (!pushConfigured()) return { sent: 0, removed: 0, people: 0 }
+  const { data } = await adminDb.query<Subscription & { user_id: string }>(
+    `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth, ps.user_id
+     FROM push_subscriptions ps
+     JOIN push_squads f ON f.user_id = ps.user_id AND f.squad_id = $1
+     JOIN squads s ON s.id = f.squad_id
+     WHERE ($2::uuid IS NULL OR ps.user_id <> $2::uuid)
+       AND (EXISTS (SELECT 1 FROM squad_members m
+                    WHERE m.squad_id = s.id AND m.user_id = ps.user_id AND m.status = 'approved'
+                      AND m.role IN ('leader', 'admin'))
+            OR EXISTS (SELECT 1 FROM organization_admins oa
+                       WHERE oa.organization_id = s.organization_id AND oa.user_id = ps.user_id)
+            OR EXISTS (SELECT 1 FROM app_admins a WHERE a.user_id = ps.user_id))`,
+    [squadId, exceptUserId ?? null],
+  )
+  const result = await send(data, payload)
+  return { ...result, people: new Set(data.map((d) => d.user_id)).size }
+}
+
 /** Skicka till alla användarens enheter (testnotis). */
 export async function sendToUser(userId: string, payload: PushPayload) {
   if (!pushConfigured()) return { sent: 0, removed: 0 }

@@ -5,11 +5,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ChevronDown, ClipboardList, Clock, ExternalLink,
-  LayoutTemplate, Loader2, Pencil, Plus, Trash2, X,
+  LayoutTemplate, Loader2, Pencil, Plus, Send, Trash2, X,
 } from 'lucide-react'
 import { useGetTrainingDetail } from '../../hooks/backend/trainings'
 import { useGetDrills } from '../../hooks/backend/drills'
-import { useDeletePlanTemplate, useGetPlanTemplates, useGetTrainingPlan, useSavePlanTemplate, useSaveTrainingPlan } from '../../hooks/backend/plans'
+import { useDeletePlanTemplate, useGetPlanTemplates, useGetTrainingPlan, useNotifyTrainingPlan, useSavePlanTemplate, useSaveTrainingPlan } from '../../hooks/backend/plans'
 import DrillDiagram from '../../components/drills/DrillDiagram'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
 import { Button } from '../../lib/shadcn/button'
@@ -80,6 +80,8 @@ export default function TrainingPlan() {
   const savePlan = useSaveTrainingPlan()
   const [blocks, setBlocks] = useState<Block[]>([])
   const [editing, setEditing] = useState(false)
+  const notify = useNotifyTrainingPlan()
+  const [notice, setNotice] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
   const [picker, setPicker] = useState<{ block: string; item: string } | null>(null)
   const [templatesOpen, setTemplatesOpen] = useState(false)
@@ -187,6 +189,20 @@ export default function TrainingPlan() {
     }
   }
 
+  async function sendToLeaders() {
+    if (!window.confirm('Skicka en notis till lagets ledare om att träningsplanen är klar?')) return
+    setError(null)
+    setNotice(null)
+    try {
+      const r = await notify.trigger({ trainingId })
+      setNotice(r.people > 0
+        ? `Notisen är skickad till ${r.people} ledare.`
+        : 'Ingen annan ledare har notiser påslagna för laget, så ingen notis skickades.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Kunde inte skicka notisen.')
+    }
+  }
+
   function applyTemplate(tblocks: TemplateBlocks) {
     const byId = new Map((drills.data ?? []).map((d) => [d.id, d]))
     change(() => tblocks.map((b) => ({
@@ -216,6 +232,14 @@ export default function TrainingPlan() {
                 className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm hover:bg-primary-foreground/30">
                 <LayoutTemplate className="h-4 w-4" /> Mallar
               </button>
+              {!editing && blocks.length > 0 && (
+                <button onClick={sendToLeaders} disabled={notify.loading} title="Skicka notis till lagets ledare om att planen är klar"
+                  aria-label="Skicka till ledare"
+                  className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-2 py-1.5 text-sm hover:bg-primary-foreground/30 disabled:opacity-60 sm:px-3">
+                  {notify.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  <span className="hidden sm:inline">Skicka till ledare</span>
+                </button>
+              )}
               {!editing && (
                 <button onClick={startEditing} className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm hover:bg-primary-foreground/30">
                   <Pencil className="h-4 w-4" /> Redigera
@@ -236,6 +260,7 @@ export default function TrainingPlan() {
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-3 md:p-4">
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         {savedAt && !editing && <p className="flex items-center gap-1.5 text-sm text-green-600"><Check className="h-4 w-4" /> Planen är sparad</p>}
+        {notice && !editing && <p className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-sm"><Send className="h-4 w-4 shrink-0" /> {notice}</p>}
         {!plan.data && plan.loading ? (
           <div className="h-64 animate-pulse rounded-xl bg-muted" />
         ) : editing ? (

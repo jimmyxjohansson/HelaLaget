@@ -90,6 +90,7 @@ import planning_updatePlanningAnswer from './functions/planning/updatePlanningAn
 import plans_deletePlanTemplate from './functions/plans/deletePlanTemplate'
 import plans_getPlanTemplates from './functions/plans/getPlanTemplates'
 import plans_getTrainingPlan from './functions/plans/getTrainingPlan'
+import plans_notifyTrainingPlan from './functions/plans/notifyTrainingPlan'
 import plans_savePlanTemplate from './functions/plans/savePlanTemplate'
 import plans_saveTrainingPlan from './functions/plans/saveTrainingPlan'
 import players_addPlayersToSquad from './functions/players/addPlayersToSquad'
@@ -232,6 +233,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'plans/deletePlanTemplate': { handler: plans_deletePlanTemplate, access: 'leader' },
   'plans/getPlanTemplates': { handler: plans_getPlanTemplates, access: 'viewer' },
   'plans/getTrainingPlan': { handler: plans_getTrainingPlan, access: 'viewer' },
+  'plans/notifyTrainingPlan': { handler: plans_notifyTrainingPlan, access: 'leader' },
   'plans/savePlanTemplate': { handler: plans_savePlanTemplate, access: 'leader' },
   'plans/saveTrainingPlan': { handler: plans_saveTrainingPlan, access: 'leader' },
   'players/addPlayersToSquad': { handler: players_addPlayersToSquad, access: 'leader' },
