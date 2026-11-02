@@ -58,7 +58,9 @@ export default function SvenskalagSvar() {
   const [payload, setPayload] = useState<SvarPayload | null>(null)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState<{ changed: number; skipped: number } | null>(null)
+  // Rader som sparats (nycklar) och hur det gick
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set())
+  const [done, setDone] = useState(false)
   const [choices, setChoices] = useState<Record<string, Choice>>({})
   // Rader där ledaren öppnat personväljaren
   const [editing, setEditing] = useState<Set<string>>(new Set())
@@ -94,6 +96,13 @@ export default function SvenskalagSvar() {
       const initial: Record<string, Choice> = {}
       for (const r of res.rows) initial[r.key] = r.match && !r.locked ? `${r.match.type}:${r.match.id}` : ''
       setChoices(initial)
+      // Spara direkt allt som kunde kopplas till en person i laget
+      const auto = res.rows.filter((r) => r.match && !r.locked)
+      if (auto.length) {
+        await apply.trigger({ kind: event.kind, id: event.id, items: auto.map((r) => toItem(r, initial[r.key])) })
+        setSavedKeys(new Set(auto.map((r) => r.key)))
+      }
+      setDone(true)
     })().catch((e: Error) => setError(e.message))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -102,26 +111,19 @@ export default function SvenskalagSvar() {
   const rows = useMemo(() => result?.rows ?? [], [result])
   const players = result?.people.filter((p) => p.type === 'player') ?? []
   const leaders = result?.people.filter((p) => p.type === 'leader') ?? []
-  const selected = rows.filter((r) => choices[r.key] && !r.locked)
+  const saved = rows.filter((r) => savedKeys.has(r.key))
+  const changed = saved.filter((r) => r.current !== r.next)
+  const locked = rows.filter((r) => r.locked)
+  // Namn som inte hittades i laget och inte sparats än
+  const unknown = rows.filter((r) => !r.match && !r.locked && !savedKeys.has(r.key))
+  const toSave = unknown.filter((r) => choices[r.key])
 
-  async function save() {
+  async function saveUnknown() {
     if (!result) return
     setError(null)
     try {
-      const items = selected.map((r) => {
-        const [type, id] = choices[r.key].split(':')
-        const manual = !r.match || `${r.match.type}:${r.match.id}` !== choices[r.key]
-        return {
-          type: type as 'player' | 'leader',
-          id: Number(id),
-          list: r.list,
-          comment: r.comment,
-          time: r.time,
-          linkName: manual ? r.name : null,
-        }
-      })
-      const res = await apply.trigger({ kind: result.event.kind, id: result.event.id, items })
-      setSaved(res)
+      await apply.trigger({ kind: result.event.kind, id: result.event.id, items: toSave.map((r) => toItem(r, choices[r.key])) })
+      setSavedKeys((k) => new Set([...k, ...toSave.map((r) => r.key)]))
     } catch (e) {
       setError((e as Error).message)
     }
@@ -129,14 +131,9 @@ export default function SvenskalagSvar() {
 
   if (!ready) return null
 
-  const saveButton = (
-    <Button onClick={save} disabled={apply.loading || selected.length === 0} className="w-full">
-      {apply.loading && <Loader2 className="w-4 h-4 animate-spin" />}
-      Spara {selected.length} svar
-    </Button>
-  )
-
+  const kindWord = result?.event.kind === 'training' ? 'träningen' : 'matchen'
   const eventPath = result ? `/${result.event.kind === 'training' ? 'trainings' : 'matches'}/${result.event.id}` : null
+  const listOf = (r: Row) => LISTS.find((l) => l.key === r.list)!
 
   return (
     <div className="flex flex-col min-h-full pb-8">
@@ -149,13 +146,13 @@ export default function SvenskalagSvar() {
 
       {!payload && <Instructions />}
 
-      {payload && !result && !error && (
+      {payload && !done && !error && (
         <div className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" /> Läser svaren…
+          <Loader2 className="w-4 h-4 animate-spin" /> {result ? 'Sparar svaren…' : 'Läser svaren…'}
         </div>
       )}
 
-      {result && (
+      {result && done && (
         <>
           <Section title={result.event.kind === 'training' ? 'Träning' : 'Match'}>
             <div className="flex items-center justify-between gap-3">
@@ -169,71 +166,89 @@ export default function SvenskalagSvar() {
                 </a>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Lästa rader: {LISTS.map((l) => `${l.label.split(',')[0]} ${payload?.lists[l.key]?.length ?? '–'}`).join(' · ')}
+            <p className="text-sm mt-3">
+              <Check className="inline w-4 h-4 text-emerald-600 mr-1 -mt-0.5" />
+              <span className="font-medium">{saved.length} svar sparade</span>
+              {saved.length > 0 && <span className="text-muted-foreground">, {changed.length} ändrade</span>}
             </p>
-            {!saved && rows.length > 0 && <div className="mt-3">{saveButton}</div>}
+            {locked.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <Lock className="inline w-3 h-3 mr-1 -mt-0.5" />
+                {locked.length} med redan rapporterad närvaro ändrades inte.
+              </p>
+            )}
+            {rows.length === 0 && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Hittade inga namn i listorna. Kontrollera att du är inloggad på Svenskalag och kör bokmärket igen.
+              </p>
+            )}
+            {eventPath && (
+              <Button asChild variant="outline" className="mt-3 w-full">
+                <Link href={eventPath}>Öppna {kindWord}</Link>
+              </Button>
+            )}
           </Section>
 
-          {saved ? (
-            <Section title="Klart">
-              <p className="text-sm">
-                <Check className="inline w-4 h-4 text-emerald-600 mr-1" />
-                {saved.changed} svar sparade{saved.skipped ? `, ${saved.skipped} hoppades över (närvaro redan rapporterad)` : ''}.
+          {unknown.length > 0 && (
+            <Section title={`Okända namn (${unknown.length})`}>
+              <p className="text-xs text-muted-foreground mb-1">
+                Välj vem i laget namnet hör till. Appen kommer ihåg kopplingen till nästa gång.
               </p>
-              {eventPath && (
-                <Button asChild className="mt-3">
-                  <Link href={eventPath}>Öppna {result.event.kind === 'training' ? 'träningen' : 'matchen'}</Link>
-                </Button>
-              )}
+              <ul className="-mx-1 divide-y">
+                {unknown.map((r) => (
+                  <ReplyItem
+                    key={r.key}
+                    row={r}
+                    tone={listOf(r).tone}
+                    choice={choices[r.key] ?? ''}
+                    editing
+                    players={players}
+                    leaders={leaders}
+                    onChoice={(v) => setChoices((c) => ({ ...c, [r.key]: v }))}
+                    onEdit={() => {}}
+                  />
+                ))}
+              </ul>
+              <Button onClick={saveUnknown} disabled={apply.loading || toSave.length === 0} className="mt-3 w-full">
+                {apply.loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Spara {toSave.length} svar
+              </Button>
             </Section>
-          ) : (
-            <>
-              {rows.length === 0 && (
-                <Section title="Svar">
-                  <p className="text-sm text-muted-foreground">
-                    Hittade inga namn i listorna. Öppna aktiviteten i Svenskalag, kontrollera att du är inloggad och kör bokmärket igen.
-                  </p>
-                </Section>
-              )}
-              {LISTS.map((l) => {
-                const list = rows.filter((r) => r.list === l.key)
-                if (!list.length) return null
-                return (
-                  <Section key={l.key} title={`${l.label} (${list.length})`}>
-                    <ul className="-mx-1 divide-y">
-                      {list.map((r) => (
-                        <ReplyItem
-                          key={r.key}
-                          row={r}
-                          tone={l.tone}
-                          choice={choices[r.key] ?? ''}
-                          editing={editing.has(r.key)}
-                          players={players}
-                          leaders={leaders}
-                          onChoice={(v) => setChoices((c) => ({ ...c, [r.key]: v }))}
-                          onEdit={() => setEditing((e) => new Set(e).add(r.key))}
-                        />
-                      ))}
-                    </ul>
-                  </Section>
-                )
-              })}
-              {rows.length > 0 && (
-                <div className="px-4 pt-2 flex flex-col gap-2">
-                  <p className="text-xs text-muted-foreground">
-                    Kommentarer sparas som anledning. Klockslaget sparas bara när svaret kom samma dag som aktiviteten
-                    (fetstilt). Namn som du kopplar för hand kommer appen ihåg till nästa gång.
-                  </p>
-                  {saveButton}
-                </div>
-              )}
-            </>
+          )}
+
+          {changed.length > 0 && (
+            <Section title="Ändrat">
+              <ul className="text-sm divide-y">
+                {changed.map((r) => (
+                  <li key={r.key} className="py-1 flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate">
+                      <span className={listOf(r).tone}>{result.people.find((p) => `${p.type}:${p.id}` === choices[r.key])?.name ?? r.name}</span>
+                      {r.comment && <span className="text-xs text-muted-foreground italic"> · {r.comment}</span>}
+                    </span>
+                    <span className="shrink-0 text-[11px] rounded bg-muted px-1.5 py-0.5 font-medium">{r.next}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
           )}
         </>
       )}
     </div>
   )
+}
+
+/** Raden som den skickas till servern. */
+function toItem(r: Row, choice: Choice) {
+  const [type, id] = choice.split(':')
+  const manual = !r.match || `${r.match.type}:${r.match.id}` !== choice
+  return {
+    type: type as 'player' | 'leader',
+    id: Number(id),
+    list: r.list,
+    comment: r.comment,
+    time: r.time,
+    linkName: manual ? r.name : null,
+  }
 }
 
 type Row = NonNullable<ReturnType<typeof usePreviewSvenskalagReplies>['data']>['rows'][number]
@@ -331,12 +346,12 @@ export function Instructions() {
       <div className="text-sm space-y-3">
         <p>
           Svenskalag kräver inloggning, så svaren läses av ett bokmärke i din egen webbläsare. Det läser listorna
-          Kommer, Kan ej och Kallade på en aktivitet och öppnar svaren här, där du granskar innan något sparas.
+          Kommer, Kan ej och Kallade på en aktivitet och sparar svaren direkt i Hela Laget.
         </p>
         <ol className="list-decimal pl-5 space-y-1">
           <li>Dra knappen nedan till bokmärkesfältet i webbläsaren (görs en gång, på datorn).</li>
           <li>Öppna träningen eller matchen på Svenskalag, inloggad som ledare.</li>
-          <li>Klicka på bokmärket. Svaren öppnas i Hela Laget i en ny flik.</li>
+          <li>Klicka på bokmärket. Svaren sparas och en kvittens öppnas i en ny flik.</li>
         </ol>
         <a
           ref={ref}
@@ -347,8 +362,8 @@ export function Instructions() {
           <Bookmark className="w-4 h-4" /> Svar till Hela Laget
         </a>
         <p className="text-xs text-muted-foreground">
-          Aktiviteten måste redan finnas i Hela Laget (hämtad via Svenskalag-synk). Svaren skickas efter # i
-          adressen och sparas först när du trycker Spara.
+          Aktiviteten måste redan finnas i Hela Laget (hämtad via Svenskalag-synk). Rapporterad närvaro skrivs aldrig
+          över, och namn som appen inte känner igen får du koppla själv.
         </p>
       </div>
     </Section>
