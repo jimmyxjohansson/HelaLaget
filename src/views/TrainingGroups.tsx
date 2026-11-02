@@ -3,7 +3,10 @@
 import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowDown, ArrowLeft, ArrowRightLeft, ArrowUp, ChevronDown, List, Loader2, RotateCcw, Users, Wand2, X } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRightLeft, ArrowUp, Check, ChevronDown, ClipboardCopy, Copy, Download, List, Loader2, RotateCcw, Share2, Users, Wand2, X } from 'lucide-react'
+import { currentSquad } from '../lib/squad-store'
+import { canCopyImage, canShareImage, copyImage, downloadImage, shareImage } from '../utils/shareImage'
+import { drawGroups, groupsText, type ImageGroup } from './ui/groupsImage'
 import { useGetTrainingGroups, useUpdateGroupRank, useUpdateParticipantGroups } from '../hooks/backend/trainings'
 import { Button } from '../lib/shadcn/button'
 import { Checkbox } from '../lib/shadcn/checkbox'
@@ -91,6 +94,8 @@ export default function TrainingGroups() {
   const [sortBy, setSortBy] = useState<SortBy>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [overviewOpen, setOverviewOpen] = useState(false)
+  const [showRank, setShowRank] = useState(true)
+  const [shareMsg, setShareMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
 
   useEffect(() => {
@@ -219,6 +224,50 @@ export default function TrainingGroups() {
     }
     return [{ key: activeTab, label: activeTab }]
   }, [activeTab, counts])
+
+  // Gruppöversikten som bild eller text att skicka till andra ledare
+  const overviewGroups: ImageGroup[] = [
+    ...GROUPS.filter(g => (counts[g] ?? 0) > 0).map(g => ({ key: g, label: g })),
+    ...((counts[UNASSIGNED_KEY] ?? 0) > 0 ? [{ key: UNASSIGNED_KEY, label: 'Ej tilldelade' }] : []),
+  ].map(({ key, label }) => ({
+    label,
+    players: (buckets[key] ?? []).map(p => ({ name: p.shortname, rank: showRank ? p.rank : null, goalkeeper: !!p.goalkeeper && key !== 'Målvakter' })),
+  }))
+  const squad = currentSquad()
+  const imageTitle = `${squad ? `${squad.organizationName} ${squad.squadName} · ` : ''}Träningsgrupper`
+  const imageSubtitle = training ? `${training.type} · ${formatDate(training.date)} ${formatTime(training.date)}` : ''
+  const imageFile = `grupper-${training ? new Date(training.date).toISOString().slice(0, 10) : 'traning'}.png`
+
+  function renderImage() {
+    const canvas = document.createElement('canvas')
+    drawGroups(canvas, overviewGroups, {
+      title: imageTitle,
+      subtitle: imageSubtitle,
+      primary: squad?.primaryColor || '#24282E',
+      accent: squad?.accentColor || '#FFFFFF',
+    })
+    return canvas
+  }
+
+  async function handleShare(kind: 'copy' | 'share' | 'download' | 'text') {
+    setShareMsg(null)
+    try {
+      if (kind === 'text') {
+        await navigator.clipboard.writeText(groupsText(overviewGroups.map(g => ({ ...g, players: g.players.map(p => ({ ...p, rank: null })) })), `${imageTitle}\n${imageSubtitle}`))
+        setShareMsg({ ok: true, text: 'Grupperna är kopierade som text.' })
+      } else if (kind === 'copy') {
+        await copyImage(renderImage())
+        setShareMsg({ ok: true, text: 'Bilden är kopierad. Klistra in den i ett meddelande.' })
+      } else if (kind === 'share') {
+        await shareImage(renderImage(), imageFile, imageTitle)
+      } else {
+        await downloadImage(renderImage(), imageFile)
+      }
+    } catch (e) {
+      if ((e as Error)?.name === 'AbortError') return
+      setShareMsg({ ok: false, text: kind === 'copy' ? 'Webbläsaren tillåter inte att bilder kopieras. Använd Dela eller Ladda ner.' : 'Det gick inte. Försök igen.' })
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-full">
@@ -497,6 +546,37 @@ export default function TrainingGroups() {
           <DialogHeader>
             <DialogTitle>Gruppöversikt</DialogTitle>
           </DialogHeader>
+          {participants.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {canCopyImage() && (
+                  <button type="button" onClick={() => handleShare('copy')}
+                    className="flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground">
+                    {shareMsg?.ok && shareMsg.text.startsWith('Bilden') ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} Kopiera bild
+                  </button>
+                )}
+                {canShareImage() && (
+                  <button type="button" onClick={() => handleShare('share')}
+                    className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted">
+                    <Share2 className="h-3.5 w-3.5" /> Dela
+                  </button>
+                )}
+                <button type="button" onClick={() => handleShare('download')}
+                  className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted">
+                  <Download className="h-3.5 w-3.5" /> Ladda ner
+                </button>
+                <button type="button" onClick={() => handleShare('text')}
+                  className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs hover:bg-muted">
+                  <ClipboardCopy className="h-3.5 w-3.5" /> Kopiera text
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <input type="checkbox" checked={showRank} onChange={(e) => setShowRank(e.target.checked)} />
+                Visa rank i bilden
+              </label>
+              {shareMsg && <p className={cn('text-xs', shareMsg.ok ? 'text-muted-foreground' : 'text-destructive')}>{shareMsg.text}</p>}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 py-1 max-h-[70vh] overflow-y-auto">
             {participants.length === 0 ? (
               <p className="col-span-2 text-xs text-muted-foreground text-center py-4">Inga deltagare.</p>
