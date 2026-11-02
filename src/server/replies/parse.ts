@@ -24,7 +24,7 @@ const MONTHS: Record<string, number> = {
 
 const IGNORE = new Set([
   'kallad', 'kallade', 'kommer', 'kan ej', 'kan inte', 'namn', 'anmäld', 'anmälda', 'svarat', 'svar',
-  'ej svarat', 'avböjt', 'deltar', 'deltar ej', 'ta bort',
+  'ej svarat', 'avböjt', 'deltar', 'deltar ej', 'ta bort', 'kommer ej',
 ])
 
 const ROLE = /^(\|\s*)?(huvud)?(tränare|ledare|lagledare|assisterande tränare|assisterande|materialare|materialansvarig|målvaktstränare|ansvarig|förälder|lagförälder|coach)$/i
@@ -65,7 +65,8 @@ export function parseRow(list: ListKey, segments: string[], today: Date): Parsed
   const rest: string[] = []
 
   for (const raw of segments) {
-    let s = raw.replace(/\s+/g, ' ').trim()
+    // Emojis och liknande tecken (t.ex. i namn) tas bort
+    let s = raw.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim()
     if (!s) continue
     // "Jimmy Johansson | Tränare" i en och samma bit
     if (!name && s.includes('|')) {
@@ -78,6 +79,8 @@ export function parseRow(list: ListKey, segments: string[], today: Date): Parsed
       }
     }
     if (s === '|') continue
+    // Telefonnummer (finns dolda för utskrift på Svenskalag) ska aldrig följa med
+    if (/^[\d\s+()\-,]{6,}$/.test(s)) continue
     if (ROLE.test(s)) { leaderRole = true; continue }
     if (IGNORE.has(s.toLowerCase())) continue
     const when = parseWhen(s, today)
