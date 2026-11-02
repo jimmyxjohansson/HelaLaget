@@ -19,7 +19,6 @@ import { Combobox } from '../components/Combobox'
 import { Button } from '../lib/shadcn/button'
 import { Input } from '../lib/shadcn/input'
 import { Label } from '../lib/shadcn/label'
-import { RadioGroup, RadioGroupItem } from '../lib/shadcn/radio-group'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../lib/shadcn/select'
@@ -864,62 +863,27 @@ export default function MatchTimeline() {
         )}
 
         {form && (
-          <Section title={form.id ? 'Redigera händelse' : 'Ny händelse'}>
+          <Section title={form.id ? 'Redigera händelse' : form.kind === 'their_goal' ? `Mål för ${match?.opponent ?? 'motståndarna'}` : form.kind === 'our_goal' ? `Mål för ${ownTeamName()}` : 'Ny händelse'}>
             {!form.id && form.kind !== 'save' && (
               <EntryTypeSwitch value="goal" onGoal={() => {}} onCard={switchToCard} />
             )}
-            <Field label="Typ">
-              <Select
-                value={form.kind}
-                onValueChange={v => setField('kind', v as EventKind)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="our_goal">{KIND_LABEL.our_goal}</SelectItem>
-                  <SelectItem value="their_goal">{KIND_LABEL.their_goal}</SelectItem>
-                  <SelectItem value="save">{KIND_LABEL.save}</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
 
-            {form.kind !== 'save' && (
-              <Field label="Måltyp">
-                <RadioGroup
-                  value={form.type}
-                  onValueChange={v => setField('type', v as GoalType)}
-                  className="grid grid-cols-2 gap-2"
+            {/* Typen följer knappen man tryckte på; väljs bara för räddningar */}
+            {form.kind === 'save' && (
+              <Field label="Typ">
+                <Select
+                  value={form.kind}
+                  onValueChange={v => setField('kind', v as EventKind)}
                 >
-                  {GOAL_TYPES.map(t => {
-                    const id = `goal-type-${t}`
-                    const selected = form.type === t
-                    return (
-                      <label
-                        key={t}
-                        htmlFor={id}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium cursor-pointer transition-colors ${
-                          selected
-                            ? 'border-primary bg-primary/10 text-foreground'
-                            : 'border-border bg-card text-muted-foreground hover:border-foreground/40'
-                        }`}
-                      >
-                        <RadioGroupItem id={id} value={t} />
-                        <span>{t}</span>
-                      </label>
-                    )
-                  })}
-                </RadioGroup>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="our_goal">{KIND_LABEL.our_goal}</SelectItem>
+                    <SelectItem value="their_goal">{KIND_LABEL.their_goal}</SelectItem>
+                    <SelectItem value="save">{KIND_LABEL.save}</SelectItem>
+                  </SelectContent>
+                </Select>
               </Field>
             )}
-
-            <Field label="Minut">
-              <Input
-                type="number"
-                min={0}
-                value={form.minute}
-                onChange={e => setField('minute', e.target.value)}
-                placeholder="t.ex. 23"
-              />
-            </Field>
 
             {form.kind === 'our_goal' && (
               <>
@@ -958,6 +922,39 @@ export default function MatchTimeline() {
                 />
               </Field>
             )}
+
+            {form.kind !== 'save' && (
+              <Field label="Måltyp">
+                <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Måltyp">
+                  {GOAL_TYPES.map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      role="radio"
+                      aria-checked={form.type === t}
+                      onClick={() => setField('type', t)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                        form.type === t
+                          ? 'bg-foreground text-background'
+                          : 'bg-muted text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            )}
+
+            <Field label="Minut">
+              <Input
+                type="number"
+                min={0}
+                value={form.minute}
+                onChange={e => setField('minute', e.target.value)}
+                placeholder="t.ex. 23"
+              />
+            </Field>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
