@@ -20,7 +20,11 @@ export type Membership = {
   logoUrl: string | null
   planningUrl: string | null
   /** Lagets sida på Svenskalag */
-  svenskalagUrl: string | null
+  /** Lagets sida (t.ex. på Svenskalag) och dokument, med namnen som visas i menyn */
+  siteUrl: string | null
+  siteName: string | null
+  docsUrl: string | null
+  docsName: string | null
 }
 
 /** Inloggad användare, alla lag hen är med i eller har ansökt till, och valt lag. */
@@ -41,7 +45,8 @@ export default async function getMe(req: { params: Params; user: User }) {
          CASE WHEN sa.is_super OR oa.user_id IS NOT NULL THEN 'approved' ELSE m.status::text END AS status,
          s.primary_color AS "primaryColor", s.accent_color AS "accentColor", s.logo_url AS "logoUrl",
          s.planning_url AS "planningUrl",
-         s.svenskalag_url AS "svenskalagUrl"
+         s.svenskalag_url AS "siteUrl", s.site_name AS "siteName",
+         s.docs_url AS "docsUrl", s.docs_name AS "docsName"
        FROM squads s
        JOIN organizations o ON o.id = s.organization_id
        CROSS JOIN (SELECT EXISTS (SELECT 1 FROM app_admins WHERE user_id = $1) AS is_super) sa

@@ -1,7 +1,7 @@
 'use client'
 
 import {
-  BarChart3, Bell, BookOpen, Building2, CalendarDays, CalendarRange, ExternalLink, Home, ListOrdered,
+  BarChart3, Bell, BookOpen, Building2, CalendarDays, CalendarRange, ExternalLink, FileText, Home, ListOrdered,
   Medal, RefreshCw, Repeat, Shield, Trophy, UserCog, Users,
 } from 'lucide-react'
 import { getMe } from '../lib/squad-store'
@@ -40,11 +40,19 @@ export function navGroups(): NavGroup[] {
     { to: '/teams', icon: Shield, label: 'Lag' },
   ]
 
-  const konto: NavItem[] = [{ to: '/lag', icon: Repeat, label: 'Mina lag' }]
-  if (me?.current?.svenskalagUrl) {
-    konto.push({ to: me.current.svenskalagUrl, icon: ExternalLink, label: 'Svenskalag', external: true })
+  // Lagets egna länkar, med namnen admin har gett dem
+  const lankar: NavItem[] = []
+  if (me?.current?.siteUrl) {
+    lankar.push({ to: me.current.siteUrl, icon: ExternalLink, label: me.current.siteName || 'Lagets sida', external: true })
   }
-  konto.push({ to: '/notiser', icon: Bell, label: 'Notiser' })
+  if (me?.current?.docsUrl) {
+    lankar.push({ to: me.current.docsUrl, icon: FileText, label: me.current.docsName || 'Dokument', external: true })
+  }
+
+  const konto: NavItem[] = [
+    { to: '/lag', icon: Repeat, label: 'Mina lag' },
+    { to: '/notiser', icon: Bell, label: 'Notiser' },
+  ]
 
   const admin: NavItem[] = []
   if (leader) admin.push({ to: '/svenskalag', icon: RefreshCw, label: 'Svenskalag-synk' })
@@ -56,6 +64,7 @@ export function navGroups(): NavGroup[] {
   return [
     { title: 'Laget', items: laget },
     { title: 'Tävling', items: tavling },
+    { title: 'Länkar', items: lankar },
     { title: 'Konto', items: konto },
     { title: 'Administration', items: admin },
   ].filter((g) => g.items.length > 0)

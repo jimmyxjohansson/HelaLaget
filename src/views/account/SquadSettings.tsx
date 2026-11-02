@@ -80,7 +80,10 @@ export default function SquadSettings() {
     logoUrl: '',
     planningUrl: '',
     svenskalagIcalUrl: '',
-    svenskalagUrl: '',
+    siteUrl: '',
+    siteName: '',
+    docsUrl: '',
+    docsName: '',
   })
   const [savedSettings, setSavedSettings] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -129,7 +132,10 @@ export default function SquadSettings() {
             logoUrl: s.logoUrl ?? '',
             planningUrl: s.planningUrl ?? '',
             svenskalagIcalUrl: s.svenskalagIcalUrl ?? '',
-            svenskalagUrl: s.svenskalagUrl ?? '',
+            siteUrl: s.siteUrl ?? '',
+            siteName: s.siteName ?? '',
+            docsUrl: s.docsUrl ?? '',
+            docsName: s.docsName ?? '',
           })
       })
       .catch(() => {})
@@ -410,16 +416,42 @@ export default function SquadSettings() {
               className="text-xs"
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sq-svl-site">Lagets sida på Svenskalag (valfritt)</Label>
-            <Input
-              id="sq-svl-site"
-              value={form.svenskalagUrl}
-              placeholder="https://www.svenskalag.se/…"
-              onChange={(e) => setForm({ ...form, svenskalagUrl: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">Visas som länken Svenskalag i menyn, under Mina lag.</p>
-          </div>
+          {([
+            { key: 'site', title: 'Lagets sida', urlPh: 'https://www.svenskalag.se/…', namePh: 'Lagets sida', example: 'till exempel Svenskalag eller lagets hemsida' },
+            { key: 'docs', title: 'Dokument', urlPh: 'https://…', namePh: 'Dokument', example: 'till exempel en delad mapp med kallelser och scheman' },
+          ] as const).map((l) => {
+            const urlKey = `${l.key}Url` as const
+            const nameKey = `${l.key}Name` as const
+            return (
+              <div key={l.key} className="flex flex-col gap-1.5">
+                <Label htmlFor={`sq-${l.key}-url`}>{l.title} (valfritt)</Label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <label className="flex flex-col gap-1 sm:flex-[2]">
+                    <span className="text-xs text-muted-foreground">Adress</span>
+                    <Input
+                      id={`sq-${l.key}-url`}
+                      value={form[urlKey]}
+                      placeholder={l.urlPh}
+                      onChange={(e) => setForm({ ...form, [urlKey]: e.target.value })}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 sm:flex-1">
+                    <span className="text-xs text-muted-foreground">Namn i menyn</span>
+                    <Input
+                      aria-label={`Namn på länken ${l.title}`}
+                      value={form[nameKey]}
+                      maxLength={40}
+                      placeholder={l.key === 'site' ? 'Svenskalag' : 'Dokument'}
+                      onChange={(e) => setForm({ ...form, [nameKey]: e.target.value })}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Visas i menyn under Länkar med namnet du anger ({form[nameKey].trim() || l.namePh}), {l.example}.
+                </p>
+              </div>
+            )
+          })}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="sq-svl">Svenskalag-kalender (valfritt)</Label>
             <Input
