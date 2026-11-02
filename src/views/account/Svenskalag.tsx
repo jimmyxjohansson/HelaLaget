@@ -12,6 +12,7 @@ import {
 import { currentSquad } from '../../lib/squad-store'
 import { Button } from '../../lib/shadcn/button'
 import { ErrorText, PageHeader, Section } from './shared'
+import { Instructions } from '../svar/SvenskalagSvar'
 
 // Tider sparas som väggklocka i UTC (samma som resten av appen)
 function formatWhen(iso: string) {
@@ -122,6 +123,8 @@ export default function Svenskalag() {
           </Button>
         </Section>
       )}
+
+      {s && <Instructions />}
 
       {s?.configured && (
         <Section title={`Att granska${s.pending.length ? ` (${s.pending.length})` : ''}`}>

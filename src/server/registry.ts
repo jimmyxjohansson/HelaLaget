@@ -104,6 +104,9 @@ import players_getSquadStatuses from './functions/players/getSquadStatuses'
 import players_getUpcomingBirthdays from './functions/players/getUpcomingBirthdays'
 import players_removePlayerFromSquad from './functions/players/removePlayerFromSquad'
 import players_updatePlayer from './functions/players/updatePlayer'
+import replies_applySvenskalagReplies from './functions/replies/applySvenskalagReplies'
+import replies_findSvenskalagActivity from './functions/replies/findSvenskalagActivity'
+import replies_previewSvenskalagReplies from './functions/replies/previewSvenskalagReplies'
 import stats_getStatsEvents from './functions/stats/getStatsEvents'
 import stats_getStatsMatches from './functions/stats/getStatsMatches'
 import stats_getStatsTrainings from './functions/stats/getStatsTrainings'
@@ -247,6 +250,9 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'players/getUpcomingBirthdays': { handler: players_getUpcomingBirthdays, access: 'viewer' },
   'players/removePlayerFromSquad': { handler: players_removePlayerFromSquad, access: 'leader' },
   'players/updatePlayer': { handler: players_updatePlayer, access: 'leader' },
+  'replies/applySvenskalagReplies': { handler: replies_applySvenskalagReplies, access: 'leader' },
+  'replies/findSvenskalagActivity': { handler: replies_findSvenskalagActivity, access: 'user' },
+  'replies/previewSvenskalagReplies': { handler: replies_previewSvenskalagReplies, access: 'leader' },
   'stats/getStatsEvents': { handler: stats_getStatsEvents, access: 'viewer' },
   'stats/getStatsMatches': { handler: stats_getStatsMatches, access: 'viewer' },
   'stats/getStatsTrainings': { handler: stats_getStatsTrainings, access: 'viewer' },
