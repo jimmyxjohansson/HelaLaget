@@ -223,7 +223,9 @@ export default function SvenskalagSvar() {
                   <li key={r.key} className="py-1 flex items-center justify-between gap-2">
                     <span className="min-w-0 truncate">
                       <span className={listOf(r).tone}>{result.people.find((p) => `${p.type}:${p.id}` === choices[r.key])?.name ?? r.name}</span>
-                      {r.comment && <span className="text-xs text-muted-foreground italic"> · {r.comment}</span>}
+                      {(r.comment || r.list === 'notattending') && (
+                        <span className="text-xs text-muted-foreground italic"> · {r.comment || 'Ingen anledning'}</span>
+                      )}
                     </span>
                     <span className="shrink-0 text-[11px] rounded bg-muted px-1.5 py-0.5 font-medium">{r.next}</span>
                   </li>

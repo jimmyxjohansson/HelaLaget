@@ -7,6 +7,8 @@ import type { SquadAccess, User } from '@/server/types'
 
 export const access = 'leader'
 
+const NO_REASON = 'Ingen anledning'
+
 type Item = {
   type: 'player' | 'leader'
   id: number
@@ -40,6 +42,8 @@ export default async function applySvenskalagReplies(req: { params: Params; user
     const cur = current.get(key)
     if (kind === 'training' && cur && REPORTED_TRAINING.has(cur)) { skipped++; continue }
     const comment = it.comment?.trim().slice(0, 300) || null
+    // Kan ej utan kommentar: skriv "Ingen anledning", men bara om det inte redan står en anledning
+    const noReason = it.list === 'notattending' && !comment
     const time = it.time && /^\d{2}:\d{2}$/.test(it.time) ? it.time : null
 
     if (kind === 'training') {
@@ -47,19 +51,22 @@ export default async function applySvenskalagReplies(req: { params: Params; user
       const params = [id, personId, status, comment, time]
       if (current.has(key)) {
         await db.query(
-          `UPDATE ${table} SET status = $3, reason = COALESCE($4, reason), reasontime = COALESCE($5, reasontime)
-           WHERE ${fk} = $1 AND ${col} = $2`, params)
+          `UPDATE ${table} SET status = $3, reason = COALESCE($4, NULLIF(reason, ''), $6), reasontime = COALESCE($5, reasontime)
+           WHERE ${fk} = $1 AND ${col} = $2`, [...params, noReason ? NO_REASON : null])
       } else {
-        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason, reasontime) VALUES ($1, $2, $3, $4, $5)`, params)
+        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason, reasontime) VALUES ($1, $2, $3, $4, $5)`,
+          [id, personId, status, comment ?? (noReason ? NO_REASON : null), time])
       }
     } else {
       const status = MATCH_STATUS[it.list]
-      const reason = [time, comment].filter(Boolean).join(' – ') || null
+      const reason = [time, comment || (noReason ? NO_REASON : null)].filter(Boolean).join(' – ') || null
       const params = [id, personId, status, reason]
       if (current.has(key)) {
-        await db.query(`UPDATE ${table} SET status = $3, reason = COALESCE($4, reason) WHERE ${fk} = $1 AND ${col} = $2`, params)
+        await db.query(
+          `UPDATE ${table} SET status = $3, reason = COALESCE($4, NULLIF(reason, ''), $5) WHERE ${fk} = $1 AND ${col} = $2`,
+          [...params, noReason ? NO_REASON : null])
       } else {
-        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason) VALUES ($1, $2, $3, $4)`, params)
+        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason) VALUES ($1, $2, $3, $4)`, [id, personId, status, reason ?? (noReason ? NO_REASON : null)])
       }
     }
     changed++
