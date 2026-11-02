@@ -8,6 +8,7 @@ import {
 } from '../lib/shadcn/dialog'
 import { rankStyle } from '../utils/rankColors'
 import { PlayerTrainingsDialog } from './PlayerTrainingsDialog'
+import { useSquadStatuses } from '../hooks/useSquadStatuses'
 
 interface AttendanceRow {
   id: number
@@ -37,6 +38,7 @@ export function AttendanceStatsButton() {
   const [statsDate1, setStatsDate1] = useState('')
   const [statsDate2, setStatsDate2] = useState('')
   const [statsStatuses, setStatsStatuses] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar']))
+  const statusVisible = useSquadStatuses()
   const [statsPeriod, setStatsPeriod] = useState(2)
   const [statsSort, setStatsSort] = useState<{ key: StatsSortKey; dir: 'asc' | 'desc' } | null>(null)
   const [detailPlayer, setDetailPlayer] = useState<{ id: number; name: string } | null>(null)
@@ -134,7 +136,7 @@ export function AttendanceStatsButton() {
               })}
             </div>
             <div className="flex gap-1.5 flex-wrap">
-              {ATTENDANCE_STATUSES.map(s => {
+              {ATTENDANCE_STATUSES.filter(statusVisible).map(s => {
                 const on = statsStatuses.has(s)
                 return (
                   <button

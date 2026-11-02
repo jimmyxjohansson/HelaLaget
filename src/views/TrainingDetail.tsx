@@ -19,6 +19,7 @@ import { useGetTrainingPlan } from '../hooks/backend/plans'
 import DatePicker from '../components/DatePicker'
 import TimeInput from '../components/TimeInput'
 import { GROUP_DEFAULT_RANK, TRAINING_GROUPS, groupShort } from '../utils/trainingGroups'
+import { useSquadStatuses } from '../hooks/useSquadStatuses'
 
 interface Attendee {
   player_id: number
@@ -126,6 +127,7 @@ export default function TrainingDetail() {
   const [addSelected, setAddSelected] = useState<Set<number>>(new Set())
   const [addingBulk, setAddingBulk] = useState(false)
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar']))
+  const statusVisible = useSquadStatuses()
   const { data: availableData, trigger: triggerAvailable } = useGetAvailablePlayers()
   const { trigger: triggerAddBulk } = useAddParticipants()
   const { trigger: triggerRemove, loading: removing } = useRemoveParticipant()
@@ -964,7 +966,7 @@ export default function TrainingDetail() {
           </SheetHeader>
           <div className="px-4 py-2 border-b border-border">
             <div className="flex gap-2 flex-wrap">
-              {(['Aktiv', 'Aktiv, ej matchklar', 'Gästspelare', 'Vilande', 'Slutat'] as const).map(s => {
+              {(['Aktiv', 'Aktiv, ej matchklar', 'Gästspelare', 'Vilande', 'Slutat'] as const).filter(statusVisible).map(s => {
                 const on = statusFilter.has(s)
                 return (
                   <button

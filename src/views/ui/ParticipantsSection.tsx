@@ -32,6 +32,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../lib/shadcn/sheet'
 import { VisualCheckbox } from '../../components/VisualCheckbox'
 import { rankStyle } from '../../utils/rankColors'
+import { useSquadStatuses } from '../../hooks/useSquadStatuses'
 
 export interface ParticipantRow {
   id: number
@@ -142,6 +143,7 @@ export default function ParticipantsSection({
   const [addSearch, setAddSearch] = useState('')
   const [addSelected, setAddSelected] = useState<Set<number>>(new Set())
   const [playerStatusFilter, setPlayerStatusFilter] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar']))
+  const statusVisible = useSquadStatuses()
 
   const [reasonOpen, setReasonOpen] = useState(false)
   const [reasonTarget, setReasonTarget] = useState<{ id: number; name: string } | null>(null)
@@ -493,7 +495,7 @@ export default function ParticipantsSection({
           </SheetHeader>
           <div className="px-4 py-2 border-b border-border">
             <div className="flex gap-2 flex-wrap">
-              {PLAYER_STATUS_FILTERS.map(s => {
+              {PLAYER_STATUS_FILTERS.filter(statusVisible).map(s => {
                 const on = playerStatusFilter.has(s)
                 return (
                   <button

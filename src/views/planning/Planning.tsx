@@ -16,6 +16,7 @@ import SummaryDialog from './SummaryDialog'
 import OverviewDialog from './OverviewDialog'
 import TotalDialog from './TotalDialog'
 import { PERIODS, PLAYER_STATUSES, periodFrom, type Kind } from './shared'
+import { useSquadStatuses } from '../../hooks/useSquadStatuses'
 
 type Slots = (number | null)[]
 const EMPTY: Slots = [null, null, null, null]
@@ -45,6 +46,7 @@ export default function Planning() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const events = useGetPlanningEvents()
   const squadGenders = useGetSquadGenders()
+  const statusVisible = useSquadStatuses()
   useEffect(() => {
     squadGenders.trigger().catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,7 +170,7 @@ export default function Planning() {
           )}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Ej kallade</span>
-            {PLAYER_STATUSES.map((s) => (
+            {PLAYER_STATUSES.filter(statusVisible).map((s) => (
               <button key={s} type="button" onClick={() => setPlayerStatuses(toggle(playerStatuses, s))} className={chip(playerStatuses.includes(s))}>
                 {s}
               </button>

@@ -12,6 +12,7 @@ import { rankStyle } from '../utils/rankColors'
 import PlayerActions from '../components/PlayerActions'
 import { canEdit } from '../lib/squad-store'
 import SquadLogo from '../components/SquadLogo'
+import { useSquadStatuses } from '../hooks/useSquadStatuses'
 
 interface Player {
   id: number
@@ -145,6 +146,7 @@ export default function Players() {
   const [sort, setSort] = usePersistentState('players.sort', 'rank')
   const [sortDir, setSortDir] = usePersistentState<SortDir>('players.sortDir', 'asc')
   const [statusFilter, setStatusFilter] = usePersistentState<string[]>('players.statusFilter', ['Aktiv', 'Aktiv, ej matchklar'])
+  const statusVisible = useSquadStatuses()
 
   function toggleStatus(value: string) {
     setStatusFilter(prev =>
@@ -280,7 +282,7 @@ export default function Players() {
           >
             Alla
           </button>
-          {STATUS_FILTERS.map(sf => {
+          {STATUS_FILTERS.filter(sf => statusVisible(sf.value)).map(sf => {
             const active = statusFilter.includes(sf.value)
             return (
               <button

@@ -10,6 +10,7 @@ import { Chip, FilterRow, Segmented, toggle } from './table'
 import TrainingStats from './TrainingStats'
 import MatchStats from './MatchStats'
 import ScoringStats from './ScoringStats'
+import { useSquadStatuses } from '../../hooks/useSquadStatuses'
 
 export type Tab = 'training' | 'matches' | 'scoring'
 
@@ -61,6 +62,7 @@ export default function Statistics() {
     ['Aktiv', 'Aktiv, ej matchklar'],
   )
   const [search, setSearch] = useState('')
+  const statusVisible = useSquadStatuses()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [slot, setSlot] = useState<HTMLDivElement | null>(null)
 
@@ -124,7 +126,7 @@ export default function Statistics() {
             )}
           </FilterRow>
           <FilterRow label="Spelarstatus">
-            {PLAYER_STATUSES.map((s) => (
+            {PLAYER_STATUSES.filter(statusVisible).map((s) => (
               <Chip key={s} on={playerStatuses.includes(s)} onClick={() => setPlayerStatuses(toggle(playerStatuses, s))}>
                 {s}
               </Chip>
