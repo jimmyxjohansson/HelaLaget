@@ -1,7 +1,7 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Loader2, Plus } from 'lucide-react'
 import { useCreateCup } from '../hooks/backend/cups'
 import { Button } from '../lib/shadcn/button'

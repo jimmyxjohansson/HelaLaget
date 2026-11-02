@@ -1,8 +1,8 @@
 'use client'
 
+import Link from '../../lib/nav'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
-import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { useRequestJoin } from '../../hooks/backend/account'
 import { setSquadCookie } from '../../lib/squad-cookie'

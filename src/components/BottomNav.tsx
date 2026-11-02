@@ -1,8 +1,7 @@
 'use client'
 
+import Link, { usePathname } from '../lib/nav'
 import { useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { LogOut, Menu, Moon, Repeat, Sun } from 'lucide-react'
 import { cn } from '../lib/shadcn/utils'
 import { isActivePath, signOut } from '../lib/navigation'

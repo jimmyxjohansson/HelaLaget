@@ -1,7 +1,7 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useGetTrainings, useCreateTraining, useUpdateTraining } from '../hooks/backend/trainings'
 import { Search, MapPin, Plus, CalendarPlus, Pencil } from 'lucide-react'
 import { trainingTypeColor } from '../utils/trainingTypeColor'

@@ -5,7 +5,7 @@ import { AccessError, getDefaultSquadId, getSquadAccess, isSuperadmin } from '@/
 import { withSquadContext } from '@/server/db'
 import { redactForViewer } from '@/server/redact'
 import { ROLE_RANK, type SquadAccess, type SquadRole } from '@/server/types'
-import { SQUAD_COOKIE } from '@/lib/squad-cookie'
+import { SQUAD_COOKIE, SQUAD_HEADER } from '@/lib/squad-cookie'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,7 +52,9 @@ export async function POST(request: NextRequest, context: Context) {
     }
 
     // Lagets funktioner: hitta valt lag och kontrollera rollen.
-    const requested = Number(request.cookies.get(SQUAD_COOKIE)?.value) || null
+    // Flikens lag (header) går före senast valt lag (cookie)
+    const fromHeader = Number(request.headers.get(SQUAD_HEADER)) || null
+    const requested = fromHeader ?? (Number(request.cookies.get(SQUAD_COOKIE)?.value) || null)
     let squad: SquadAccess | null = requested ? await getSquadAccess(user.id, requested) : null
     if (!squad) {
       const fallback = await getDefaultSquadId(user.id)
@@ -76,7 +78,8 @@ export async function POST(request: NextRequest, context: Context) {
     if (squad.role === 'viewer') result = redactForViewer(result)
 
     const response = NextResponse.json(result ?? null)
-    if (squad.squadId !== requested) {
+    // Cookien rättas bara när den användes, så att en flik inte byter lag åt de andra
+    if (!fromHeader && squad.squadId !== requested) {
       response.cookies.set(SQUAD_COOKIE, String(squad.squadId), {
         path: '/',
         maxAge: 60 * 60 * 24 * 365,

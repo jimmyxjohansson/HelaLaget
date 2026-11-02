@@ -1,7 +1,7 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Search, Plus, Pencil, Trash2, ChevronRight, Loader2, Trophy } from 'lucide-react'
 import {
   useGetLeagues, useCreateLeague, useUpdateLeague, useDeleteLeague,

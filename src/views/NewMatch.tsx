@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useState, type ReactNode } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save } from 'lucide-react'
 import { useCreateMatch, useGetTeamsAndLeagues } from '../hooks/backend/matches'
 import { Button } from '../lib/shadcn/button'

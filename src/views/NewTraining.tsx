@@ -1,7 +1,7 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save } from 'lucide-react'
 import { useCreateTraining } from '../hooks/backend/trainings'
 import { Button } from '../lib/shadcn/button'

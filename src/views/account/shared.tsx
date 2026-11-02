@@ -1,7 +1,7 @@
 'use client'
 
+import { useRouter } from '../../lib/nav'
 import type { ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 
 export const ROLE_LABEL: Record<string, string> = {

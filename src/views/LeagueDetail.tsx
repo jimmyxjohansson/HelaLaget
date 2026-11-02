@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { ArrowLeft, ArrowUp, ArrowDown, ChevronsUpDown, Home, Plane, Plus, Pencil, Trash2, Users } from 'lucide-react'
 import { useGetLeagueMatches, useUpsertStanding, useDeleteStanding } from '../hooks/backend/leagues'
 import { useGetTeams } from '../hooks/backend/teams'

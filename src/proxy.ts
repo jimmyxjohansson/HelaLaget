@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { ANY_SQUAD, TEAM_ROOTS } from '@/lib/team-routes'
 
 /**
  * Körs före varje request (Next.js 16 kallar detta "proxy", tidigare
@@ -70,6 +71,14 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     url.search = ''
+    return NextResponse.redirect(url)
+  }
+
+  // Gamla adresser utan lagets namn (bokmärken, notiser): /matches/3 → /-/matches/3.
+  // Appen byter sedan "-" mot flikens lag.
+  if (user && TEAM_ROOTS.includes(pathname.split('/')[1] ?? '')) {
+    const url = request.nextUrl.clone()
+    url.pathname = `/${ANY_SQUAD}${pathname}`
     return NextResponse.redirect(url)
   }
 

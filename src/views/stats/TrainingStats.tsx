@@ -1,8 +1,8 @@
 'use client'
 
+import { useRouter } from '../../lib/nav'
 import { useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { useRouter } from 'next/navigation'
 import { useGetStatsTrainings } from '../../hooks/backend/stats'
 import { usePersistentState } from '../../hooks/usePersistentState'
 import { rankStyle } from '../../utils/rankColors'

@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../../lib/nav'
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { ArrowLeft, Copy, ExternalLink, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useDeleteDrill, useGetDrill, useSaveDrill } from '../../hooks/backend/drills'
 import DrillDiagram from '../../components/drills/DrillDiagram'

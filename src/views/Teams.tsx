@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter } from '../lib/nav'
 import { useEffect, useRef, useState } from 'react'
 import {
   Search, Plus, Pencil, Trash2, Shield, Upload, X, Loader2, Swords, ArrowUp, ArrowDown,

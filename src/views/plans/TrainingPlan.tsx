@@ -1,8 +1,8 @@
 'use client'
 
+import Link, { useRouter } from '../../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import {
   ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ChevronDown, ClipboardList, Clock, ExternalLink,
   LayoutTemplate, Loader2, Pencil, Plus, Trash2, X,

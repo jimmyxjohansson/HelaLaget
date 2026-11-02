@@ -1,9 +1,9 @@
 'use client'
 
+import Link from '../../lib/nav'
 import GenderBadge from '../../components/GenderBadge'
 import { byGender, genderSummary } from '../../utils/gender'
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import {
   ArrowLeft, ArrowRight, ClipboardList, ExternalLink, Hand, Loader2, MessageSquare, Plus, Trash2, UserPlus, X,
 } from 'lucide-react'

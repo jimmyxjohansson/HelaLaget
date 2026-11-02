@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import {
   useGetCupParticipants,

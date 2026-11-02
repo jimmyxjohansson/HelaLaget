@@ -1,7 +1,7 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useLiveRefresh } from '../components/LiveScore'
 import MatchCard from '../components/MatchCard'
 import { useGetMatches } from '../hooks/backend/matches'

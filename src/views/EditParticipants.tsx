@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useState, type ReactNode } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { ArrowLeft, Check, Loader2 } from 'lucide-react'
 import { useGetMatch, useUpdateMatchGoalkeeper, useAddMatchParticipants, useRemoveParticipants, useUpdateParticipantsStatus, useUpdateParticipantReason } from '../hooks/backend/matches'
 import { useGetPlayers } from '../hooks/backend/players'

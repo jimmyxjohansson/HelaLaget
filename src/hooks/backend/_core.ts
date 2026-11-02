@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import { getTabSquad, SQUAD_HEADER } from '../../lib/squad-cookie'
 
 type TriggerOptions = {
   /** Fanns i Retool. Vi cachar aldrig, så flaggan behövs inte men accepteras. */
@@ -22,11 +23,17 @@ export class BackendError extends Error {
   }
 }
 
+function tabSquadHeader(): Record<string, string> {
+  const squadId = typeof window === 'undefined' ? null : getTabSquad()
+  return squadId ? { [SQUAD_HEADER]: String(squadId) } : {}
+}
+
 /** Anropar en backend-funktion via /api/<modul>/<funktion>. */
 export async function callBackend<R>(name: string, params: unknown): Promise<R> {
   const res = await fetch(`/api/${name}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    // Flikens lag följer med, så att flera flikar kan visa olika lag samtidigt
+    headers: { 'Content-Type': 'application/json', ...tabSquadHeader() },
     body: JSON.stringify(params ?? {}),
   })
 

@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useState, Fragment, type ReactNode } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useGetMatch, useUpdateMatchFogisRegistered, useSetMatchMuted, useDeleteMatch, useGetMatchesVsOpponent, useSyncParticipantsFromCup } from '../hooks/backend/matches'
 import { ArrowLeft, MapPin, Users, Clock, User, Pencil, ExternalLink, UserCog, MoreVertical, Trash2, Calendar, Trophy, Download, RefreshCw, BellOff } from 'lucide-react'
 import { rankStyle } from '../utils/rankColors'

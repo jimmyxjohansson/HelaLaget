@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useRef, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useGetTrainingDetail, useUpdateAttendanceStatus, useDeleteTraining, useUpdateLeaderStatus, useGetAvailableLeaders, useAddLeaders, useRemoveLeader } from '../hooks/backend/trainings'
 import { ArrowLeft, MapPin, Pencil, X, Copy, UserPlus, Search, Trash2, ChevronDown, ChevronsUpDown, MoreVertical, CheckCircle, UserCheck, XCircle, Clock, ClipboardCheck, ClipboardX, MessageSquare, Ban, Users, ExternalLink, ClipboardList, ChevronRight } from 'lucide-react'
 import { trainingTypeColor } from '../utils/trainingTypeColor'

@@ -83,7 +83,7 @@ const FALLBACK_LOGO = '/icons/icon-192.png'
 /** Notisens bild: logga för laget som gjorde målet (annars vårt lags). */
 function payload(m: MatchInfo, title: string, body: string, logo: 'ours' | 'theirs' = 'ours'): PushPayload {
   const icon = logo === 'theirs' ? (m.opponent_logo ?? '/icons/icon-192.png') : (m.squad_logo ?? FALLBACK_LOGO)
-  return { title, body, icon, url: `/matches/${m.id}?lag=${m.squad_id}`, tag: `match-${m.id}` }
+  return { title, body, icon, url: `/-/matches/${m.id}?lag=${m.squad_id}`, tag: `match-${m.id}` }
 }
 
 /** "24' " eller i tilläggstid "30+1' " (perioden sparas på händelsen). */

@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useState, type ReactNode } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { ArrowLeft, Save } from 'lucide-react'
 import { useGetMatch } from '../hooks/backend/matches'
 import { Combobox } from '../components/Combobox'

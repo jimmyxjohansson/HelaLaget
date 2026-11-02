@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { ArrowDown, ArrowLeft, ArrowRightLeft, ArrowUp, ChevronDown, List, Loader2, RotateCcw, Users, Wand2, X } from 'lucide-react'
 import { useGetTrainingGroups, useUpdateGroupRank, useUpdateParticipantGroups } from '../hooks/backend/trainings'
 import { Button } from '../lib/shadcn/button'

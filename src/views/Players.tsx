@@ -1,7 +1,7 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useGetPlayers } from '../hooks/backend/players'
 import { usePersistentState } from '../hooks/usePersistentState'
 import { Search, User, Trophy, ChevronRight, ArrowUp, ArrowDown, Pencil } from 'lucide-react'

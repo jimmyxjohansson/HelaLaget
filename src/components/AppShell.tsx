@@ -1,12 +1,13 @@
 'use client'
 
+import { usePathname as useNextPathname, useRouter as useNextRouter } from 'next/navigation'
+import { setCurrentSlug, slugFromPath, stripTeam, ANY_SQUAD } from '../lib/nav'
 import { Suspense, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import MobileShell from './MobileShell'
 import { callBackend } from '../hooks/backend/_core'
 import { getMe, hexToRgbChannels, setMe, type Me } from '../lib/squad-store'
-import { readSquadCookie, setSquadCookie } from '../lib/squad-cookie'
+import { getTabSquad, readSquadCookie, setSquadCookie, setTabSquad, SQUAD_PARAM, squadParamFromUrl, squadSlug } from '../lib/squad-cookie'
 import { registerServiceWorker } from '../lib/push'
 import { Button } from '../lib/shadcn/button'
 
@@ -24,8 +25,10 @@ const ACCOUNT_PAGES = ['/lag', '/foreningar', '/join', '/notiser']
  */
 export default function AppShell({ children }: { children: ReactNode }) {
   const mounted = useSyncExternalStore(subscribe, () => true, () => false)
-  const pathname = usePathname() ?? '/'
-  const router = useRouter()
+  // Adressen som den står, med lagets namn först (t.ex. /skabersjo-if-p-13/matches)
+  const rawPathname = useNextPathname() ?? '/'
+  const pathname = stripTeam(rawPathname)
+  const router = useNextRouter()
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
 
@@ -33,14 +36,35 @@ export default function AppShell({ children }: { children: ReactNode }) {
     if (!mounted) return
     let cancelled = false
     registerServiceWorker()
-    // Länkar från notiser anger laget (?lag=<id>), så att matchen öppnas i rätt lag.
-    const fromLink = Number(new URLSearchParams(window.location.search).get('lag')) || null
-    callBackend<Me>('account/getMe', { squadId: fromLink ?? readSquadCookie() })
+    // Laget väljs i ordningen: lagets namn först i adressen
+    // (/skabersjo-if-p-13/matches), ?lag=<nummer> i äldre notislänkar,
+    // flikens eget lag, senast valt lag.
+    const pathSlug = slugFromPath(window.location.pathname)
+    const queryParam = squadParamFromUrl()
+    const param = pathSlug && pathSlug !== ANY_SQUAD ? pathSlug : queryParam
+    const numeric = param && /^\d+$/.test(param) ? Number(param) : null
+    let fromLink = numeric
+    callBackend<Me>('account/getMe', { squadId: numeric ?? getTabSquad() ?? readSquadCookie() })
+      .then(async (first) => {
+        let me = first
+        // Lagnamn i adressen: leta upp laget bland användarens lag
+        if (param && !numeric) {
+          const match = me.memberships.find((m) => m.status === 'approved' && squadSlug(m, me.memberships) === param)
+          if (match) {
+            fromLink = match.squadId
+            if (match.squadId !== me.current?.squadId) me = await callBackend<Me>('account/getMe', { squadId: match.squadId })
+          }
+        }
+        return me
+      })
       .then((me) => {
         if (cancelled) return
         setMe(me)
         if (me.current) {
-          if (readSquadCookie() !== me.current.squadId) setSquadCookie(me.current.squadId)
+          setCurrentSlug(squadSlug(me.current, me.memberships))
+          setTabSquad(me.current.squadId)
+          // Ett lag valt via länk blir också standard för nya flikar
+          if (fromLink === me.current.squadId || !readSquadCookie()) setSquadCookie(me.current.squadId)
           const root = document.documentElement.style
           const primary = hexToRgbChannels(me.current.primaryColor)
           const accent = hexToRgbChannels(me.current.accentColor)
@@ -66,6 +90,21 @@ export default function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (needsSquad) router.replace('/lag')
   }, [needsSquad, router])
+
+  // Lagets namn står först i adressen. Saknas det (startsidan, gamla länkar
+  // via /-/…) eller är det ett annat lag skrivs adressen om till flikens lag.
+  const slug = me?.current ? squadSlug(me.current, me.memberships) : null
+  useEffect(() => {
+    if (!slug) return
+    const onTeamPage = !ACCOUNT_PAGES.some((p) => rawPathname === p || rawPathname.startsWith(`${p}/`))
+    if (!onTeamPage) return
+    const url = new URL(window.location.href)
+    const hadParam = url.searchParams.has(SQUAD_PARAM)
+    url.searchParams.delete(SQUAD_PARAM)
+    if (slugFromPath(rawPathname) === slug && !hadParam) return
+    const rest = stripTeam(rawPathname)
+    router.replace(`/${slug}${rest === '/' ? '' : rest}${url.search}${url.hash}`)
+  }, [slug, rawPathname, router])
 
   // Fliknamn: "Skabersjö IF P-13 – Hela Laget". Next sätter tillbaka titeln
   // från layouten vid varje sidbyte, så den skrivs över igen när den ändras.

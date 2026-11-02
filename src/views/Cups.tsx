@@ -1,7 +1,7 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useGetCups } from '../hooks/backend/cups'
 import { usePersistentState } from '../hooks/usePersistentState'
 import { Search, MapPin, ChevronRight, Calendar, Trophy } from 'lucide-react'

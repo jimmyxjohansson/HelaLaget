@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useRef, useState } from 'react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useGetPlayer, useGetPlayerStats, useUpdatePlayer, useUploadPlayerImage } from '../hooks/backend/players'
 import { ArrowLeft, Edit2, Check, X, User, Upload, Loader2 } from 'lucide-react'
 import { rankStyle } from '../utils/rankColors'

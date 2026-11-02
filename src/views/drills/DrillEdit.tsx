@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../../lib/nav'
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { Check, Loader2, Plus, X } from 'lucide-react'
 import { useGetDrill, useSaveDrill } from '../../hooks/backend/drills'
 import DiagramEditor from '../../components/drills/DiagramEditor'

@@ -1,7 +1,7 @@
 'use client'
 
+import Link from '../../lib/nav'
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { CalendarDays, Check, ExternalLink, Loader2, Medal, RefreshCw, Trophy, X } from 'lucide-react'
 import {
   useAcknowledgeRemovedEvent,

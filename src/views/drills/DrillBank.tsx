@@ -1,8 +1,7 @@
 'use client'
 
+import Link, { useRouter } from '../../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { BookOpen, Download, Loader2, Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { useGetDrills, useImportStarterDrills } from '../../hooks/backend/drills'
 import { usePersistentState } from '../../hooks/usePersistentState'

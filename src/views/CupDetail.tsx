@@ -1,7 +1,8 @@
 'use client'
 
+import { useRouter } from '../lib/nav'
 import { useEffect, useState, type ReactNode } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useGetCup } from '../hooks/backend/cups'
 import {
   ArrowLeft, MapPin, Calendar, Clock, Pencil, Plus, ChevronRight,

@@ -1,7 +1,7 @@
 'use client'
 
+import Link from '../../lib/nav'
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import { CalendarDays, MessageSquare, Shield, Trophy, User, Users } from 'lucide-react'
 import { cn } from '../../lib/shadcn/utils'
 import { rankStyle } from '../../utils/rankColors'

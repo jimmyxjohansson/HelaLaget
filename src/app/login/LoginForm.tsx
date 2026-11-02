@@ -1,7 +1,7 @@
 'use client'
 
+import Link from '../../lib/nav'
 import { useState } from 'react'
-import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
