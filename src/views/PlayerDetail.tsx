@@ -432,7 +432,7 @@ export default function PlayerDetail() {
                     </div>
                   ))}
                   <datalist id="sizes-wear">{['116', '128', '140', '152', '164', '176', 'XS', 'S', 'M', 'L', 'XL'].map(v => <option key={v} value={v} />)}</datalist>
-                  <datalist id="sizes-socks">{['27–30', '31–34', '35–38', '39–42', '43–46'].map(v => <option key={v} value={v} />)}</datalist>
+                  <datalist id="sizes-socks">{['28-30', '31-33', '34-36', '37-39', '40-42', '43-45', '46-48'].map(v => <option key={v} value={v} />)}</datalist>
                 </div>
 
                 {/* Profile image */}
