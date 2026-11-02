@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Check, Copy, ImageIcon, Loader2, Plus, RefreshCw, Trash2, Upload, X } from 'lucide-react'
+import { Check, Copy, Eye, ImageIcon, Loader2, Plus, RefreshCw, ShieldCheck, Trash2, Upload, UserCheck, X } from 'lucide-react'
 import { uploadImage } from '../../lib/storage'
 import {
   useDecideMember,
@@ -29,6 +29,12 @@ import { ErrorText, PageHeader, ROLE_HELP, ROLE_LABEL, Section } from './shared'
 
 type Role = 'viewer' | 'leader' | 'admin'
 const ROLES: Role[] = ['viewer', 'leader', 'admin']
+const ROLE_ICON: Record<Role, typeof Eye> = { admin: ShieldCheck, leader: UserCheck, viewer: Eye }
+const ROLE_TONE: Record<Role, string> = {
+  admin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300',
+  leader: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+  viewer: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300',
+}
 
 function RoleSelect({ value, onChange, disabled }: { value: Role; onChange: (r: Role) => void; disabled?: boolean }) {
   return (
@@ -244,45 +250,69 @@ export default function SquadSettings() {
       </Section>
 
       <Section title={`Medlemmar (${approved.length})`}>
-        <ul className="flex flex-col divide-y divide-border">
-          {approved.map((m) => (
-            <li key={m.userId} className="py-2 flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {m.name ?? m.email} {m.isMe && <span className="text-muted-foreground font-normal">(du)</span>}
-                </p>
-                {m.name && <p className="text-xs text-muted-foreground truncate">{m.email}</p>}
+        <div className="flex flex-col gap-4">
+          {(['admin', 'leader', 'viewer'] as Role[]).map((r) => {
+            const group = approved.filter((m) => m.role === r)
+            const Icon = ROLE_ICON[r]
+            return (
+              <div key={r} className="overflow-hidden rounded-xl border border-border">
+                <div className="flex items-start gap-3 bg-muted/50 px-3 py-2.5">
+                  <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${ROLE_TONE[r]}`}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">
+                      {ROLE_LABEL[r]} <span className="font-normal text-muted-foreground">· {group.length}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{ROLE_HELP[r]}</p>
+                  </div>
+                </div>
+                {group.length === 0 ? (
+                  <p className="px-3 py-2.5 text-xs text-muted-foreground">Ingen med {ROLE_LABEL[r].toLowerCase()} ännu.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {group.map((m) => {
+                      const display = m.name ?? m.email
+                      const initials = (display ?? '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]?.toUpperCase()).join('')
+                      return (
+                        <li key={m.userId} className="flex items-center gap-3 px-3 py-2">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+                            {initials}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">
+                              {display} {m.isMe && <span className="font-normal text-muted-foreground">(du)</span>}
+                            </p>
+                            {m.name && <p className="truncate text-xs text-muted-foreground">{m.email}</p>}
+                          </div>
+                          <RoleSelect
+                            value={m.role}
+                            disabled={m.isMe || update.loading}
+                            onChange={(nr) => run(() => update.trigger({ userId: m.userId, role: nr }), () => members.trigger())}
+                          />
+                          {!m.isMe && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label={`Ta bort ${display}`}
+                              onClick={() => {
+                                if (confirmAction(`Ta bort ${display} från laget?`)) {
+                                  run(() => remove.trigger({ userId: m.userId }), () => members.trigger())
+                                }
+                              }}
+                            >
+                              <Trash2 />
+                            </Button>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
               </div>
-              <RoleSelect
-                value={m.role}
-                disabled={m.isMe || update.loading}
-                onChange={(r) => run(() => update.trigger({ userId: m.userId, role: r }), () => members.trigger())}
-              />
-              {!m.isMe && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label={`Ta bort ${m.name ?? m.email}`}
-                  onClick={() => {
-                    if (confirmAction(`Ta bort ${m.name ?? m.email} från laget?`)) {
-                      run(() => remove.trigger({ userId: m.userId }), () => members.trigger())
-                    }
-                  }}
-                >
-                  <Trash2 />
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
-        <dl className="mt-3 text-xs text-muted-foreground flex flex-col gap-1">
-          {ROLES.map((r) => (
-            <div key={r}>
-              <dt className="inline font-medium text-foreground">{ROLE_LABEL[r]}: </dt>
-              <dd className="inline">{ROLE_HELP[r]}</dd>
-            </div>
-          ))}
-        </dl>
+            )
+          })}
+        </div>
         {rejected.length > 0 && (
           <p className="mt-3 text-xs text-muted-foreground">
             Nekade: {rejected.map((m) => m.name ?? m.email).join(', ')}
