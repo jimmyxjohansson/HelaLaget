@@ -776,7 +776,7 @@ export default function MatchTimeline() {
         )}
 
         {cardForm && (
-          <Section title={cardForm.id ? 'Redigera kort' : 'Nytt kort'}>
+          <Section title={`${cardForm.id ? 'Redigera kort' : 'Kort'} för ${cardForm.side === 'our' ? ownTeamName() : match?.opponent ?? 'motståndarna'}`}>
             {!cardForm.id && (
               <EntryTypeSwitch value={cardForm.color} onGoal={switchToGoal} onCard={(color) => setCardForm({ ...cardForm, color })} />
             )}
@@ -795,22 +795,7 @@ export default function MatchTimeline() {
                 </button>
               ))}
             </div>}
-            <div className="grid grid-cols-2 gap-2">
-              {(['our', 'their'] as const).map((side) => (
-                <button
-                  key={side}
-                  type="button"
-                  onClick={() => setCardForm({ ...cardForm, side })}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                    cardForm.side === side ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-foreground/40'
-                  }`}
-                >
-                  {side === 'our'
-                    ? <><img src={ownTeamLogoUrl()} alt="" className="w-5 h-5 object-contain" /> {ownTeamName()}</>
-                    : <>{match?.opponent_img ? <img src={match.opponent_img} alt="" className="w-5 h-5 object-contain" /> : null} <span className="truncate">{match?.opponent ?? 'Motståndare'}</span></>}
-                </button>
-              ))}
-            </div>
+            {/* Laget följer knappen man tryckte på och sparas i bakgrunden */}
             {cardForm.side === 'our' && (
               <Field label="Spelare (valfritt)">
                 <Combobox
