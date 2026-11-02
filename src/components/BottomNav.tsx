@@ -1,20 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, CalendarDays, Users, Sun, Moon, Trophy, Medal, Shield, Settings, ListOrdered, CalendarRange, LogOut, BarChart3, BookOpen } from 'lucide-react'
+import { LogOut, Menu, Moon, Repeat, Sun } from 'lucide-react'
 import { cn } from '../lib/shadcn/utils'
 import { isActivePath, signOut } from '../lib/navigation'
-import { currentSquad } from '../lib/squad-store'
-import { accountLinks } from './accountLinks'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from '../lib/shadcn/dropdown-menu'
+import { getMe } from '../lib/squad-store'
+import { Sheet, SheetContent, SheetTitle } from '../lib/shadcn/sheet'
+import SquadLogo from './SquadLogo'
+import { isItemActive, mainItems, navGroups } from './navItems'
 
 type Theme = 'light' | 'dark'
 
@@ -23,117 +18,127 @@ interface Props {
   onToggleTheme: () => void
 }
 
-const tabs = [
-  { to: '/', icon: Home, label: 'Hem' },
-  { to: '/trainings', icon: CalendarDays, label: 'Träningar' },
-  { to: '/matches', icon: Trophy, label: 'Matcher' },
-  { to: '/cups', icon: Medal, label: 'Cuper' },
-]
-
-const adminTabs = [
-  { to: '/serier', icon: ListOrdered, label: 'Serier' },
-  { to: '/players', icon: Users, label: 'Spelare' },
-  { to: '/ovningar', icon: BookOpen, label: 'Övningsbank' },
-  { to: '/statistik', icon: BarChart3, label: 'Statistik' },
-  { to: '/teams', icon: Shield, label: 'Lag' },
-]
-
-
 export default function BottomNav({ theme, onToggleTheme }: Props) {
   const pathname = usePathname() ?? '/'
-  const squad = currentSquad()
-  const extraLinks = accountLinks()
-  // Första fliken heter som laget (t.ex. P-13) i stället för Hem
-  const homeTabs = tabs.map((t) => (t.to === '/' && squad ? { ...t, label: squad.squadName } : t))
-  const adminActive = [...adminTabs, ...extraLinks.filter((l) => !l.external), { to: '/planering' }].some(t => pathname.startsWith(t.to))
+  const [open, setOpen] = useState(false)
+  const me = getMe()
+  const squad = me?.current
+  const tabs = mainItems()
+  // Byt lag-knappen överst leder redan till Mina lag
+  const groups = navGroups()
+    .map((g) => ({ ...g, items: g.items.filter((i) => i.to !== '/lag') }))
+    .filter((g) => g.items.length > 0)
+  const all = groups.flatMap((g) => g.items)
+  const moreActive = all.some((i) => isItemActive(pathname, i, all))
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border max-w-[430px] mx-auto pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch">
-        {homeTabs.map(({ to, icon: Icon, label }) => (
+        {tabs.map(({ to, icon: Icon, label }) => (
           <Link
             key={to}
             href={to}
-            className={
-            cn(
+            className={cn(
               'flex flex-col items-center justify-center flex-1 min-w-0 py-2 gap-0.5 text-xs font-medium transition-colors',
-              isActivePath(pathname, to)
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            )
-            }
+              isActivePath(pathname, to) && !moreActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
           >
             <Icon className="w-5 h-5" />
             <span className="max-w-full truncate px-1">{label}</span>
           </Link>
         ))}
 
-        {/* Admin menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={cn(
-                'flex flex-col items-center justify-center flex-1 py-2 gap-0.5 text-xs font-medium transition-colors outline-none',
-                adminActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Settings className="w-5 h-5" />
-              <span>Admin</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="end" className="w-44 mb-1">
-            <DropdownMenuLabel>
-              {squad ? `${squad.organizationName} ${squad.squadName}` : 'Admin'}
-              {squad?.role === 'viewer' && <span className="block text-xs font-normal text-muted-foreground">Läsbehörighet</span>}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {(squad?.role === 'leader' || squad?.role === 'admin') && (
-            <DropdownMenuItem asChild>
-              <Link href="/planering" className="flex items-center gap-2 cursor-pointer">
-                <CalendarRange className="w-4 h-4" />
-                <span>Planering</span>
-              </Link>
-            </DropdownMenuItem>
-            )}
-            {adminTabs.map(({ to, icon: Icon, label }) => (
-              <DropdownMenuItem key={to} asChild>
-                <Link href={to} className="flex items-center gap-2 cursor-pointer">
-                  <Icon className="w-4 h-4" />
-                  <span>{label}</span>
-                </Link>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            {extraLinks.map(({ to, icon: Icon, label, external }) => (
-              <DropdownMenuItem key={to} asChild>
-                <Link href={to} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="flex items-center gap-2 cursor-pointer">
-                  <Icon className="w-4 h-4" />
-                  <span>{label}</span>
-                </Link>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={signOut} className="flex items-center gap-2 cursor-pointer">
-              <LogOut className="w-4 h-4" />
-              <span>Logga ut</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Theme toggle */}
         <button
-          onClick={onToggleTheme}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="flex flex-col items-center justify-center px-4 py-2 gap-0.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {theme === 'dark' ? (
-            <Sun className="w-5 h-5" />
-          ) : (
-            <Moon className="w-5 h-5" />
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className={cn(
+            'flex flex-col items-center justify-center flex-1 min-w-0 py-2 gap-0.5 text-xs font-medium transition-colors outline-none',
+            moreActive || open ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
           )}
-          <span>{theme === 'dark' ? 'Ljus' : 'Mörk'}</span>
+        >
+          <Menu className="w-5 h-5" />
+          <span>Mer</span>
         </button>
       </div>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="bottom"
+          className="mx-auto flex max-h-[85vh] max-w-[430px] flex-col gap-0 rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
+        >
+          <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/30" aria-hidden />
+
+          {/* Lag och byt lag */}
+          <div className="flex items-center gap-3 border-b border-border px-4 pb-3 pt-2 pr-12">
+            <SquadLogo className="h-10 w-10" />
+            <div className="min-w-0 flex-1">
+              <SheetTitle className="truncate text-base font-bold text-foreground">{squad?.squadName ?? 'Hela Laget'}</SheetTitle>
+              <p className="truncate text-xs text-muted-foreground">
+                {squad?.organizationName}
+                {squad?.role === 'viewer' && ' · Läsbehörighet'}
+              </p>
+            </div>
+            <Link
+              href="/lag"
+              onClick={() => setOpen(false)}
+              className="flex shrink-0 items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/70"
+            >
+              <Repeat className="h-3.5 w-3.5" /> {(me?.memberships.length ?? 0) > 1 ? 'Byt lag' : 'Mina lag'}
+            </Link>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-3 py-2">
+            {groups.map((g) => (
+              <section key={g.title} className="py-2">
+                <h3 className="px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{g.title}</h3>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {g.items.map((item) => {
+                    const Icon = item.icon
+                    const active = isItemActive(pathname, item, all)
+                    return (
+                      <Link
+                        key={item.to}
+                        href={item.to}
+                        onClick={() => setOpen(false)}
+                        {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                        className={cn(
+                          'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                          active ? 'bg-primary/10 text-primary' : 'bg-muted/50 text-foreground hover:bg-muted',
+                        )}
+                      >
+                        <Icon className={cn('h-4 w-4 shrink-0', !active && 'text-muted-foreground')} />
+                        <span className="min-w-0 leading-tight">{item.label}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+
+          {/* Konto */}
+          <div className="flex items-center gap-2 border-t border-border px-4 py-3">
+            <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{me?.user.name ?? me?.user.email ?? ''}</p>
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/70"
+            >
+              {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              {theme === 'dark' ? 'Ljust läge' : 'Mörkt läge'}
+            </button>
+            <button
+              type="button"
+              onClick={signOut}
+              className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/70"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Logga ut
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </nav>
   )
 }
