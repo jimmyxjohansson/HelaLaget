@@ -7,6 +7,7 @@ export default async function getTeams(_req: { params?: {}; user: User }) {
     team: string | null
     imgurl: string | null
     country: string | null
+    city: string | null
     matchcount: number
     won: number
     lost: number
@@ -15,7 +16,7 @@ export default async function getTeams(_req: { params?: {}; user: User }) {
     goals_against: number
   }>(
     `SELECT
-      t.id, t.team, t.imgurl, t.country,
+      t.id, t.team, t.imgurl, t.country, t.city,
       COUNT(m.id)::int AS matchcount,
       COUNT(CASE WHEN m.outcome::text = 'Vinst' THEN 1 END)::int AS won,
       COUNT(CASE WHEN m.outcome::text = 'Förlust' THEN 1 END)::int AS lost,
@@ -24,7 +25,7 @@ export default async function getTeams(_req: { params?: {}; user: User }) {
       COALESCE(SUM(CASE WHEN m.status::text = 'Avslutad' THEN m.theirgoals END), 0)::int AS goals_against
     FROM teams t
     LEFT JOIN matches m ON m.vs = t.id
-    GROUP BY t.id, t.team, t.imgurl, t.country
+    GROUP BY t.id, t.team, t.imgurl, t.country, t.city
     ORDER BY t.team`
   )
   return result.data

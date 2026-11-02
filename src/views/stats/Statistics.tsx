@@ -10,9 +10,10 @@ import { Chip, FilterRow, Segmented, toggle } from './table'
 import TrainingStats from './TrainingStats'
 import MatchStats from './MatchStats'
 import ScoringStats from './ScoringStats'
+import OpponentStats from './OpponentStats'
 import { useSquadStatuses } from '../../hooks/useSquadStatuses'
 
-export type Tab = 'training' | 'matches' | 'scoring'
+export type Tab = 'training' | 'matches' | 'scoring' | 'opponents'
 
 /** Filter som gäller alla flikar. */
 export type Filters = {
@@ -76,7 +77,7 @@ export default function Statistics() {
           <SquadLogo />
           <div className="min-w-0">
             <h1 className="text-xl font-bold">Statistik</h1>
-            <p className="text-sm text-team-accent/70">Närvaro, matcher, mål och assist för hela laget</p>
+            <p className="text-sm text-team-accent/70">Närvaro, matcher, mål, assist och motståndare för hela laget</p>
           </div>
         </div>
       </div>
@@ -90,6 +91,7 @@ export default function Statistics() {
               { value: 'training', label: 'Träning' },
               { value: 'matches', label: 'Matcher' },
               { value: 'scoring', label: 'Mål & assist' },
+              { value: 'opponents', label: 'Motståndare' },
             ]}
           />
           <div className="relative ml-auto min-w-[160px] flex-1 sm:max-w-[240px] sm:flex-none">
@@ -141,6 +143,7 @@ export default function Statistics() {
         {tab === 'training' && <TrainingStats filters={filters} slot={slot} />}
         {tab === 'matches' && <MatchStats filters={filters} slot={slot} />}
         {tab === 'scoring' && <ScoringStats filters={filters} slot={slot} />}
+        {tab === 'opponents' && <OpponentStats filters={filters} />}
       </div>
     </div>
   )

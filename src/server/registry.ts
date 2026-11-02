@@ -109,6 +109,7 @@ import replies_findSvenskalagActivity from './functions/replies/findSvenskalagAc
 import replies_previewSvenskalagReplies from './functions/replies/previewSvenskalagReplies'
 import stats_getStatsEvents from './functions/stats/getStatsEvents'
 import stats_getStatsMatches from './functions/stats/getStatsMatches'
+import stats_getStatsOpponents from './functions/stats/getStatsOpponents'
 import stats_getStatsTrainings from './functions/stats/getStatsTrainings'
 import svenskalag_acknowledgeRemovedEvent from './functions/svenskalag/acknowledgeRemovedEvent'
 import svenskalag_decideSvenskalagEvent from './functions/svenskalag/decideSvenskalagEvent'
@@ -255,6 +256,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'replies/previewSvenskalagReplies': { handler: replies_previewSvenskalagReplies, access: 'leader' },
   'stats/getStatsEvents': { handler: stats_getStatsEvents, access: 'viewer' },
   'stats/getStatsMatches': { handler: stats_getStatsMatches, access: 'viewer' },
+  'stats/getStatsOpponents': { handler: stats_getStatsOpponents, access: 'viewer' },
   'stats/getStatsTrainings': { handler: stats_getStatsTrainings, access: 'viewer' },
   'svenskalag/acknowledgeRemovedEvent': { handler: svenskalag_acknowledgeRemovedEvent, access: 'leader' },
   'svenskalag/decideSvenskalagEvent': { handler: svenskalag_decideSvenskalagEvent, access: 'leader' },

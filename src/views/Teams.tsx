@@ -29,6 +29,7 @@ interface Team {
   team: string | null
   imgurl: string | null
   country: string | null
+  city?: string | null
   matchcount?: number
   won?: number
   lost?: number
@@ -108,7 +109,8 @@ export default function Teams() {
     const q = search.toLowerCase()
     return (
       (t.team ?? '').toLowerCase().includes(q) ||
-      (t.country ?? '').toLowerCase().includes(q)
+      (t.country ?? '').toLowerCase().includes(q) ||
+      (t.city ?? '').toLowerCase().includes(q)
     )
   })
 
@@ -231,8 +233,8 @@ export default function Teams() {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">{t.team}</p>
-                    {t.country && (
-                      <p className="text-xs text-muted-foreground">{t.country}</p>
+                    {(t.city || t.country) && (
+                      <p className="text-xs text-muted-foreground">{[t.city, t.country].filter(Boolean).join(', ')}</p>
                     )}
                     {(t.matchcount ?? 0) > 0 && (
                       <div className="flex items-center gap-2 mt-1.5">
@@ -458,6 +460,7 @@ interface TeamValues {
   team: string
   country: string | null
   imgurl: string | null
+  city: string | null
 }
 
 function TeamDialog({
@@ -471,6 +474,7 @@ function TeamDialog({
 }) {
   const [name, setName] = useState('')
   const [country, setCountry] = useState('Sverige')
+  const [city, setCity] = useState('')
   const [imgurl, setImgurl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -481,6 +485,7 @@ function TeamDialog({
     if (!open) return
     setName(team.team ?? '')
     setCountry(team.country ?? 'Sverige')
+    setCity(team.city ?? '')
     setImgurl(team.imgurl ?? null)
     setError(null)
   }, [open, team.id])
@@ -506,7 +511,7 @@ function TeamDialog({
     setSaving(true)
     setError(null)
     try {
-      await onSave({ team: name.trim(), country: country || null, imgurl })
+      await onSave({ team: name.trim(), country: country || null, imgurl, city: city.trim() || null })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Något gick fel.')
     } finally {
@@ -565,10 +570,17 @@ function TeamDialog({
             <Input value={name} onChange={e => setName(e.target.value)} placeholder="Lagets namn" />
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Land</Label>
-            <Input value={country} onChange={e => setCountry(e.target.value)} placeholder="t.ex. Sverige" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Ort</Label>
+              <Input value={city} onChange={e => setCity(e.target.value)} placeholder="t.ex. Malmö" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Land</Label>
+              <Input value={country} onChange={e => setCountry(e.target.value)} placeholder="t.ex. Sverige" />
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground -mt-2">Orten visar laget på kartan under Statistik.</p>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
