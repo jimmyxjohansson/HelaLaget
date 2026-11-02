@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, Fragment, type ReactNode } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Trash2, Save, X, Play, Square, Clock, Hand, Check, Loader2, Flag } from 'lucide-react'
+import { ArrowLeft, Trash2, Save, X, Play, Square, Clock, Hand, Check, Loader2, Flag, Bell, BellOff } from 'lucide-react'
 import {
   useGetMatch,
   useSaveMatchEvent,
@@ -10,6 +10,7 @@ import {
   useUpdateMatchGoalkeeper,
   useFinishMatch,
   useSetMatchClock,
+  useSetMatchMuted,
 } from '../hooks/backend/matches'
 import { Combobox } from '../components/Combobox'
 import { Button } from '../lib/shadcn/button'
@@ -46,6 +47,7 @@ interface MatchData {
   theirgoals: number
   status: string | null
   outcome: string | null
+  mute_notifications?: boolean
 }
 
 interface Participant {
@@ -152,6 +154,7 @@ export default function MatchTimeline() {
   const { loading: savingGk, trigger: saveGoalkeeper } = useUpdateMatchGoalkeeper()
   const { loading: finishing, trigger: finishMatch } = useFinishMatch()
   const { trigger: saveClock } = useSetMatchClock()
+  const { loading: savingMuted, trigger: saveMuted } = useSetMatchMuted()
 
   const [form, setForm] = useState<EventForm | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -159,6 +162,7 @@ export default function MatchTimeline() {
   const [goalkeeper, setGoalkeeper] = useState<string>('')
   const [savedGk, setSavedGk] = useState(false)
   const [finishOpen, setFinishOpen] = useState(false)
+  const [muted, setMuted] = useState(false)
 
   function toggleFilter(f: 'goal' | 'save') {
     setFilters(prev => {
@@ -199,6 +203,20 @@ export default function MatchTimeline() {
     setTimer(restored)
     setNow(Date.now())
   }, [match])
+
+  useEffect(() => { setMuted(!!match?.mute_notifications) }, [match?.id, match?.mute_notifications])
+
+  async function toggleMuted() {
+    if (!match) return
+    const next = !muted
+    setMuted(next)
+    try {
+      await saveMuted({ id: match.id, muted: next })
+    } catch (e) {
+      setMuted(!next)
+      setError(e instanceof Error ? e.message : 'Kunde inte ändra notiserna.')
+    }
+  }
 
   // Sync goalkeeper select with the loaded match
   useEffect(() => {
@@ -460,10 +478,30 @@ export default function MatchTimeline() {
             {match?.status === 'Avslutad' ? 'Avslutad' : 'Avsluta match'}
           </button>
         </div>
-        <h1 className="text-lg font-bold text-team-accent">Tidslinje</h1>
-        {match?.opponent && (
-          <p className="text-xs text-team-accent/70">vs {match.opponent}</p>
-        )}
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-team-accent">Tidslinje</h1>
+            {match?.opponent && (
+              <p className="text-xs text-team-accent/70">vs {match.opponent}</p>
+            )}
+          </div>
+          {match && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={muted}
+              onClick={toggleMuted}
+              disabled={savingMuted}
+              title={muted ? 'Inga notiser skickas för den här matchen' : 'Notiser skickas för mål, perioder och slutresultat'}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+                muted ? 'bg-team-accent text-team' : 'bg-team-accent/15 text-team-accent hover:bg-team-accent/25'
+              }`}
+            >
+              {muted ? <BellOff className="w-3.5 h-3.5" /> : <Bell className="w-3.5 h-3.5" />}
+              {muted ? 'Notiser tystade' : 'Tysta notiser'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Body */}
