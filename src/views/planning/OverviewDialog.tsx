@@ -34,6 +34,34 @@ export function overviewPlayers(s: Slot, showDeclined: boolean) {
       (a.fullname ?? a.shortname ?? '').localeCompare(b.fullname ?? b.shortname ?? '', 'sv'))
 }
 
+const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+const SIZE_COLS = 2
+
+/** Tröjstorlekar bland spelarna som är med (inte nekat/ej svarat), sorterade. */
+export function shirtSummary(players: SlotPlayer[]) {
+  const counts = new Map<string, number>()
+  let missing = 0
+  for (const p of players) {
+    if (p.status === 'Nekat' || p.status === 'Ej svarat') continue
+    const size = p.shirtSize?.trim()
+    if (size) counts.set(size, (counts.get(size) ?? 0) + 1)
+    else missing++
+  }
+  const rank = (v: string) => {
+    const n = parseFloat(v)
+    if (!Number.isNaN(n)) return [0, n] as const
+    const i = SIZE_ORDER.indexOf(v.toUpperCase())
+    return [i === -1 ? 2 : 1, i] as const
+  }
+  const rows = [...counts.entries()].sort(([a], [b]) => {
+    const [ga, va] = rank(a)
+    const [gb, vb] = rank(b)
+    return ga - gb || va - vb || a.localeCompare(b, 'sv')
+  }).map(([size, n]) => ({ size, n }))
+  if (missing) rows.push({ size: 'Saknas', n: missing })
+  return rows
+}
+
 /**
  * Laddar en bild för canvas. Först direkt (kräver CORS), annars via appens
  * bildproxy. Går den inte att ladda alls ritas ingen logga.
@@ -58,14 +86,16 @@ export function drawOverview(
   canvas: HTMLCanvasElement,
   slots: Slot[],
   logos: (HTMLImageElement | null)[],
-  opts: { kind: Kind; title: string; primary: string; accent: string; showDeclined: boolean; periodLabel: string },
+  opts: { kind: Kind; title: string; primary: string; accent: string; showDeclined: boolean; showShirts: boolean; periodLabel: string },
 ) {
   const scale = 2
   const n = Math.max(1, slots.length)
   const width = PAD * 2 + n * COL_W + (n - 1) * GAP
   const lists = slots.map((s) => overviewPlayers(s, opts.showDeclined))
+  const shirts = slots.map((s) => (opts.showShirts ? shirtSummary(s.players) : []))
   const colHeight = (i: number) =>
-    HEAD_H + 8 + Math.max(1, lists[i].length) * LINE_H + (slots[i].leaders.length ? 26 + LINE_H : 0) + 8
+    HEAD_H + 8 + Math.max(1, lists[i].length) * LINE_H + (slots[i].leaders.length ? 26 + LINE_H : 0) +
+    (shirts[i].length ? 26 + Math.ceil(shirts[i].length / SIZE_COLS) * LINE_H : 0) + 8
   const height = PAD + Math.max(...slots.map((_, i) => colHeight(i)), 80) + PAD
 
   canvas.width = width * scale
@@ -176,6 +206,31 @@ export function drawOverview(
       ctx.font = `400 11px ${FONT}`
       ctx.fillStyle = '#111827'
       ctx.fillText(fit(ctx, s.leaders.map((l) => l.shortname).join(', '), COL_W - 18), x + 9, y + LINE_H / 2 - 2)
+      y += LINE_H
+    }
+
+    if (shirts[i].length) {
+      y += 10
+      ctx.font = `700 9px ${FONT}`
+      ctx.fillStyle = '#6b7280'
+      ctx.fillText('TRÖJSTORLEKAR', x + 9, y + 8)
+      y += 16
+      const cellW = (COL_W - 18) / SIZE_COLS
+      shirts[i].forEach((r, j) => {
+        const cx = x + 9 + (j % SIZE_COLS) * cellW
+        const cy = y + Math.floor(j / SIZE_COLS) * LINE_H + LINE_H / 2 - 2
+        const count = `${r.n} st`
+        ctx.font = `400 11px ${FONT}`
+        const cw = ctx.measureText(count).width
+        ctx.fillStyle = r.size === 'Saknas' ? '#9ca3af' : '#111827'
+        ctx.font = `700 11px ${FONT}`
+        ctx.fillText(fit(ctx, r.size, cellW - cw - 22), cx, cy)
+        ctx.font = `400 11px ${FONT}`
+        ctx.fillStyle = '#6b7280'
+        ctx.textAlign = 'right'
+        ctx.fillText(count, cx + cellW - (j % SIZE_COLS === SIZE_COLS - 1 ? 0 : 14), cy)
+        ctx.textAlign = 'left'
+      })
     }
   })
 }
@@ -205,6 +260,7 @@ export default function OverviewDialog({
   const [logos, setLogos] = useState<(HTMLImageElement | null)[]>([])
   const [preview, setPreview] = useState<string | null>(null)
   const [showDeclined, setShowDeclined] = useState(false)
+  const [showShirts, setShowShirts] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const key = eventIds.join(',')
@@ -236,11 +292,12 @@ export default function OverviewDialog({
       primary: squad?.primaryColor || '#24282E',
       accent: squad?.accentColor || '#FFFFFF',
       showDeclined,
+      showShirts,
       periodLabel: PERIODS.find((p) => p.months === months)?.label ?? '',
     })
     setPreview(canvas.toDataURL('image/png'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slots, showDeclined])
+  }, [slots, showDeclined, showShirts])
 
   const blob = () =>
     new Promise<Blob>((resolve, reject) =>
@@ -307,10 +364,16 @@ export default function OverviewDialog({
             className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50">
             <Download className="h-4 w-4" /> Ladda ner
           </button>
-          <label className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
-            <input type="checkbox" checked={showDeclined} onChange={(e) => setShowDeclined(e.target.checked)} />
-            Visa nekat / ej svarat
-          </label>
+          <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-1">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input type="checkbox" checked={showDeclined} onChange={(e) => setShowDeclined(e.target.checked)} />
+              Visa nekat / ej svarat
+            </label>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input type="checkbox" checked={showShirts} onChange={(e) => setShowShirts(e.target.checked)} />
+              Visa tröjstorlekar
+            </label>
+          </div>
         </div>
         {done && <p className="text-sm text-muted-foreground">{done}</p>}
         {error && <p className="text-sm text-destructive">{error}</p>}
