@@ -95,7 +95,9 @@ export function parseRow(list: ListKey, segments: string[], today: Date): Parsed
     if (s) rest.push(s)
   }
   if (!name) return null
-  const comment = rest.join(' ').trim() || null
+  // En kommentar utan bokstäver eller siffror (".", "-", mellanslag) räknas som ingen kommentar
+  const joined = rest.join(' ').trim()
+  const comment = /[\p{L}\d]/u.test(joined) ? joined : null
   return { list, name, leaderRole, comment, answered, answeredDay, answeredTime }
 }
 

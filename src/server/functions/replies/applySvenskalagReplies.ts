@@ -41,7 +41,8 @@ export default async function applySvenskalagReplies(req: { params: Params; user
     const key = `${col}:${personId}`
     const cur = current.get(key)
     if (kind === 'training' && cur && REPORTED_TRAINING.has(cur)) { skipped++; continue }
-    const comment = it.comment?.trim().slice(0, 300) || null
+    const trimmed = it.comment?.trim().slice(0, 300) ?? ''
+    const comment = /[\p{L}\d]/u.test(trimmed) ? trimmed : null
     // Kan ej utan kommentar: skriv "Ingen anledning", men bara om det inte redan står en anledning
     const noReason = it.list === 'notattending' && !comment
     const time = it.time && /^\d{2}:\d{2}$/.test(it.time) ? it.time : null
