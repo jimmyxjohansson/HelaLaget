@@ -37,6 +37,7 @@ import matches_addParticipant from './functions/matches/addParticipant'
 import matches_createMatch from './functions/matches/createMatch'
 import matches_createTeam from './functions/matches/createTeam'
 import matches_deleteMatch from './functions/matches/deleteMatch'
+import matches_deleteMatchCard from './functions/matches/deleteMatchCard'
 import matches_deleteMatchEvent from './functions/matches/deleteMatchEvent'
 import matches_finishMatch from './functions/matches/finishMatch'
 import matches_getMatch from './functions/matches/getMatch'
@@ -46,6 +47,7 @@ import matches_getTeamsAndLeagues from './functions/matches/getTeamsAndLeagues'
 import matches_getUpcomingMatches from './functions/matches/getUpcomingMatches'
 import matches_removeParticipant from './functions/matches/removeParticipant'
 import matches_removeParticipants from './functions/matches/removeParticipants'
+import matches_saveMatchCard from './functions/matches/saveMatchCard'
 import matches_saveMatchEvent from './functions/matches/saveMatchEvent'
 import matches_setMatchClock from './functions/matches/setMatchClock'
 import matches_setMatchMuted from './functions/matches/setMatchMuted'
@@ -177,6 +179,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'matches/createMatch': { handler: matches_createMatch, access: 'leader' },
   'matches/createTeam': { handler: matches_createTeam, access: 'leader' },
   'matches/deleteMatch': { handler: matches_deleteMatch, access: 'leader' },
+  'matches/deleteMatchCard': { handler: matches_deleteMatchCard, access: 'leader' },
   'matches/deleteMatchEvent': { handler: matches_deleteMatchEvent, access: 'leader' },
   'matches/finishMatch': { handler: matches_finishMatch, access: 'leader' },
   'matches/getMatch': { handler: matches_getMatch, access: 'viewer' },
@@ -186,6 +189,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'matches/getUpcomingMatches': { handler: matches_getUpcomingMatches, access: 'viewer' },
   'matches/removeParticipant': { handler: matches_removeParticipant, access: 'leader' },
   'matches/removeParticipants': { handler: matches_removeParticipants, access: 'leader' },
+  'matches/saveMatchCard': { handler: matches_saveMatchCard, access: 'leader' },
   'matches/saveMatchEvent': { handler: matches_saveMatchEvent, access: 'leader' },
   'matches/setMatchClock': { handler: matches_setMatchClock, access: 'leader' },
   'matches/setMatchMuted': { handler: matches_setMatchMuted, access: 'leader' },

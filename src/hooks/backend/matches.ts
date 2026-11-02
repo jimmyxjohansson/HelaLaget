@@ -6,6 +6,7 @@ import type addParticipant from '../../server/functions/matches/addParticipant'
 import type createMatch from '../../server/functions/matches/createMatch'
 import type createTeam from '../../server/functions/matches/createTeam'
 import type deleteMatch from '../../server/functions/matches/deleteMatch'
+import type deleteMatchCard from '../../server/functions/matches/deleteMatchCard'
 import type deleteMatchEvent from '../../server/functions/matches/deleteMatchEvent'
 import type finishMatch from '../../server/functions/matches/finishMatch'
 import type getMatch from '../../server/functions/matches/getMatch'
@@ -15,6 +16,7 @@ import type getTeamsAndLeagues from '../../server/functions/matches/getTeamsAndL
 import type getUpcomingMatches from '../../server/functions/matches/getUpcomingMatches'
 import type removeParticipant from '../../server/functions/matches/removeParticipant'
 import type removeParticipants from '../../server/functions/matches/removeParticipants'
+import type saveMatchCard from '../../server/functions/matches/saveMatchCard'
 import type saveMatchEvent from '../../server/functions/matches/saveMatchEvent'
 import type setMatchClock from '../../server/functions/matches/setMatchClock'
 import type setMatchMuted from '../../server/functions/matches/setMatchMuted'
@@ -50,6 +52,11 @@ export const useDeleteMatch = createBackendHook<
   Parameters<typeof deleteMatch>[0]['params'],
   Awaited<ReturnType<typeof deleteMatch>>
 >('matches/deleteMatch')
+
+export const useDeleteMatchCard = createBackendHook<
+  Parameters<typeof deleteMatchCard>[0]['params'],
+  Awaited<ReturnType<typeof deleteMatchCard>>
+>('matches/deleteMatchCard')
 
 export const useDeleteMatchEvent = createBackendHook<
   Parameters<typeof deleteMatchEvent>[0]['params'],
@@ -95,6 +102,11 @@ export const useRemoveParticipants = createBackendHook<
   Parameters<typeof removeParticipants>[0]['params'],
   Awaited<ReturnType<typeof removeParticipants>>
 >('matches/removeParticipants')
+
+export const useSaveMatchCard = createBackendHook<
+  Parameters<typeof saveMatchCard>[0]['params'],
+  Awaited<ReturnType<typeof saveMatchCard>>
+>('matches/saveMatchCard')
 
 export const useSaveMatchEvent = createBackendHook<
   Parameters<typeof saveMatchEvent>[0]['params'],

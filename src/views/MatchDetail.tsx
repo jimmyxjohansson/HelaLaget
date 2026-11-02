@@ -116,16 +116,27 @@ interface MatchEvent {
   save_name: string | null
 }
 
+interface MatchCard {
+  id: number
+  player: number | null
+  side: 'our' | 'their'
+  color: 'Gul' | 'Röd'
+  minute: number | null
+  period?: number | null
+  player_name: string | null
+}
+
 interface MatchResult {
   match: MatchData | null
   participants: Participant[]
   events: MatchEvent[]
+  cards?: MatchCard[]
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 type Tab        = 'handelser' | 'deltagare' | 'information'
-type FilterKind = 'goal' | 'save'
+type FilterKind = 'goal' | 'save' | 'card'
 type EventKind  = 'our_goal' | 'their_goal' | 'save'
 
 function classifyEvent(e: MatchEvent): EventKind {
@@ -165,7 +176,7 @@ export default function MatchDetail() {
   const { trigger: triggerDeleteMatch, loading: deleting } = useDeleteMatch()
   const { trigger: triggerSyncFromCup, loading: syncing } = useSyncParticipantsFromCup()
   const [activeTab,  setActiveTab]  = useState<Tab>('handelser')
-  const [filters,    setFilters]    = useState<Set<FilterKind>>(new Set(['goal']))
+  const [filters,    setFilters]    = useState<Set<FilterKind>>(new Set(['goal', 'card']))
   const [fogisRegistered, setFogisRegistered] = useState<boolean>(false)
   const [muted, setMuted] = useState(false)
   const { trigger: triggerSetMuted } = useSetMatchMuted()
@@ -182,6 +193,7 @@ export default function MatchDetail() {
   const match        = result?.match
   const participants = result?.participants ?? []
   const events       = result?.events ?? []
+  const cards        = result?.cards ?? []
 
   useEffect(() => {
     if (match) setFogisRegistered(!!match.fogisregistered)
@@ -279,6 +291,26 @@ export default function MatchDetail() {
     const kind = classifyEvent(e)
     return kind === 'save' ? filters.has('save') : filters.has('goal')
   })
+
+  // Händelser och kort i samma lista, nyast först
+  const periodOf = (x: { minute: number | null; period?: number | null }) => {
+    const pt = match?.playtime
+    const pc = match?.periods && match.periods > 0 ? match.periods : 1
+    if (x.period) return Math.min(pc, x.period)
+    return pt && x.minute != null ? Math.min(pc, Math.floor(x.minute / pt) + 1) : 1
+  }
+  type Item = { kind: 'event'; e: MatchEvent } | { kind: 'card'; c: MatchCard }
+  const items: Item[] = [
+    ...filteredEvents.map((e) => ({ kind: 'event' as const, e })),
+    ...(filters.has('card') ? cards.map((c) => ({ kind: 'card' as const, c })) : []),
+  ]
+  if (filters.has('card') && cards.length) {
+    const of = (it: Item) => (it.kind === 'event' ? it.e : it.c)
+    items.sort((x, y) => {
+      const a = of(x), b = of(y)
+      return periodOf(b) - periodOf(a) || (b.minute ?? -1) - (a.minute ?? -1) || (x.kind === y.kind ? b.id - a.id : x.kind === 'card' ? -1 : 1)
+    })
+  }
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'handelser',   label: 'Händelser' },
@@ -586,6 +618,7 @@ export default function MatchDetail() {
                   {([
                     { key: 'goal' as FilterKind, label: 'Mål' },
                     { key: 'save' as FilterKind, label: 'Räddningar' },
+                    ...(cards.length ? [{ key: 'card' as FilterKind, label: 'Kort' }] : []),
                   ] as const).map(f => (
                     <button
                       key={f.key}
@@ -610,7 +643,7 @@ export default function MatchDetail() {
               </div>
 
               {/* Timeline */}
-              {filteredEvents.length === 0 ? (
+              {items.length === 0 ? (
                 <div className="text-sm text-muted-foreground text-center py-10">
                   Inga händelser registrerade
                 </div>
@@ -620,35 +653,55 @@ export default function MatchDetail() {
                   <div className="absolute left-1/2 top-2 bottom-2 w-px bg-border -translate-x-1/2 z-0" />
 
                   <div className="flex flex-col divide-y divide-border/40">
-                    {filteredEvents.map((e, i) => {
+                    {items.map((item, i) => {
+                      const pc0 = match.periods && match.periods > 0 ? match.periods : 1
+                      const itemPeriod = periodOf(item.kind === 'event' ? item.e : item.c)
+                      const prevItem = items[i - 1]
+                      const prevItemPeriod = prevItem ? periodOf(prevItem.kind === 'event' ? prevItem.e : prevItem.c) : null
+                      const divider = pc0 > 1 && itemPeriod !== prevItemPeriod && (
+                        <div className="relative z-10 flex items-center gap-3 py-2 bg-background">
+                          <div className="h-px flex-1 bg-border" />
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                            Period {itemPeriod}
+                          </span>
+                          <div className="h-px flex-1 bg-border" />
+                        </div>
+                      )
+                      if (item.kind === 'card') {
+                        const c = item.c
+                        return (
+                          <Fragment key={`c${c.id}`}>
+                            {divider}
+                            <div className="grid grid-cols-[1fr_52px_1fr] items-center py-1 relative z-10">
+                              <div className="pr-2 flex flex-col items-end">
+                                {c.side === 'our' && (
+                                  <span className="text-[14px] font-semibold text-foreground text-right leading-tight">{c.player_name ?? ownTeamName()}</span>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-center">
+                                <div className="w-7 h-7 flex items-center justify-center bg-background">
+                                  <span aria-label={c.color === 'Gul' ? 'Gult kort' : 'Rött kort'} className="inline-block w-4 h-[22px] rounded-[3px] shadow-sm" style={{ backgroundColor: c.color === 'Gul' ? '#facc15' : '#dc2626' }} />
+                                </div>
+                                <span className="text-[12px] font-mono text-muted-foreground leading-tight">{c.minute != null ? `${c.minute}'` : '–'}</span>
+                              </div>
+                              <div className="pl-2 flex flex-col items-start">
+                                {c.side === 'their' && (
+                                  <span className="text-xs font-semibold text-muted-foreground leading-tight">{match.opponent ?? '–'}</span>
+                                )}
+                              </div>
+                            </div>
+                          </Fragment>
+                        )
+                      }
+                      const e = item.e
                       const kind = classifyEvent(e)
                       const isOurs   = kind === 'our_goal' || kind === 'save'
                       const isTheirs = kind === 'their_goal'
                       const isSave   = kind === 'save'
 
-                      // Period boundaries in the descending (newest-first) list.
-                      const pt = match.playtime
-                      const pc = match.periods && match.periods > 0 ? match.periods : 1
-                      const eventPeriod = pt && e.minute != null
-                        ? Math.min(pc, Math.floor(e.minute / pt) + 1)
-                        : 1
-                      const prev = filteredEvents[i - 1]
-                      const prevPeriod = prev && pt && prev.minute != null
-                        ? Math.min(pc, Math.floor(prev.minute / pt) + 1)
-                        : null
-                      const showDivider = pc > 1 && eventPeriod !== prevPeriod
-
                       return (
                         <Fragment key={e.id}>
-                          {showDivider && (
-                            <div className="relative z-10 flex items-center gap-3 py-2 bg-background">
-                              <div className="h-px flex-1 bg-border" />
-                              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
-                                Period {eventPeriod}
-                              </span>
-                              <div className="h-px flex-1 bg-border" />
-                            </div>
-                          )}
+                          {divider}
                           <div className="grid grid-cols-[1fr_52px_1fr] items-center py-1 relative z-10">
 						
                           {/* Left — our content */}

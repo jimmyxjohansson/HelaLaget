@@ -153,9 +153,28 @@ export default async function getMatch(req: { params: Params; user: User }) {
     [id]
   )
 
+  // Gula och röda kort (egen tabell, påverkar inte resultatet)
+  const cardsResult = await db.query<{
+    id: number
+    player: number | null
+    side: 'our' | 'their'
+    color: 'Gul' | 'Röd'
+    minute: number | null
+    period: number | null
+    player_name: string | null
+  }>(
+    `SELECT c.id, c.player, c.side, c.color, c.minute, c.period, p.shortname AS player_name
+     FROM matchcards c
+     LEFT JOIN players p ON p.id = c.player
+     WHERE c.match = $1
+     ORDER BY COALESCE(c.period, 1), c.minute ASC NULLS LAST, c.id ASC`,
+    [id]
+  )
+
   return {
     match: matchResult.data[0] ?? null,
     participants,
     events: eventsResult.data,
+    cards: cardsResult.data,
   }
 }

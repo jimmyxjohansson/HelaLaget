@@ -12,6 +12,8 @@ import {
   useFinishMatch,
   useSetMatchClock,
   useSetMatchMuted,
+  useSaveMatchCard,
+  useDeleteMatchCard,
 } from '../hooks/backend/matches'
 import { Combobox } from '../components/Combobox'
 import { Button } from '../lib/shadcn/button'
@@ -84,10 +86,43 @@ type GoalType = 'Spelmål' | 'Hörna' | 'Frispark' | 'Straff' | 'Självmål'
 const GOAL_TYPES: GoalType[] = ['Spelmål', 'Hörna', 'Frispark', 'Straff', 'Självmål']
 const DEFAULT_GOAL_TYPE: GoalType = 'Spelmål'
 
+interface MatchCard {
+  id: number
+  player: number | null
+  side: 'our' | 'their'
+  color: 'Gul' | 'Röd'
+  minute: number | null
+  period?: number | null
+  player_name: string | null
+}
+
 interface MatchResult {
   match: MatchData | null
   participants: Participant[]
   events: MatchEvent[]
+  cards?: MatchCard[]
+}
+
+interface CardForm {
+  id?: number
+  side: 'our' | 'their'
+  color: 'Gul' | 'Röd'
+  player: string
+  minute: string
+  period: number | null
+}
+
+type TimelineItem = { kind: 'event'; e: MatchEvent } | { kind: 'card'; c: MatchCard }
+
+/** Ett gult eller rött kort som liten rektangel. */
+function CardIcon({ color, className = 'w-3.5 h-[18px]' }: { color: 'Gul' | 'Röd'; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block rounded-[3px] shadow-sm ${className}`}
+      style={{ backgroundColor: color === 'Gul' ? '#facc15' : '#dc2626' }}
+    />
+  )
 }
 
 type EventKind = 'our_goal' | 'their_goal' | 'save'
@@ -158,14 +193,17 @@ export default function MatchTimeline() {
   const { loading: savingMuted, trigger: saveMuted } = useSetMatchMuted()
 
   const [form, setForm] = useState<EventForm | null>(null)
+  const [cardForm, setCardForm] = useState<CardForm | null>(null)
+  const { loading: savingCard, trigger: saveCard } = useSaveMatchCard()
+  const { trigger: deleteCard } = useDeleteMatchCard()
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<Set<'goal' | 'save'>>(new Set(['goal']))
+  const [filters, setFilters] = useState<Set<'goal' | 'save' | 'card'>>(new Set(['goal', 'card']))
   const [goalkeeper, setGoalkeeper] = useState<string>('')
   const [savedGk, setSavedGk] = useState(false)
   const [finishOpen, setFinishOpen] = useState(false)
   const [muted, setMuted] = useState(false)
 
-  function toggleFilter(f: 'goal' | 'save') {
+  function toggleFilter(f: 'goal' | 'save' | 'card') {
     setFilters(prev => {
       const next = new Set(prev)
       if (next.has(f)) next.delete(f)
@@ -192,6 +230,7 @@ export default function MatchTimeline() {
   const match = result?.match
   const participants = result?.participants ?? []
   const events = result?.events ?? []
+  const cards = result?.cards ?? []
 
   // Klockan sparas på matchen: fortsätt där den var när sidan öppnas. Bara vid
   // första laddningen, så att senare omladdningar inte skriver över ett knapptryck.
@@ -334,6 +373,78 @@ export default function MatchTimeline() {
       })
   }, [events, filters, playtime, periodCount])
 
+  // Händelser och kort i samma tidslinje, nyast först
+  const timelineItems = useMemo<TimelineItem[]>(() => {
+    const items: TimelineItem[] = orderedEvents.map((e) => ({ kind: 'event' as const, e }))
+    if (filters.has('card')) for (const c of cards) items.push({ kind: 'card', c })
+    const of = (it: TimelineItem) => (it.kind === 'event' ? it.e : it.c)
+    return items.sort((x, y) => {
+      const a = of(x), b = of(y)
+      const ap = eventPeriodOf(a, playtime, periodCount)
+      const bp = eventPeriodOf(b, playtime, periodCount)
+      if (ap !== bp) return bp - ap
+      const am = a.minute ?? -1
+      const bm = b.minute ?? -1
+      if (am !== bm) return bm - am
+      return x.kind === y.kind ? b.id - a.id : x.kind === 'card' ? -1 : 1
+    })
+  }, [orderedEvents, cards, filters, playtime, periodCount])
+
+  function startCard(color: 'Gul' | 'Röd') {
+    setForm(null)
+    setCardForm({
+      side: 'our',
+      color,
+      player: '',
+      minute: currentMinute != null ? String(currentMinute) : '',
+      period: timer?.period ?? null,
+    })
+    setError(null)
+  }
+
+  function editCard(c: MatchCard) {
+    setForm(null)
+    setCardForm({
+      id: c.id,
+      side: c.side,
+      color: c.color,
+      player: c.player != null ? String(c.player) : '',
+      minute: c.minute != null ? String(c.minute) : '',
+      period: c.period ?? null,
+    })
+    setError(null)
+  }
+
+  async function handleSaveCard() {
+    if (!cardForm || !matchId) return
+    setError(null)
+    try {
+      await saveCard({
+        ...(cardForm.id ? { id: cardForm.id } : { period: cardForm.period }),
+        matchId,
+        side: cardForm.side,
+        color: cardForm.color,
+        player: cardForm.side === 'our' && cardForm.player ? Number(cardForm.player) : null,
+        minute: cardForm.minute !== '' ? Number(cardForm.minute) : null,
+      })
+      setCardForm(null)
+      fetchMatch({ id: matchId }, { skipCache: true })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Något gick fel.')
+    }
+  }
+
+  async function handleDeleteCard(cardId: number) {
+    if (!matchId) return
+    if (!window.confirm('Ta bort kortet?')) return
+    try {
+      await deleteCard({ id: cardId, matchId })
+      fetchMatch({ id: matchId }, { skipCache: true })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Något gick fel.')
+    }
+  }
+
   // Saves grouped per goalkeeper, sorted by most saves.
   const saveSummary = useMemo(() => {
     const counts = new Map<number, { player: number; name: string; img: string | null; count: number }>()
@@ -356,6 +467,7 @@ export default function MatchTimeline() {
   }, [events, participants])
 
   function startAdd(kind: EventKind = 'our_goal') {
+    setCardForm(null)
     setForm({
       ...emptyForm(),
       kind,
@@ -366,6 +478,7 @@ export default function MatchTimeline() {
   }
 
   function startEdit(e: MatchEvent) {
+    setCardForm(null)
     setForm(formFromEvent(e))
     setError(null)
   }
@@ -610,7 +723,7 @@ export default function MatchTimeline() {
         </div>
 
         {/* Quick-add buttons under the timer */}
-        {!form && (
+        {!form && !cardForm && (
           <div className="grid grid-cols-3 gap-2">
             <div className="flex items-center justify-center text-[30px] font-bold text-foreground">
               {match?.ourgoals ?? 0}
@@ -655,10 +768,95 @@ export default function MatchTimeline() {
                 </span>
               )}
             </button>
+            <div className="col-span-3 grid grid-cols-2 gap-2">
+              {(['Gul', 'Röd'] as const).map((color) => (
+                <button
+                  key={color}
+                  onClick={() => startCard(color)}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card hover:bg-muted/60 px-2 py-2 text-sm font-medium text-foreground transition-colors"
+                >
+                  <CardIcon color={color} />
+                  {color === 'Gul' ? 'Gult kort' : 'Rött kort'}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
-        {!form && error && (
+        {cardForm && (
+          <Section title={cardForm.id ? 'Redigera kort' : 'Nytt kort'}>
+            <div className="grid grid-cols-2 gap-2">
+              {(['Gul', 'Röd'] as const).map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setCardForm({ ...cardForm, color })}
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    cardForm.color === color ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-foreground/40'
+                  }`}
+                >
+                  <CardIcon color={color} />
+                  {color === 'Gul' ? 'Gult' : 'Rött'}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {(['our', 'their'] as const).map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  onClick={() => setCardForm({ ...cardForm, side })}
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    cardForm.side === side ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-foreground/40'
+                  }`}
+                >
+                  {side === 'our'
+                    ? <><img src={ownTeamLogoUrl()} alt="" className="w-5 h-5 object-contain" /> {ownTeamName()}</>
+                    : <>{match?.opponent_img ? <img src={match.opponent_img} alt="" className="w-5 h-5 object-contain" /> : null} <span className="truncate">{match?.opponent ?? 'Motståndare'}</span></>}
+                </button>
+              ))}
+            </div>
+            {cardForm.side === 'our' && (
+              <Field label="Spelare (valfritt)">
+                <Combobox
+                  options={playerOptions}
+                  value={cardForm.player}
+                  onValueChange={(v) => setCardForm({ ...cardForm, player: v })}
+                  placeholder="Välj spelare..."
+                  emptyMessage="Inga spelare."
+                  className="w-full"
+                />
+              </Field>
+            )}
+            <Field label="Minut">
+              <Input
+                type="number"
+                min={0}
+                value={cardForm.minute}
+                onChange={(e) => setCardForm({ ...cardForm, minute: e.target.value })}
+                placeholder="t.ex. 23"
+              />
+            </Field>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <div className="flex items-center gap-2 pt-2">
+              <Button
+                onClick={handleSaveCard}
+                disabled={savingCard}
+                className="flex-1"
+                style={{ backgroundColor: 'rgb(var(--team-primary))', color: 'rgb(var(--team-accent))' }}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {savingCard ? 'Sparar…' : cardForm.id ? 'Spara' : 'Lägg till'}
+              </Button>
+              <Button variant="outline" onClick={() => { setCardForm(null); setError(null) }} disabled={savingCard}>
+                <X className="w-4 h-4 mr-1" />
+                Avbryt
+              </Button>
+            </div>
+          </Section>
+        )}
+
+        {!form && !cardForm && error && (
           <p className="text-sm text-destructive">{error}</p>
         )}
         {loading && !result && (
@@ -782,11 +980,12 @@ export default function MatchTimeline() {
           </Section>
         )}
 
-        <Section title={`Händelser (${orderedEvents.length})`}>
+        <Section title={`Händelser (${timelineItems.length})`}>
           <div className="flex gap-2 mb-3">
             {([
               { key: 'goal' as const, label: 'Mål' },
               { key: 'save' as const, label: 'Räddningar' },
+              ...(cards.length ? [{ key: 'card' as const, label: 'Kort' }] : []),
             ]).map(f => (
               <button
                 key={f.key}
@@ -801,7 +1000,7 @@ export default function MatchTimeline() {
               </button>
             ))}
           </div>
-          {orderedEvents.length === 0 ? (
+          {timelineItems.length === 0 ? (
             <p className="text-sm text-muted-foreground py-3">
               Inga händelser ännu. Lägg till den första via knappen ovan.
             </p>
@@ -811,30 +1010,70 @@ export default function MatchTimeline() {
               <div className="absolute left-1/2 top-2 bottom-2 w-px bg-border -translate-x-1/2 z-0" />
 
               <div className="flex flex-col divide-y divide-border/40">
-                {orderedEvents.map((e, i) => {
+                {timelineItems.map((item, i) => {
+                  const eventPeriod = eventPeriodOf(item.kind === 'event' ? item.e : item.c, playtime, periodCount)
+                  const prevItem = timelineItems[i - 1]
+                  const prevPeriod = prevItem ? eventPeriodOf(prevItem.kind === 'event' ? prevItem.e : prevItem.c, playtime, periodCount) : null
+                  const showDivider = periodCount > 1 && eventPeriod !== prevPeriod
+                  const divider = showDivider && (
+                    <div className="relative z-10 flex items-center gap-3 py-2 bg-card">
+                      <div className="h-px flex-1 bg-border" />
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                        Period {eventPeriod}
+                      </span>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+                  )
+
+                  if (item.kind === 'card') {
+                    const c = item.c
+                    const ours = c.side === 'our'
+                    return (
+                      <Fragment key={`c${c.id}`}>
+                        {divider}
+                        <div
+                          className="relative grid grid-cols-[1fr_52px_1fr] items-center py-1 z-10 cursor-pointer hover:bg-muted/40 transition-colors rounded-md"
+                          onClick={() => editCard(c)}
+                        >
+                          <div className="pr-2 pl-8 flex flex-col items-end">
+                            {ours && (
+                              <span className="text-[14px] font-semibold text-foreground text-right leading-tight">
+                                {c.player_name ?? ownTeamName()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <div className="w-7 h-7 flex items-center justify-center bg-card">
+                              <CardIcon color={c.color} className="w-4 h-[22px]" />
+                            </div>
+                            <span className="text-[12px] font-mono text-muted-foreground leading-tight">{minuteLabel(c, playtime)}</span>
+                          </div>
+                          <div className="pl-2 pr-8 flex flex-col items-start">
+                            {!ours && (
+                              <span className="text-xs font-semibold text-muted-foreground leading-tight">{match?.opponent ?? '–'}</span>
+                            )}
+                          </div>
+                          <button
+                            onClick={ev => { ev.stopPropagation(); handleDeleteCard(c.id) }}
+                            className="absolute top-1 right-1 text-muted-foreground hover:text-destructive p-1 rounded hover:bg-muted transition-colors"
+                            aria-label="Ta bort kort"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </Fragment>
+                    )
+                  }
+
+                  const e = item.e
                   const kind = classifyEvent(e)
                   const isOurs = kind === 'our_goal' || kind === 'save'
                   const isTheirs = kind === 'their_goal'
                   const isSave = kind === 'save'
 
-                  // Period this event belongs to, and whether it opens a new period
-                  // block in the descending (newest-first) list.
-                  const eventPeriod = eventPeriodOf(e, playtime, periodCount)
-                  const prev = orderedEvents[i - 1]
-                  const prevPeriod = prev ? eventPeriodOf(prev, playtime, periodCount) : null
-                  const showDivider = periodCount > 1 && eventPeriod !== prevPeriod
-
                   return (
                     <Fragment key={e.id}>
-                      {showDivider && (
-                        <div className="relative z-10 flex items-center gap-3 py-2 bg-card">
-                          <div className="h-px flex-1 bg-border" />
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
-                            Period {eventPeriod}
-                          </span>
-                          <div className="h-px flex-1 bg-border" />
-                        </div>
-                      )}
+                      {divider}
                       <div
                         className="relative grid grid-cols-[1fr_52px_1fr] items-center py-1 z-10 cursor-pointer hover:bg-muted/40 transition-colors rounded-md"
                         onClick={() => startEdit(e)}
