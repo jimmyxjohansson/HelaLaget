@@ -197,7 +197,7 @@ export default function TrainingPlan() {
       const r = await notify.trigger({ trainingId })
       setNotice(r.people > 0
         ? `Notisen är skickad till ${r.people} ledare.`
-        : 'Ingen annan ledare har notiser påslagna för laget, så ingen notis skickades.')
+        : 'Ingen ledare har notiser påslagna för laget, så ingen notis skickades. Slå på dem under Mer → Notiser.')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Kunde inte skicka notisen.')
     }

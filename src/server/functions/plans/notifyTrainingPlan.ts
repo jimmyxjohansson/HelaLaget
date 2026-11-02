@@ -14,8 +14,8 @@ function when(date: string) {
 }
 
 /**
- * Notis till lagets ledare om att träningsplanen är klar. Notisen öppnar
- * planen. Den som skickar får ingen notis själv.
+ * Notis till lagets ledare om att träningsplanen är klar, även till den som
+ * skickar. Notisen öppnar planen.
  */
 export default async function notifyTrainingPlan(req: { params: Params; user: User; squad?: SquadAccess }) {
   if (!pushConfigured()) throw new AccessError('Notiser är inte inställda på servern ännu.', 503)
@@ -44,7 +44,6 @@ export default async function notifyTrainingPlan(req: { params: Params; user: Us
       url: `/-/trainings/${trainingId}/plan?lag=${squadId}`,
       tag: `plan-${trainingId}`,
     },
-    req.user.id,
   )
   return { people: result.people, devices: result.sent }
 }
