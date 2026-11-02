@@ -3,7 +3,7 @@
 import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useRef, useState, Fragment, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Trash2, Save, X, Play, Square, Clock, Hand, Check, Loader2, Flag, Bell, BellOff } from 'lucide-react'
+import { ArrowLeft, Trash2, Save, X, Play, Square, Clock, Hand, Check, Loader2, Flag, Bell, BellOff, UserPlus } from 'lucide-react'
 import {
   useGetMatch,
   useSaveMatchEvent,
@@ -224,6 +224,43 @@ export default function MatchTimeline() {
   }, [timer])
 
   useEffect(() => { if (matchId) fetchMatch({ id: matchId }) }, [matchId])
+
+  // Tillbaka från deltagarna: öppna formuläret igen som det var
+  const formKey = `hl_timeline_form_${matchId}`
+  useEffect(() => {
+    if (!matchId) return
+    try {
+      const saved = sessionStorage.getItem(formKey)
+      if (!saved) return
+      sessionStorage.removeItem(formKey)
+      const state = JSON.parse(saved) as { form: EventForm | null; cardForm: CardForm | null }
+      setForm(state.form)
+      setCardForm(state.cardForm)
+    } catch {
+      // Utan sessionStorage öppnas sidan som vanligt
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId])
+
+  /** Till matchens deltagare, t.ex. för att lägga till en spelare som glömts. */
+  function openParticipants() {
+    try {
+      sessionStorage.setItem(formKey, JSON.stringify({ form, cardForm }))
+    } catch {
+      // Formuläret får fyllas i igen
+    }
+    router.push(`/matches/${matchId}/participants?fran=tidslinje`)
+  }
+  const participantsHint = (
+    <button
+      type="button"
+      onClick={openParticipants}
+      className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+      title="Hantera deltagare i matchen"
+    >
+      <UserPlus className="w-3.5 h-3.5" /> Deltagare
+    </button>
+  )
 
   const result = data as unknown as MatchResult | undefined
   const match = result?.match
@@ -797,7 +834,7 @@ export default function MatchTimeline() {
             </div>}
             {/* Laget följer knappen man tryckte på och sparas i bakgrunden */}
             {cardForm.side === 'our' && (
-              <Field label="Spelare (valfritt)">
+              <Field label="Spelare (valfritt)" hint={participantsHint}>
                 <Combobox
                   options={playerOptions}
                   value={cardForm.player}
@@ -872,7 +909,7 @@ export default function MatchTimeline() {
 
             {form.kind === 'our_goal' && (
               <>
-                <Field label="Målskytt">
+                <Field label="Målskytt" hint={participantsHint}>
                   <Combobox
                     options={playerOptions}
                     value={form.goalPlayer}
@@ -896,7 +933,7 @@ export default function MatchTimeline() {
             )}
 
             {form.kind === 'save' && (
-              <Field label="Räddade av">
+              <Field label="Räddade av" hint={participantsHint}>
                 <Combobox
                   options={playerOptions}
                   value={form.savePlayer}

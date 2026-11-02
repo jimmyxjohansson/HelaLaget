@@ -189,7 +189,7 @@ export default function EditParticipants() {
 
             <Button
               variant="outline"
-              onClick={() => router.push(`/matches/${id}`)}
+              onClick={() => router.push(new URLSearchParams(window.location.search).get('fran') === 'tidslinje' ? `/matches/${id}/timeline` : `/matches/${id}`)}
               className="w-full"
             >
               Klar
