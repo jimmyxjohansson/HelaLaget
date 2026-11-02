@@ -390,15 +390,20 @@ export default function MatchTimeline() {
     })
   }, [orderedEvents, cards, filters, playtime, periodCount])
 
-  function startCard(color: 'Gul' | 'Röd') {
+  /** Byter ett nytt mål till ett kort (eller tillbaka) och behåller lag och minut. */
+  function switchToCard(color: 'Gul' | 'Röd') {
+    const side: 'our' | 'their' = form?.kind === 'their_goal' ? 'their' : cardForm?.side ?? 'our'
+    const minute = form?.minute ?? cardForm?.minute ?? ''
+    const period = form?.period ?? cardForm?.period ?? null
     setForm(null)
-    setCardForm({
-      side: 'our',
-      color,
-      player: '',
-      minute: currentMinute != null ? String(currentMinute) : '',
-      period: timer?.period ?? null,
-    })
+    setCardForm({ side, color, player: cardForm?.player ?? '', minute, period })
+    setError(null)
+  }
+
+  function switchToGoal() {
+    if (!cardForm) return
+    setForm({ ...emptyForm(), kind: cardForm.side === 'their' ? 'their_goal' : 'our_goal', minute: cardForm.minute, period: cardForm.period })
+    setCardForm(null)
     setError(null)
   }
 
@@ -768,24 +773,15 @@ export default function MatchTimeline() {
                 </span>
               )}
             </button>
-            <div className="col-span-3 grid grid-cols-2 gap-2">
-              {(['Gul', 'Röd'] as const).map((color) => (
-                <button
-                  key={color}
-                  onClick={() => startCard(color)}
-                  className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card hover:bg-muted/60 px-2 py-2 text-sm font-medium text-foreground transition-colors"
-                >
-                  <CardIcon color={color} />
-                  {color === 'Gul' ? 'Gult kort' : 'Rött kort'}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
         {cardForm && (
           <Section title={cardForm.id ? 'Redigera kort' : 'Nytt kort'}>
-            <div className="grid grid-cols-2 gap-2">
+            {!cardForm.id && (
+              <EntryTypeSwitch value={cardForm.color} onGoal={switchToGoal} onCard={(color) => setCardForm({ ...cardForm, color })} />
+            )}
+            {cardForm.id && <div className="grid grid-cols-2 gap-2">
               {(['Gul', 'Röd'] as const).map((color) => (
                 <button
                   key={color}
@@ -799,7 +795,7 @@ export default function MatchTimeline() {
                   {color === 'Gul' ? 'Gult' : 'Rött'}
                 </button>
               ))}
-            </div>
+            </div>}
             <div className="grid grid-cols-2 gap-2">
               {(['our', 'their'] as const).map((side) => (
                 <button
@@ -869,6 +865,9 @@ export default function MatchTimeline() {
 
         {form && (
           <Section title={form.id ? 'Redigera händelse' : 'Ny händelse'}>
+            {!form.id && form.kind !== 'save' && (
+              <EntryTypeSwitch value="goal" onGoal={() => {}} onCard={switchToCard} />
+            )}
             <Field label="Typ">
               <Select
                 value={form.kind}
@@ -1219,6 +1218,36 @@ export default function MatchTimeline() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  )
+}
+
+/** Mål, gult eller rött kort: valet överst när en ny händelse registreras. */
+function EntryTypeSwitch({ value, onGoal, onCard }: {
+  value: 'goal' | 'Gul' | 'Röd'
+  onGoal: () => void
+  onCard: (color: 'Gul' | 'Röd') => void
+}) {
+  const options = [
+    { key: 'goal' as const, label: 'Mål', icon: null },
+    { key: 'Gul' as const, label: 'Gult kort', icon: <CardIcon color="Gul" className="w-3 h-4" /> },
+    { key: 'Röd' as const, label: 'Rött kort', icon: <CardIcon color="Röd" className="w-3 h-4" /> },
+  ]
+  return (
+    <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          onClick={() => (o.key === 'goal' ? onGoal() : onCard(o.key))}
+          className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
+            value === o.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {o.icon}
+          {o.label}
+        </button>
+      ))}
     </div>
   )
 }
