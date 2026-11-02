@@ -81,7 +81,7 @@ export default function TrainingPlan() {
   const savePlan = useSaveTrainingPlan()
   const [blocks, setBlocks] = useState<Block[]>([])
   const [editing, setEditing] = useState(false)
-  const [previewId, setPreviewId] = useState<number | null>(null)
+  const [preview, setPreview] = useState<{ id: number; level: string | null } | null>(null)
   const notify = useNotifyTrainingPlan()
   const [notice, setNotice] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
@@ -281,7 +281,7 @@ export default function TrainingPlan() {
                 onRemoveItem={(ik) => updateBlock(b.key, { items: b.items.filter((i) => i.key !== ik) })}
                 onAddItem={() => addItem(b)}
                 onPick={(ik) => { setPicker({ block: b.key, item: ik }); if (!drills.data) drills.trigger().catch(() => {}) }}
-                onInfo={setPreviewId}
+                onInfo={(id) => setPreview({ id, level: null })}
                 onMove={(dir) => move(bi, dir)}
                 onRemove={() => change((bs) => bs.filter((x) => x.key !== b.key))}
               />
@@ -306,7 +306,7 @@ export default function TrainingPlan() {
           </div>
         ) : (
           blocks.map((b, bi) => (
-            <BlockView key={b.key} b={b} start={training ? clock(training.date, blocks.slice(0, bi).reduce((a, x) => a + blockMinutes(x), 0)) : null} groupCount={groupCount} />
+            <BlockView key={b.key} b={b} start={training ? clock(training.date, blocks.slice(0, bi).reduce((a, x) => a + blockMinutes(x), 0)) : null} groupCount={groupCount} onInfo={(id, level) => setPreview({ id, level })} />
           ))
         )}
       </div>
@@ -324,7 +324,7 @@ export default function TrainingPlan() {
         </div>
       )}
 
-      <DrillPreview drillId={previewId} onClose={() => setPreviewId(null)} />
+      <DrillPreview drillId={preview?.id ?? null} initialLevel={preview?.level} onClose={() => setPreview(null)} />
       <DrillPicker open={!!picker} drills={drills.data} onClose={() => setPicker(null)} onPick={pick} />
       <TemplatesDialog open={templatesOpen} onClose={() => setTemplatesOpen(false)} current={payload()} onApply={applyTemplate} />
     </div>
@@ -436,7 +436,7 @@ function BlockEditor({ b, start, first, last, groups, groupCount, onChange, onIt
 
 /* ───────────── Visning (ute på planen) ───────────── */
 
-function BlockView({ b, start, groupCount }: { b: Block; start: string | null; groupCount: (g: string) => number }) {
+function BlockView({ b, start, groupCount, onInfo }: { b: Block; start: string | null; groupCount: (g: string) => number; onInfo: (id: number, level: string | null) => void }) {
   const multi = b.items.length > 1
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
@@ -450,7 +450,7 @@ function BlockView({ b, start, groupCount }: { b: Block; start: string | null; g
         <div className={cn('grid', multi && 'md:grid-cols-2', 'divide-y divide-border md:divide-y-0')}>
           {b.items.map((i, idx) => (
             <div key={i.key} className={cn(multi && 'md:border-border', multi && idx % 2 === 0 && 'md:border-r', multi && idx >= 2 && 'md:border-t')}>
-              <ItemView i={i} groupCount={groupCount} wide={!multi} />
+              <ItemView i={i} groupCount={groupCount} wide={!multi} onInfo={onInfo} />
             </div>
           ))}
         </div>
@@ -459,7 +459,7 @@ function BlockView({ b, start, groupCount }: { b: Block; start: string | null; g
   )
 }
 
-function ItemView({ i, groupCount, wide }: { i: Item; groupCount: (g: string) => number; wide?: boolean }) {
+function ItemView({ i, groupCount, wide, onInfo }: { i: Item; groupCount: (g: string) => number; wide?: boolean; onInfo: (id: number, level: string | null) => void }) {
   const [open, setOpen] = useState(false)
   const d = i.drill
   const lv = d && i.level ? d.levels?.[i.level] : null
@@ -476,6 +476,13 @@ function ItemView({ i, groupCount, wide }: { i: Item; groupCount: (g: string) =>
         <span className="font-medium">{d?.name ?? (i.title || 'Övning')}</span>
         {i.level && (
           <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white" style={{ backgroundColor: LEVEL_COLOR[i.level] }}>{i.level}</span>
+        )}
+        {d && (
+          <button type="button" onClick={() => onInfo(d.id, i.level)}
+            className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground ring-1 ring-border hover:bg-muted hover:text-foreground"
+            aria-label={`Visa hela övningen ${d.name}`} title="Visa hela övningen">
+            <Info className="h-4 w-4" />
+          </button>
         )}
       </div>
       {i.notes && <p className="text-sm italic text-muted-foreground">{i.notes}</p>}

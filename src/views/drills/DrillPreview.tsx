@@ -11,8 +11,10 @@ import { DrillContent } from './DrillDetail'
  * Hela övningen i en popup: ritning, nivåer, organisation och
  * coachningspunkter. Med onPick går övningen att välja direkt härifrån.
  */
-export default function DrillPreview({ drillId, onClose, onPick, pickLabel = 'Välj övningen' }: {
+export default function DrillPreview({ drillId, initialLevel = null, onClose, onPick, pickLabel = 'Välj övningen' }: {
   drillId: number | null
+  /** Nivån som visas först, t.ex. den som valts i träningsplanen */
+  initialLevel?: string | null
   onClose: () => void
   onPick?: () => void
   pickLabel?: string
@@ -22,7 +24,7 @@ export default function DrillPreview({ drillId, onClose, onPick, pickLabel = 'V�
 
   useEffect(() => {
     if (drillId == null) return
-    setLevel(null)
+    setLevel(initialLevel)
     q.trigger({ id: drillId }).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drillId])
