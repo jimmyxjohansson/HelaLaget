@@ -100,7 +100,7 @@ export default function Svenskalag() {
                 Laginställningar
               </Link>
             ) : (
-              'Admin → Laginställningar'
+              'Mer → Laginställningar'
             )}
             . Länken finns i Svenskalag under lagets kalender → Prenumerera.
           </p>

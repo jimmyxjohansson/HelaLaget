@@ -40,7 +40,7 @@ export default function DrillPicker({ open, drills, onClose, onPick }: {
           {!drills ? (
             <p className="py-8 text-center text-sm text-muted-foreground">Hämtar övningar…</p>
           ) : list.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Övningsbanken är tom. Lägg till övningar under Admin → Övningsbank.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">Övningsbanken är tom. Lägg till övningar under Mer → Övningsbank.</p>
           ) : shown.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">Inga övningar matchar filtret.</p>
           ) : (

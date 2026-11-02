@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Check, Copy, Loader2, Plus, RefreshCw, Trash2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Check, Copy, ImageIcon, Loader2, Plus, RefreshCw, Trash2, Upload, X } from 'lucide-react'
+import { uploadImage } from '../../lib/storage'
 import {
   useDecideMember,
   useGetMembers,
@@ -77,6 +78,34 @@ export default function SquadSettings() {
     svenskalagUrl: '',
   })
   const [savedSettings, setSavedSettings] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [logoFailed, setLogoFailed] = useState(false)
+  const logoInput = useRef<HTMLInputElement | null>(null)
+
+  async function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) { setError('Välj en bildfil.'); return }
+    if (file.size > 5 * 1024 * 1024) { setError('Bilden är för stor (max 5 MB).'); return }
+    setUploadingLogo(true)
+    setError(null)
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => { const r = reader.result as string; resolve(r.slice(r.indexOf(',') + 1)) }
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(file)
+      })
+      const { url } = await uploadImage({ data, fileName: file.name, mimeType: file.type }, 'squads')
+      setLogoFailed(false)
+      setForm((f) => ({ ...f, logoUrl: url }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kunde inte ladda upp loggan.')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
   const [newLeader, setNewLeader] = useState({ firstname: '', lastname: '' })
   const [pickLeader, setPickLeader] = useState('')
   const reloadLeaders = () => Promise.all([leaders.trigger(), orgLeaders.trigger()])
@@ -312,12 +341,45 @@ export default function SquadSettings() {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sq-logo">Logga (länk till bild)</Label>
+            <Label htmlFor="sq-logo">Logga</Label>
+            <div className="flex items-center gap-3">
+              <div
+                className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-border"
+                style={{ backgroundColor: form.primaryColor }}
+              >
+                {form.logoUrl && !logoFailed ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={form.logoUrl} alt="Lagets logga" onError={() => setLogoFailed(true)} className="h-12 w-12 object-contain" />
+                ) : (
+                  <ImageIcon className="h-6 w-6" style={{ color: form.accentColor }} />
+                )}
+                {form.logoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => { setForm({ ...form, logoUrl: '' }); setLogoFailed(false) }}
+                    aria-label="Ta bort loggan"
+                    className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <input ref={logoInput} type="file" accept="image/*" onChange={handleLogoFile} className="hidden" />
+                <Button type="button" variant="outline" size="sm" onClick={() => logoInput.current?.click()} disabled={uploadingLogo} className="self-start">
+                  {uploadingLogo
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Laddar upp…</>
+                    : <><Upload className="mr-2 h-4 w-4" /> Ladda upp logga</>}
+                </Button>
+                <p className="text-xs text-muted-foreground">PNG eller SVG med genomskinlig bakgrund blir finast. Spara för att byta.</p>
+              </div>
+            </div>
             <Input
               id="sq-logo"
               value={form.logoUrl}
-              placeholder="https://…"
-              onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
+              placeholder="…eller klistra in en länk till bilden"
+              onChange={(e) => { setForm({ ...form, logoUrl: e.target.value }); setLogoFailed(false) }}
+              className="text-xs"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -349,7 +411,7 @@ export default function SquadSettings() {
             />
             <p className="text-xs text-muted-foreground">
               I Svenskalag: lagets kalender → Prenumerera → kopiera länken. Träningar och matcher hämtas då automatiskt
-              (Admin → Svenskalag).
+              (Mer → Svenskalag-synk).
             </p>
           </div>
           <div className="flex items-center gap-3">
