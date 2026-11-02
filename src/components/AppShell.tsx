@@ -41,8 +41,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
         setMe(me)
         if (me.current) {
           if (readSquadCookie() !== me.current.squadId) setSquadCookie(me.current.squadId)
-          // Fliknamn: "Skabersjö IF P-13 – Hela Laget"
-          document.title = `${me.current.organizationName} ${me.current.squadName} – Hela Laget`
           const root = document.documentElement.style
           const primary = hexToRgbChannels(me.current.primaryColor)
           const accent = hexToRgbChannels(me.current.accentColor)
@@ -68,6 +66,20 @@ export default function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (needsSquad) router.replace('/lag')
   }, [needsSquad, router])
+
+  // Fliknamn: "Skabersjö IF P-13 – Hela Laget". Next sätter tillbaka titeln
+  // från layouten vid varje sidbyte, så den skrivs över igen när den ändras.
+  const tabTitle = me?.current ? `${me.current.organizationName} ${me.current.squadName} – Hela Laget` : null
+  useEffect(() => {
+    if (!tabTitle) return
+    const apply = () => {
+      if (document.title !== tabTitle) document.title = tabTitle
+    }
+    apply()
+    const observer = new MutationObserver(apply)
+    observer.observe(document.head, { subtree: true, childList: true, characterData: true })
+    return () => observer.disconnect()
+  }, [tabTitle, pathname])
 
   if (!mounted || state === 'loading' || needsSquad) {
     return (
