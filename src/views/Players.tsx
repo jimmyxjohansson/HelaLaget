@@ -146,7 +146,10 @@ export default function Players() {
   const [sort, setSort] = usePersistentState('players.sort', 'rank')
   const [sortDir, setSortDir] = usePersistentState<SortDir>('players.sortDir', 'asc')
   const [statusFilter, setStatusFilter] = usePersistentState<string[]>('players.statusFilter', ['Aktiv', 'Aktiv, ej matchklar'])
-  const statusVisible = useSquadStatuses()
+  const [statusRefresh, setStatusRefresh] = useState(0)
+  const statusVisible = useSquadStatuses(statusRefresh)
+  // Valda statusar som inte finns i laget (t.ex. sparade från ett annat lag) filtrerar inte bort någon
+  const activeStatuses = statusFilter.filter((s) => statusVisible(s))
 
   function toggleStatus(value: string) {
     setStatusFilter(prev =>
@@ -187,12 +190,12 @@ export default function Players() {
   const anySaves = (players ?? []).some((p) => p.saves > 0)
   const filtered = (players ?? [])
     .filter(p => {
-      if (statusFilter.length > 0 && !statusFilter.includes(p.status)) return false
+      if (activeStatuses.length > 0 && !activeStatuses.includes(p.status)) return false
       if (!search) return true
       const q = search.toLowerCase()
       return (
         p.firstname.toLowerCase().includes(q) ||
-        p.lastname.toLowerCase().includes(q) ||
+        (p.lastname ?? '').toLowerCase().includes(q) ||
         p.shortname.toLowerCase().includes(q) ||
         String(p.number).includes(q)
       )
@@ -238,7 +241,7 @@ export default function Players() {
               <p className="text-team-accent/70 text-sm">{filtered.length} spelare<span className="hidden sm:inline"> · närvaro och matcher {TIME_FILTERS.find((t) => t.value === timeFilter)?.label === 'Alla' ? 'totalt' : `senaste ${TIME_FILTERS.find((t) => t.value === timeFilter)?.label ?? ''}`}</span></p>
             </div>
           </div>
-          {canEdit() && <PlayerActions onChanged={() => trigger({ months: timeFilter })} />}
+          {canEdit() && <PlayerActions onChanged={() => { trigger({ months: timeFilter }); setStatusRefresh((n) => n + 1) }} />}
         </div>
       </div>
 
@@ -275,7 +278,7 @@ export default function Players() {
           <button
             onClick={() => setStatusFilter([])}
             className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-              statusFilter.length === 0
+              activeStatuses.length === 0
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
