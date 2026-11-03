@@ -5,16 +5,19 @@ import { Copy, MousePointer2, RotateCw, Trash2, Undo2, Eraser } from 'lucide-rea
 import DrillDiagram from './DrillDiagram'
 import { cn } from '../../lib/shadcn/utils'
 import {
-  ARROW_NAME, CONE_HEX, TEAM_HEX, moveShape, newId, snap, unit,
-  type ArrowStyle, type ConeColor, type Diagram, type Pitch, type Pt, type Shape, type Team,
+  ARROW_NAME, CONE_HEX, DOT_TEAMS, GOAL_SIZES, LINE_HEX, TEAM_HEX, lineColor, moveShape, newId, snap, unit,
+  type ArrowStyle, type ConeColor, type Diagram, type GoalSize, type LineColor, type Pitch, type Pt, type Shape, type Team,
 } from '../../utils/diagram'
+
+const ARROW_STYLES: ArrowStyle[] = ['pass', 'run', 'dribble', 'shot', 'line']
+const LINE_COLORS = Object.keys(LINE_HEX) as LineColor[]
 
 type Tool =
   | { t: 'select' }
   | { t: 'cone'; color: ConeColor }
   | { t: 'player'; team: Team }
   | { t: 'ball' }
-  | { t: 'goal'; size: 'small' | 'large' }
+  | { t: 'goal'; size: GoalSize }
   | { t: 'pole' }
   | { t: 'zone'; color: ConeColor }
   | { t: 'text' }
@@ -51,6 +54,8 @@ export default function DiagramEditor({ value, onChange }: { value: Diagram; onC
   const [tool, setTool] = useState<Tool>({ t: 'select' })
   const [selected, setSelected] = useState<string | null>(null)
   const [drag, setDrag] = useState<Drag>(null)
+  // Färg på nya linjer och pilar (null = standard: vit, gul för skott)
+  const [drawColor, setDrawColor] = useState<LineColor | null>(null)
   const history = useRef<Diagram[]>([])
   const valueRef = useRef(value)
   valueRef.current = value
@@ -141,7 +146,7 @@ export default function DiagramEditor({ value, onChange }: { value: Diagram; onC
     const id = newId()
     switch (tool.t) {
       case 'cone': shape = { id, kind: 'cone', x: p.x, y: p.y, color: tool.color }; break
-      case 'player': shape = { id, kind: 'player', x: p.x, y: p.y, team: tool.team, label: tool.team === 'GK' ? 'MV' : '' }; break
+      case 'player': shape = { id, kind: 'player', x: p.x, y: p.y, team: tool.team, label: '' }; break
       case 'ball': shape = { id, kind: 'ball', x: p.x, y: p.y }; break
       case 'goal': shape = { id, kind: 'goal', x: p.x, y: p.y, size: tool.size, rot: p.x < value.width / 2 ? 270 : 90 }; break
       case 'pole': shape = { id, kind: 'pole', x: p.x, y: p.y }; break
@@ -177,7 +182,7 @@ export default function DiagramEditor({ value, onChange }: { value: Diagram; onC
         const id = newId()
         const shape: Shape =
           tool.t === 'arrow'
-            ? { id, kind: 'arrow', style: tool.style, from: start, to: now }
+            ? { id, kind: 'arrow', style: tool.style, from: start, to: now, ...(drawColor ? { color: drawColor } : {}) }
             : { id, kind: 'zone', x: Math.min(start.x, now.x), y: Math.min(start.y, now.y), w: Math.abs(now.x - start.x), h: Math.abs(now.y - start.y), color: tool.t === 'zone' ? tool.color : 'blue' }
         commit({ ...value, shapes: [...value.shapes, shape] })
         setSelected(id)
@@ -194,7 +199,7 @@ export default function DiagramEditor({ value, onChange }: { value: Diagram; onC
   const preview: Shape | null =
     drag?.mode === 'draw'
       ? tool.t === 'arrow'
-        ? { id: '_draft', kind: 'arrow', style: tool.style, from: drag.start, to: drag.now }
+        ? { id: '_draft', kind: 'arrow', style: tool.style, from: drag.start, to: drag.now, ...(drawColor ? { color: drawColor } : {}) }
         : { id: '_draft', kind: 'zone', x: Math.min(drag.start.x, drag.now.x), y: Math.min(drag.start.y, drag.now.y), w: Math.abs(drag.now.x - drag.start.x), h: Math.abs(drag.now.y - drag.start.y), color: tool.t === 'zone' ? tool.color : 'blue' }
       : null
   const shown = preview ? { ...value, shapes: [...value.shapes, preview] } : value
@@ -252,20 +257,27 @@ export default function DiagramEditor({ value, onChange }: { value: Diagram; onC
             <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8,2 L14,14 L2,14 z" fill={CONE_HEX[c]} stroke="#0006" /></svg>
           </button>
         ))}
-        {(['A', 'B', 'N', 'GK'] as Team[]).map((t) => (
+        {([...DOT_TEAMS, 'GK', 'L'] as Team[]).map((t) => (
           <button key={t} type="button" className={toolBtn(is({ t: 'player', team: t }))} onClick={() => setTool({ t: 'player', team: t })} title={TEAM_HEX[t].name}>
-            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill={TEAM_HEX[t].fill} stroke="#fff" strokeWidth="1.5" /></svg>
+            <TeamIcon team={t} />
           </button>
         ))}
         <button type="button" className={toolBtn(is({ t: 'ball' }))} onClick={() => setTool({ t: 'ball' })} title="Boll">
           <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#fff" stroke="#111" /><circle cx="8" cy="8" r="2.2" fill="#111" /></svg>
         </button>
-        <button type="button" className={toolBtn(is({ t: 'goal', size: 'small' }))} onClick={() => setTool({ t: 'goal', size: 'small' })} title="Litet mål">Mål S</button>
-        <button type="button" className={toolBtn(is({ t: 'goal', size: 'large' }))} onClick={() => setTool({ t: 'goal', size: 'large' })} title="Stort mål">Mål L</button>
+        <select
+          value={tool.t === 'goal' ? tool.size : ''}
+          onChange={(e) => e.target.value && setTool({ t: 'goal', size: e.target.value as GoalSize })}
+          className={cn(toolBtn(tool.t === 'goal'), 'pr-1')}
+          title="Mål: välj storlek och klicka på planen"
+        >
+          <option value="">Mål…</option>
+          {GOAL_SIZES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+        </select>
         <button type="button" className={toolBtn(is({ t: 'pole' }))} onClick={() => setTool({ t: 'pole' })} title="Käpp">
           <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" fill="#fde047" stroke="#111" /></svg>
         </button>
-        {(['pass', 'run', 'dribble', 'shot'] as ArrowStyle[]).map((s) => (
+        {ARROW_STYLES.map((s) => (
           <button key={s} type="button" className={toolBtn(is({ t: 'arrow', style: s }))} onClick={() => setTool({ t: 'arrow', style: s })} title={`${ARROW_NAME[s]}: dra på planen`}>
             <ArrowIcon style={s} /> <span className="hidden sm:inline">{ARROW_NAME[s]}</span>
           </button>
@@ -280,6 +292,18 @@ export default function DiagramEditor({ value, onChange }: { value: Diagram; onC
           <Eraser className="h-4 w-4" />
         </button>
       </div>
+
+      {tool.t === 'arrow' && (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">Färg på linjen</span>
+          <button type="button" onClick={() => setDrawColor(null)}
+            className={cn('h-6 rounded-full border-2 px-2', drawColor === null ? 'border-foreground' : 'border-border')}>Standard</button>
+          {LINE_COLORS.map((c) => (
+            <button key={c} type="button" onClick={() => setDrawColor(c)} aria-label={c}
+              className={cn('h-6 w-6 rounded-full border-2', drawColor === c ? 'border-foreground' : 'border-border')} style={{ backgroundColor: LINE_HEX[c] }} />
+          ))}
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-border">
         <DrillDiagram
@@ -312,9 +336,11 @@ export default function DiagramEditor({ value, onChange }: { value: Diagram; onC
                 <input value={sel.label ?? ''} maxLength={3} placeholder="Text"
                   onChange={(e) => update(sel.id, { label: e.target.value }, false)}
                   className="h-8 w-16 rounded-md border border-border bg-background px-2" />
-                {(['A', 'B', 'N', 'GK'] as Team[]).map((t) => (
+                {([...DOT_TEAMS, 'GK', 'L'] as Team[]).map((t) => (
                   <button key={t} type="button" onClick={() => update(sel.id, { team: t })} title={TEAM_HEX[t].name}
-                    className={cn('h-6 w-6 rounded-full border-2', sel.team === t ? 'border-foreground' : 'border-transparent')} style={{ backgroundColor: TEAM_HEX[t].fill }} />
+                    className={cn('flex h-7 w-7 items-center justify-center rounded-full border-2', sel.team === t ? 'border-foreground' : 'border-transparent')}>
+                    <TeamIcon team={t} />
+                  </button>
                 ))}
               </>
             )}
@@ -327,23 +353,29 @@ export default function DiagramEditor({ value, onChange }: { value: Diagram; onC
                 <button type="button" className={toolBtn(false)} onClick={() => update(sel.id, { rot: (sel.rot + 90) % 360 })}>
                   <RotateCw className="h-4 w-4" /> Vrid
                 </button>
-                <button type="button" className={toolBtn(false)} onClick={() => update(sel.id, { size: sel.size === 'small' ? 'large' : 'small' })}>
-                  {sel.size === 'small' ? 'Gör stort' : 'Gör litet'}
-                </button>
+                <select value={sel.size} onChange={(e) => update(sel.id, { size: e.target.value as GoalSize })}
+                  className="h-8 rounded-md border border-border bg-background px-2">
+                  {sel.size === 'large' && <option value="large">Stort mål</option>}
+                  {GOAL_SIZES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                </select>
               </>
             )}
             {sel.kind === 'arrow' && (
               <>
                 <select value={sel.style} onChange={(e) => update(sel.id, { style: e.target.value as ArrowStyle })} className="h-8 rounded-md border border-border bg-background px-2">
-                  {(['pass', 'run', 'dribble', 'shot'] as ArrowStyle[]).map((s) => <option key={s} value={s}>{ARROW_NAME[s]}</option>)}
+                  {ARROW_STYLES.map((s) => <option key={s} value={s}>{ARROW_NAME[s]}</option>)}
                 </select>
-                {sel.style !== 'dribble' && (
-                  <label className="flex items-center gap-1">
-                    <span className="text-muted-foreground">Böj</span>
-                    <input type="range" min={-10} max={10} step={0.5} value={sel.bend ?? 0}
-                      onChange={(e) => update(sel.id, { bend: Number(e.target.value) || undefined }, false)} className="w-24" />
-                  </label>
-                )}
+                <label className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Böj</span>
+                  <input type="range" min={-10} max={10} step={0.5} value={sel.bend ?? 0}
+                    onChange={(e) => update(sel.id, { bend: Number(e.target.value) || undefined }, false)} className="w-24" />
+                </label>
+                <span className="flex items-center gap-1">
+                  {LINE_COLORS.map((c) => (
+                    <button key={c} type="button" onClick={() => update(sel.id, { color: c })} aria-label={`Färg ${c}`}
+                      className={cn('h-6 w-6 rounded-full border-2', lineColor(sel) === c ? 'border-foreground' : 'border-border')} style={{ backgroundColor: LINE_HEX[c] }} />
+                  ))}
+                </span>
               </>
             )}
             {sel.kind === 'text' && (
@@ -373,14 +405,43 @@ function clampSize(v: string, fallback: number) {
 function shapeName(s: Shape) {
   switch (s.kind) {
     case 'cone': return 'Kon'
-    case 'player': return TEAM_HEX[s.team].name
+    case 'player': return s.team === 'GK' || s.team === 'L' ? TEAM_HEX[s.team].name : `Spelare (${TEAM_HEX[s.team]?.name.toLowerCase() ?? ''})`
     case 'ball': return 'Boll'
-    case 'goal': return s.size === 'large' ? 'Stort mål' : 'Litet mål'
+    case 'goal': return GOAL_SIZES.find((g) => g.value === s.size)?.label ?? 'Stort mål'
     case 'pole': return 'Käpp'
     case 'zone': return 'Zon'
     case 'text': return 'Text'
     case 'arrow': return ARROW_NAME[s.style]
   }
+}
+
+/** Liten symbol för prick, målvakt och ledare i verktygen. */
+function TeamIcon({ team }: { team: Team }) {
+  if (team === 'GK') {
+    return (
+      <svg width="18" height="18" viewBox="-1.1 -1.1 2.2 2.2">
+        <circle r={1} fill="#16a34a" stroke="#fff" strokeWidth={0.15} />
+        <g fill="#fff">
+          <rect x={-0.44} y={-0.6} width={0.19} height={0.75} rx={0.095} />
+          <rect x={-0.21} y={-0.72} width={0.19} height={0.85} rx={0.095} />
+          <rect x={0.02} y={-0.72} width={0.19} height={0.85} rx={0.095} />
+          <rect x={0.25} y={-0.6} width={0.19} height={0.75} rx={0.095} />
+          <rect x={-0.44} y={-0.05} width={0.88} height={0.58} rx={0.16} />
+          <rect x={-0.78} y={-0.08} width={0.2} height={0.52} rx={0.1} transform="rotate(-38 -0.68 0.18)" />
+        </g>
+      </svg>
+    )
+  }
+  if (team === 'L') {
+    return (
+      <svg width="18" height="18" viewBox="-1.1 -1.1 2.2 2.2">
+        <circle r={1} fill="#1f2937" stroke="#fff" strokeWidth={0.15} />
+        <circle cx={0} cy={-0.3} r={0.27} fill="#fff" />
+        <path d="M-0.55,0.62 Q-0.55,0.05 0,0.05 Q0.55,0.05 0.55,0.62 Z" fill="#fff" />
+      </svg>
+    )
+  }
+  return <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill={TEAM_HEX[team].fill} stroke="#fff" strokeWidth="1.5" /></svg>
 }
 
 function ArrowIcon({ style }: { style: ArrowStyle }) {
@@ -390,7 +451,7 @@ function ArrowIcon({ style }: { style: ArrowStyle }) {
       {style === 'dribble'
         ? <path d="M1,6 Q3,2 5,6 T9,6 T13,6 L15,6" />
         : <path d="M1,6 L15,6" strokeDasharray={style === 'run' ? '3 2' : undefined} />}
-      <path d="M12,3 L16,6 L12,9" />
+      {style !== 'line' && <path d="M12,3 L16,6 L12,9" />}
     </svg>
   )
 }

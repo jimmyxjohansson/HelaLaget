@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, type PointerEvent as ReactPointerEvent, type ReactNode, type Ref } from 'react'
-import { CONE_HEX, TEAM_HEX, unit, type Diagram, type Pt, type Shape } from '../../utils/diagram'
+import { CONE_HEX, GOAL_SIZES, LINE_HEX, TEAM_HEX, isBigGoal, lineColor, unit, type Diagram, type LineColor, type Pt, type Shape } from '../../utils/diagram'
 
 const PAD = 1.5 // meter runt planen
 
@@ -40,9 +40,9 @@ export default function DrillDiagram({ diagram, className, selectedId, overlay, 
       aria-label={title ?? 'Övningens uppställning'}
     >
       <defs>
-        {(['pass', 'run', 'dribble', 'shot'] as const).map((s) => (
-          <marker key={s} id={`${uid}-${s}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10 z" fill={s === 'shot' ? '#fde047' : '#ffffff'} />
+        {(Object.keys(LINE_HEX) as LineColor[]).map((c) => (
+          <marker key={c} id={`${uid}-head-${c}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill={LINE_HEX[c]} />
           </marker>
         ))}
         <pattern id={`${uid}-grass`} width={Math.max(w, h) / 8} height={h + PAD * 2} patternUnits="userSpaceOnUse" x={-PAD} y={-PAD}>
@@ -81,7 +81,7 @@ function Markings({ d, u }: { d: Diagram; u: number }) {
     return <rect key={side} x={(w - bw) / 2} y={h - depth} width={bw} height={depth} {...line} />
   }
   let goalSide: Side = portrait ? 'top' : 'right'
-  const big = d.shapes.find((s) => s.kind === 'goal' && s.size === 'large')
+  const big = d.shapes.find((s) => s.kind === 'goal' && isBigGoal(s.size))
   if (big && big.kind === 'goal') {
     // Målets nät pekar ut från planen: 0° = uppe, 90° = höger, 180° = nere, 270° = vänster
     const rot = ((Math.round(big.rot / 90) * 90) % 360 + 360) % 360
@@ -132,25 +132,77 @@ function arrowPath(from: Pt, to: Pt, bend = 0) {
   return `M${from.x},${from.y} Q${cx},${cy} ${to.x},${to.y}`
 }
 
-function wavyPath(from: Pt, to: Pt, u: number) {
+/** Punkt och riktning på linjen (rak eller böjd) vid t ∈ [0, 1]. */
+function curveAt(from: Pt, to: Pt, bend: number, t: number) {
   const dx = to.x - from.x
   const dy = to.y - from.y
-  const len = Math.hypot(dx, dy)
+  const len = Math.hypot(dx, dy) || 1
+  const c = { x: (from.x + to.x) / 2 - (dy / len) * bend, y: (from.y + to.y) / 2 + (dx / len) * bend }
+  const mt = 1 - t
+  const x = mt * mt * from.x + 2 * mt * t * c.x + t * t * to.x
+  const y = mt * mt * from.y + 2 * mt * t * c.y + t * t * to.y
+  const tx = 2 * mt * (c.x - from.x) + 2 * t * (to.x - c.x)
+  const ty = 2 * mt * (c.y - from.y) + 2 * t * (to.y - c.y)
+  const tl = Math.hypot(tx, ty) || 1
+  return { x, y, nx: -ty / tl, ny: tx / tl }
+}
+
+/** Vågig linje (dribbling), som följer böjen. Sista biten är rak så att pilen syns. */
+function wavyPath(from: Pt, to: Pt, u: number, bend = 0) {
+  // Längden längs kurvan, ungefärlig
+  let len = 0
+  let prev = curveAt(from, to, bend, 0)
+  for (let i = 1; i <= 24; i++) {
+    const p = curveAt(from, to, bend, i / 24)
+    len += Math.hypot(p.x - prev.x, p.y - prev.y)
+    prev = p
+  }
   if (len < 0.1) return ''
-  const nx = -dy / len
-  const ny = dx / len
   const amp = u * 0.35
   const waveLen = u * 1.6
-  const steps = Math.max(8, Math.floor((len / waveLen) * 8))
-  const tail = Math.min(len * 0.2, u * 1.4) // rak bit sist, så att pilen syns
+  const steps = Math.max(12, Math.floor((len / waveLen) * 8))
+  const tail = Math.min(len * 0.2, u * 1.4)
+  const stop = 1 - tail / len
   const pts: string[] = []
   for (let i = 0; i <= steps; i++) {
-    const t = (i / steps) * (len - tail)
-    const a = Math.sin((t / waveLen) * Math.PI * 2) * amp
-    pts.push(`${from.x + (dx / len) * t + nx * a},${from.y + (dy / len) * t + ny * a}`)
+    const t = (i / steps) * stop
+    const p = curveAt(from, to, bend, t)
+    const a = Math.sin(((t * len) / waveLen) * Math.PI * 2) * amp
+    pts.push(`${p.x + p.nx * a},${p.y + p.ny * a}`)
   }
   pts.push(`${to.x},${to.y}`)
   return `M${pts.join(' L')}`
+}
+
+/** Målvakt: en målvaktshandske. */
+function KeeperIcon({ x, y, r, u }: { x: number; y: number; r: number; u: number }) {
+  const sw = (u * 0.12) / r
+  return (
+    <g transform={`translate(${x} ${y}) scale(${r})`}>
+      <circle r={1} fill="#16a34a" stroke="#fff" strokeWidth={sw} />
+      <g fill="#fff">
+        <rect x={-0.44} y={-0.6} width={0.19} height={0.75} rx={0.095} />
+        <rect x={-0.21} y={-0.72} width={0.19} height={0.85} rx={0.095} />
+        <rect x={0.02} y={-0.72} width={0.19} height={0.85} rx={0.095} />
+        <rect x={0.25} y={-0.6} width={0.19} height={0.75} rx={0.095} />
+        <rect x={-0.44} y={-0.05} width={0.88} height={0.58} rx={0.16} />
+        <rect x={-0.78} y={-0.08} width={0.2} height={0.52} rx={0.1} transform="rotate(-38 -0.68 0.18)" />
+        <rect x={-0.36} y={0.5} width={0.72} height={0.2} rx={0.05} fill="#bbf7d0" />
+      </g>
+    </g>
+  )
+}
+
+/** Ledare: en person i mörk cirkel. */
+function LeaderIcon({ x, y, r, u }: { x: number; y: number; r: number; u: number }) {
+  const sw = (u * 0.12) / r
+  return (
+    <g transform={`translate(${x} ${y}) scale(${r})`}>
+      <circle r={1} fill="#1f2937" stroke="#fff" strokeWidth={sw} />
+      <circle cx={0} cy={-0.3} r={0.27} fill="#fff" />
+      <path d="M-0.55,0.62 Q-0.55,0.05 0,0.05 Q0.55,0.05 0.55,0.62 Z" fill="#fff" />
+    </g>
+  )
 }
 
 function ShapeView({ s, u, uid, selected }: { s: Shape; u: number; uid: string; selected: boolean }) {
@@ -168,7 +220,21 @@ function ShapeView({ s, u, uid, selected }: { s: Shape; u: number; uid: string; 
     }
     case 'player': {
       const r = u * 0.95
-      const c = TEAM_HEX[s.team]
+      const c = TEAM_HEX[s.team] ?? TEAM_HEX.A
+      if (s.team === 'GK' || s.team === 'L') {
+        const label = s.label && s.label !== 'MV' ? s.label : null
+        return (
+          <g data-id={s.id} style={sel}>
+            {s.team === 'GK' ? <KeeperIcon x={s.x} y={s.y} r={r} u={u} /> : <LeaderIcon x={s.x} y={s.y} r={r} u={u} />}
+            {label && (
+              <text x={s.x} y={s.y + r * 1.75} fill="#fff" fontSize={r * 0.8} fontWeight={700} textAnchor="middle" dominantBaseline="central"
+                fontFamily="system-ui, sans-serif" paintOrder="stroke" stroke="rgba(0,0,0,0.55)" strokeWidth={u * 0.14}>
+                {label}
+              </text>
+            )}
+          </g>
+        )
+      }
       return (
         <g data-id={s.id} style={sel}>
           <circle cx={s.x} cy={s.y} r={r} fill={c.fill} stroke="#fff" strokeWidth={u * 0.12} />
@@ -191,8 +257,11 @@ function ShapeView({ s, u, uid, selected }: { s: Shape; u: number; uid: string; 
       )
     }
     case 'goal': {
-      const gw = s.size === 'large' ? Math.max(u * 4.5, 5) : u * 2.4
-      const gd = s.size === 'large' ? u * 1.3 : u * 0.9
+      // Målen ritas i sin riktiga bredd, men aldrig så smått att de inte syns
+      const meters = GOAL_SIZES.find((g) => g.value === s.size)?.meters
+      // Småmål och det gamla stora målet ser ut som tidigare; matchmålen ritas i riktig bredd
+      const gw = s.size === 'small' ? u * 2.4 : s.size === 'large' ? Math.max(u * 4.5, 5) : Math.max(meters ?? 5, u * 3)
+      const gd = s.size === 'small' ? u * 0.9 : Math.min(u * 1.3, gw * 0.3)
       return (
         <g data-id={s.id} style={sel} transform={`rotate(${s.rot} ${s.x} ${s.y})`}>
           <rect x={s.x - gw / 2} y={s.y - gd} width={gw} height={gd} fill="rgba(255,255,255,0.25)" stroke="#fff" strokeWidth={u * 0.14} />
@@ -220,8 +289,9 @@ function ShapeView({ s, u, uid, selected }: { s: Shape; u: number; uid: string; 
         </text>
       )
     case 'arrow': {
-      const color = s.style === 'shot' ? '#fde047' : '#ffffff'
-      const d = s.style === 'dribble' ? wavyPath(s.from, s.to, u) : arrowPath(s.from, s.to, s.bend)
+      const c = lineColor(s)
+      const color = LINE_HEX[c]
+      const d = s.style === 'dribble' ? wavyPath(s.from, s.to, u, s.bend) : arrowPath(s.from, s.to, s.bend)
       return (
         <g data-id={s.id} style={sel}>
           <path d={d} fill="none" stroke="transparent" strokeWidth={u * 1.2} />
@@ -233,7 +303,7 @@ function ShapeView({ s, u, uid, selected }: { s: Shape; u: number; uid: string; 
             strokeDasharray={s.style === 'run' ? `${u * 0.55} ${u * 0.35}` : undefined}
             strokeLinecap="round"
             strokeLinejoin="round"
-            markerEnd={`url(#${uid}-${s.style})`}
+            markerEnd={s.style === 'line' ? undefined : `url(#${uid}-head-${c})`}
           />
         </g>
       )

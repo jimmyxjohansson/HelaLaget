@@ -7,18 +7,25 @@
 export type Pt = { x: number; y: number }
 
 export type ConeColor = 'orange' | 'yellow' | 'blue' | 'red' | 'white'
-export type Team = 'A' | 'B' | 'N' | 'GK'
-export type ArrowStyle = 'pass' | 'run' | 'dribble' | 'shot'
+/**
+ * Spelare: färgade prickar (A röd, B blå, Y gul, O orange, P lila), målvakt (GK)
+ * och ledare (L). N är den gamla gula pricken (neutral) och visas som gul.
+ */
+export type Team = 'A' | 'B' | 'Y' | 'O' | 'P' | 'GK' | 'L' | 'N'
+export type ArrowStyle = 'pass' | 'run' | 'dribble' | 'shot' | 'line'
+export type LineColor = 'white' | 'yellow' | 'red' | 'blue' | 'orange' | 'black'
+/** Mål: småmål och matchmål för 7, 9 och 11 mot 11. 'large' är det gamla stora målet. */
+export type GoalSize = 'small' | 'g7' | 'g9' | 'g11' | 'large'
 
 export type Shape =
   | { id: string; kind: 'cone'; x: number; y: number; color: ConeColor }
   | { id: string; kind: 'player'; x: number; y: number; team: Team; label?: string }
   | { id: string; kind: 'ball'; x: number; y: number }
-  | { id: string; kind: 'goal'; x: number; y: number; size: 'small' | 'large'; rot: number }
+  | { id: string; kind: 'goal'; x: number; y: number; size: GoalSize; rot: number }
   | { id: string; kind: 'pole'; x: number; y: number }
   | { id: string; kind: 'zone'; x: number; y: number; w: number; h: number; color: ConeColor }
   | { id: string; kind: 'text'; x: number; y: number; text: string }
-  | { id: string; kind: 'arrow'; style: ArrowStyle; from: Pt; to: Pt; bend?: number }
+  | { id: string; kind: 'arrow'; style: ArrowStyle; from: Pt; to: Pt; bend?: number; color?: LineColor }
 
 export type Pitch = 'plain' | 'half' | 'full'
 
@@ -41,17 +48,51 @@ export const CONE_HEX: Record<ConeColor, string> = {
 }
 
 export const TEAM_HEX: Record<Team, { fill: string; text: string; name: string }> = {
-  A: { fill: '#dc2626', text: '#fff', name: 'Lag röd' },
-  B: { fill: '#2563eb', text: '#fff', name: 'Lag blå' },
-  N: { fill: '#facc15', text: '#1f2937', name: 'Neutral' },
+  A: { fill: '#dc2626', text: '#fff', name: 'Röd' },
+  B: { fill: '#2563eb', text: '#fff', name: 'Blå' },
+  Y: { fill: '#facc15', text: '#1f2937', name: 'Gul' },
+  O: { fill: '#f97316', text: '#fff', name: 'Orange' },
+  P: { fill: '#9333ea', text: '#fff', name: 'Lila' },
   GK: { fill: '#16a34a', text: '#fff', name: 'Målvakt' },
+  L: { fill: '#1f2937', text: '#fff', name: 'Ledare' },
+  N: { fill: '#facc15', text: '#1f2937', name: 'Gul' },
 }
+
+/** Prickarna i den ordning de visas i verktygen. */
+export const DOT_TEAMS: Team[] = ['A', 'B', 'Y', 'O', 'P']
 
 export const ARROW_NAME: Record<ArrowStyle, string> = {
   pass: 'Passning',
   run: 'Löpning',
   dribble: 'Dribbling',
   shot: 'Skott',
+  line: 'Linje',
+}
+
+export const LINE_HEX: Record<LineColor, string> = {
+  white: '#ffffff',
+  yellow: '#fde047',
+  red: '#ef4444',
+  blue: '#3b82f6',
+  orange: '#fb923c',
+  black: '#111827',
+}
+
+/** Linjens färg: vald färg, annars gul för skott och vit för övriga. */
+export function lineColor(s: { style: ArrowStyle; color?: LineColor }): LineColor {
+  return s.color ?? (s.style === 'shot' ? 'yellow' : 'white')
+}
+
+export const GOAL_SIZES: { value: GoalSize; label: string; meters: number | null }[] = [
+  { value: 'small', label: 'Småmål', meters: 1.5 },
+  { value: 'g7', label: 'Mål 7 mot 7', meters: 5 },
+  { value: 'g9', label: 'Mål 9 mot 9', meters: 6 },
+  { value: 'g11', label: 'Mål 11 mot 11', meters: 7.32 },
+]
+
+/** Matchmål, som ger straffområde på halvplan. */
+export function isBigGoal(size: GoalSize) {
+  return size !== 'small'
 }
 
 export function emptyDiagram(width = 30, height = 20, pitch: Pitch = 'plain'): Diagram {
