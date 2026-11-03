@@ -22,6 +22,9 @@ export function useSvenskalagExtension() {
 
 /** Ber tillägget läsa svaren på aktiviteten i Svenskalag, med användarens egen inloggning där. */
 export function fetchReplies(url: string): Promise<unknown> {
+  // Matcher länkas som /match/<nr>/… men Svenskalag skickar /aktivitet/<nr> vidare
+  // till samma sida, och det är den formen tillägget känner igen.
+  url = url.replace(/\/match\/(\d+)(?:\/[^?#]*)?/, '/aktivitet/$1')
   const id = Math.random().toString(36).slice(2)
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => { window.removeEventListener('message', on); reject(new Error('Svenskalag svarade inte. Försök igen.')) }, 45000)

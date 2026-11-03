@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Hela Laget – Svenskalag-synk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Hämtar kallelsesvar från Svenskalag till Hela Laget med din egen inloggning på Svenskalag.",
   "icons": {
     "128": "icon-128.png"

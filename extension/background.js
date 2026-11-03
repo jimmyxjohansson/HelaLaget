@@ -1,7 +1,7 @@
 // Öppnar aktiviteten på Svenskalag i en bakgrundsflik med din inloggning,
 // läser listorna Kommer, Kan ej och Kallade och stänger fliken igen.
 
-const ACTIVITY = /^https:\/\/(www\.)?svenskalag\.se\/[^?#]*\/aktivitet\/(\d+)/
+const ACTIVITY = /^https:\/\/(www\.)?svenskalag\.se\/[^?#]*\/(?:aktivitet|match)\/(\d+)/
 
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   if (msg?.type !== 'fetch') return false

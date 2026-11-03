@@ -7,13 +7,14 @@ export const access = 'user'
 type Params = { activityId: string }
 
 /**
- * Hittar träningen eller matchen som hör till en aktivitet på Svenskalag,
+ * Hittar träningen, matchen eller cupen som hör till en aktivitet på Svenskalag
+ * (länkad som /aktivitet/<nr> eller /match/<nr>),
  * bland lagen där användaren är ledare eller admin.
  */
 export default async function findSvenskalagActivity(req: { params: Params; user: User }) {
   const activityId = String(req.params.activityId ?? '').replace(/\D/g, '')
   if (!activityId) throw new AccessError('Aktiviteten saknar nummer.', 400)
-  const pattern = `/aktivitet/${activityId}(/|$|[?#])`
+  const pattern = `/(aktivitet|match)/${activityId}(/|$|[?#])`
   const { data } = await adminDb.query<{ kind: 'training' | 'match' | 'cup'; id: number; squad_id: number; date: string; title: string | null }>(
     `WITH mine AS (
        SELECT s.id FROM squads s

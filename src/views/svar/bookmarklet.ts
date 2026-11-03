@@ -7,7 +7,7 @@
 // Skrivet som vanlig text (inte en funktion i koden) så att bygget inte
 // kan skriva om det. __ORIGIN__ byts mot appens adress.
 const SOURCE = `(function(O){
-var m=location.pathname.match(/\\/aktivitet\\/(\\d+)/);
+var m=location.pathname.match(/\\/(?:aktivitet|match)\\/(\\d+)/);
 if(!/(^|\\.)svenskalag\\.se$/.test(location.hostname)||!m){alert('Öppna en aktivitet på Svenskalag först, t.ex. en träning eller match.');return}
 var PANES={attending:['tabYes','attending'],notattending:['tabNo','notattending'],invited:['tabNoAnswer','invited']};
 var SKIP='.visible-print,.reply-button,thead,script,style,button,option,.dropdown-menu';
