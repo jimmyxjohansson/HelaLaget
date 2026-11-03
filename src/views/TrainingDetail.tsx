@@ -483,24 +483,6 @@ export default function TrainingDetail() {
             <ArrowLeft className="w-4 h-4" /> Tillbaka
           </button>
           {training && (
-            <div className="flex items-center gap-2">
-              <AttendanceStatsButton />
-              <button
-                onClick={() => router.push(`/trainings/${id}/plan`)}
-                className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
-                aria-label="Träningsplan"
-                title="Träningsplan"
-              >
-                <ClipboardList className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => router.push(`/trainings/${id}/groups`)}
-                className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
-                aria-label="Hantera grupper"
-                title="Hantera grupper"
-              >
-                <Users className="w-5 h-5" />
-              </button>
               <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -517,30 +499,20 @@ export default function TrainingDetail() {
                 <DropdownMenuItem onClick={() => setTimeout(() => setEditOpen(true), 0)} className="flex items-center gap-2">
                   <Pencil className="w-4 h-4" /> Redigera
                 </DropdownMenuItem>
-                {training.svenskalag && (
-                  <DropdownMenuItem asChild className="flex items-center gap-2">
-                    <a href={training.svenskalag} target="_blank" rel="noreferrer">
-                      <ExternalLink className="w-4 h-4" /> Svenskalag
-                    </a>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                {training.reported ? (
-                  <DropdownMenuItem
-                    onClick={() => handleMarkReported(false)}
-                    disabled={markingReported}
-                    className="flex items-center gap-2"
-                  >
-                    <ClipboardX className="w-4 h-4" /> Markera ej rapporterad
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem
-                    onClick={() => handleMarkReported(true)}
-                    disabled={markingReported}
-                    className="flex items-center gap-2 text-green-600 focus:text-green-600"
-                  >
-                    <ClipboardCheck className="w-4 h-4" /> Markera som rapporterad
-                  </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push(`/trainings/${id}/plan`)} className="flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4" /> Träningsplan
+                </DropdownMenuItem>
+                {training.reported && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleMarkReported(false)}
+                      disabled={markingReported}
+                      className="flex items-center gap-2"
+                    >
+                      <ClipboardX className="w-4 h-4" /> Markera ej rapporterad
+                    </DropdownMenuItem>
+                  </>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -551,7 +523,6 @@ export default function TrainingDetail() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            </div>
           )}
         </div>
         {!training ? (
@@ -572,6 +543,52 @@ export default function TrainingDetail() {
             {training.notes && (
               <p className="text-team-accent/60 text-xs mt-1 italic">{training.notes}</p>
             )}
+            {/* Vanligaste knapparna: Svenskalag, Statistik, Grupper och Rapportera */}
+            <div className="flex items-center gap-2 mt-3">
+              {training.svenskalag && (
+                <a
+                  href={training.svenskalag}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
+                  aria-label="Öppna i Svenskalag"
+                  title="Svenskalag"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                </a>
+              )}
+              <AttendanceStatsButton />
+              <button
+                onClick={() => router.push(`/trainings/${id}/groups`)}
+                className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
+                aria-label="Hantera grupper"
+                title="Grupper"
+              >
+                <Users className="w-5 h-5" />
+              </button>
+              {training.reported ? (
+                <button
+                  onClick={() => handleMarkReported(false)}
+                  disabled={markingReported}
+                  className="h-9 px-3 rounded-full bg-primary-foreground/20 flex items-center gap-1.5 text-xs font-medium hover:bg-primary-foreground/30 transition-colors"
+                  aria-label="Rapporterad. Tryck för att markera som ej rapporterad"
+                  title="Rapporterad – tryck för att ångra"
+                >
+                  <ClipboardCheck className="w-4 h-4" /> Rapporterad
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleMarkReported(true)}
+                  disabled={markingReported}
+                  className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: 'rgb(var(--team-accent))', color: 'rgb(var(--team-primary))' }}
+                  aria-label="Markera som rapporterad"
+                  title="Markera som rapporterad"
+                >
+                  <ClipboardCheck className="w-5 h-5" />
+                </button>
+              )}
+            </div>
           </>
         )}
       </div>

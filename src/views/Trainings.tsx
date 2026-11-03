@@ -2,8 +2,8 @@
 
 import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
-import { useGetTrainings, useCreateTraining, useUpdateTraining } from '../hooks/backend/trainings'
-import { Search, MapPin, Plus, CalendarPlus, Pencil } from 'lucide-react'
+import { useGetTrainings, useCreateTraining, useUpdateTraining, useMarkAsReported } from '../hooks/backend/trainings'
+import { Search, MapPin, Plus, CalendarPlus, Pencil, ClipboardCheck, Loader2 } from 'lucide-react'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
 import { AttendanceStatsButton } from '../components/AttendanceStatsButton'
 import {
@@ -78,6 +78,10 @@ function monthLabel(dateStr: string) {
 
 export default function Trainings() {
   const { data, loading, trigger } = useGetTrainings()
+  const { trigger: markReported } = useMarkAsReported()
+  // Träningar som just nu markeras, och svaret direkt i listan innan den laddats om
+  const [reporting, setReporting] = useState<Set<number>>(new Set())
+  const [reportedNow, setReportedNow] = useState<Record<number, boolean>>({})
   const { trigger: createTraining } = useCreateTraining()
   const { trigger: updateTraining, loading: savingEdit } = useUpdateTraining()
   const router = useRouter()
@@ -157,7 +161,25 @@ export default function Trainings() {
     trigger(TRAINING_WINDOW())
   }, [])
 
-  const trainings = data as unknown as Training[] | undefined
+  const trainings = useMemo(
+    () => (data as unknown as Training[] | undefined)?.map((t) => (t.id in reportedNow ? { ...t, reported: reportedNow[t.id] } : t)),
+    [data, reportedNow],
+  )
+
+  async function toggleReported(t: Training) {
+    const next = !t.reported
+    setReporting((r) => new Set(r).add(t.id))
+    try {
+      await markReported({ trainingId: t.id, reported: next })
+      setReportedNow((m) => ({ ...m, [t.id]: next }))
+    } finally {
+      setReporting((r) => {
+        const n = new Set(r)
+        n.delete(t.id)
+        return n
+      })
+    }
+  }
 
   const todayStart = new Date()
   todayStart.setUTCHours(0, 0, 0, 0)
@@ -349,6 +371,17 @@ export default function Trainings() {
                       title="Redigera"
                     >
                       <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleReported(t) }}
+                      disabled={reporting.has(t.id)}
+                      className={`absolute bottom-2 right-2 p-1.5 rounded-lg transition-colors hover:bg-background/60 ${
+                        t.reported ? 'text-green-600' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                      aria-label={t.reported ? 'Markera som ej rapporterad' : 'Markera som rapporterad'}
+                      title={t.reported ? 'Rapporterad – tryck för att ångra' : 'Markera som rapporterad'}
+                    >
+                      {reporting.has(t.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardCheck className="w-4 h-4" />}
                     </button>
                   </div>
                 ))}
