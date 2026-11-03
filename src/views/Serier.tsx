@@ -1,5 +1,6 @@
 'use client'
 
+import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useState } from 'react'
 import { Search, Plus, Pencil, Trash2, ChevronRight, Loader2, Trophy } from 'lucide-react'
@@ -40,6 +41,8 @@ interface League {
 type StatusFilter = 'Pågående' | 'Avslutade'
 
 export default function Serier() {
+  // Spelare och Anhörig ser men ändrar inget
+  const editor = canEdit()
   const { data, loading, trigger: fetchLeagues } = useGetLeagues()
   const { trigger: createLeague } = useCreateLeague()
   const { trigger: updateLeague } = useUpdateLeague()
@@ -117,13 +120,13 @@ export default function Serier() {
               <p className="text-team-accent/70 text-sm">{activeCount} pågående</p>
             </div>
           </div>
-          <button
+          {editor && <button
             onClick={openNew}
             className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
             aria-label="Lägg till serie"
           >
             <Plus className="w-5 h-5" />
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -198,20 +201,20 @@ export default function Serier() {
                       </span>
                     )}
                   </div>
-                  <button
+                  {editor && <button
                     onClick={(e) => openEdit(l, e)}
                     aria-label="Redigera"
                     className="p-2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
+                  </button>}
+                  {editor && <button
                     onClick={(e) => { e.stopPropagation(); setDeleteTarget(l) }}
                     aria-label="Ta bort"
                     className="p-2 text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </button>
+                  </button>}
                   <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 </div>
               </div>

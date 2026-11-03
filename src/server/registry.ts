@@ -59,6 +59,7 @@ import matches_updateParticipant from './functions/matches/updateParticipant'
 import matches_updateParticipantReason from './functions/matches/updateParticipantReason'
 import matches_updateParticipantsStatus from './functions/matches/updateParticipantsStatus'
 import members_decideMember from './functions/members/decideMember'
+import members_getLinkablePlayers from './functions/members/getLinkablePlayers'
 import members_getMembers from './functions/members/getMembers'
 import members_getSquadSettings from './functions/members/getSquadSettings'
 import members_regenerateJoinCode from './functions/members/regenerateJoinCode'
@@ -206,6 +207,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'matches/updateParticipantReason': { handler: matches_updateParticipantReason, access: 'leader' },
   'matches/updateParticipantsStatus': { handler: matches_updateParticipantsStatus, access: 'leader' },
   'members/decideMember': { handler: members_decideMember, access: 'admin' },
+  'members/getLinkablePlayers': { handler: members_getLinkablePlayers, access: 'admin' },
   'members/getMembers': { handler: members_getMembers, access: 'admin' },
   'members/getSquadSettings': { handler: members_getSquadSettings, access: 'admin' },
   'members/regenerateJoinCode': { handler: members_regenerateJoinCode, access: 'admin' },

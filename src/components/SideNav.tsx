@@ -4,7 +4,7 @@ import Link, { usePathname } from '../lib/nav'
 import { ChevronsUpDown, LogOut, Moon, Sun } from 'lucide-react'
 import { cn } from '../lib/shadcn/utils'
 import { isActivePath, signOut } from '../lib/navigation'
-import { getMe } from '../lib/squad-store'
+import { getMe, roleLabel } from '../lib/squad-store'
 import SquadLogo from './SquadLogo'
 import { isItemActive, mainItems, navGroups } from './navItems'
 
@@ -41,7 +41,7 @@ export default function SideNav({ theme, onToggleTheme }: Props) {
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{squad.organizationName}</p>
               <p className="truncate text-base font-bold leading-tight text-foreground">{squad.squadName}</p>
-              {squad.role === 'viewer' && <p className="text-[11px] text-muted-foreground">Läsbehörighet</p>}
+              {squad.role === 'viewer' && <p className="text-[11px] text-muted-foreground">{roleLabel(squad)}</p>}
             </div>
             <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           </Link>

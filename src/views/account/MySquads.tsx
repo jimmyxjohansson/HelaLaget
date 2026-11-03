@@ -4,14 +4,14 @@ import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Check, Clock, LogOut, Loader2, X } from 'lucide-react'
 import { useRequestJoin } from '../../hooks/backend/account'
-import { getMe } from '../../lib/squad-store'
+import { getMe, roleLabel } from '../../lib/squad-store'
 import { setSquadCookie } from '../../lib/squad-cookie'
 import { signOut } from '../../lib/navigation'
 import { Button } from '../../lib/shadcn/button'
 import { Input } from '../../lib/shadcn/input'
 import { Label } from '../../lib/shadcn/label'
 import { Textarea } from '../../lib/shadcn/textarea'
-import { ErrorText, PageHeader, ROLE_LABEL, Section } from './shared'
+import { ErrorText, PageHeader, Section } from './shared'
 
 /** Mina lag: byt lag, se ansökningar och gå med i ett nytt lag med kod. */
 export default function MySquads() {
@@ -72,7 +72,7 @@ export default function MySquads() {
                       <span className="block text-xs text-muted-foreground">{m.organizationName}</span>
                       <span className="block font-semibold truncate">{m.squadName}</span>
                     </span>
-                    <span className="text-xs text-muted-foreground">{ROLE_LABEL[m.role]}</span>
+                    <span className="text-xs text-muted-foreground">{roleLabel(m)}</span>
                     {isCurrent && <Check className="w-4 h-4 text-primary" aria-label="Valt lag" />}
                   </button>
                 </li>

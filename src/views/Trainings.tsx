@@ -21,6 +21,7 @@ import { Input } from '../lib/shadcn/input'
 import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
 import SquadLogo from '../components/SquadLogo'
+import { canEdit } from '../lib/squad-store'
 import DateTimePicker from '../components/DateTimePicker'
 // Alla träningar hämtas, så att flikarna (Kommande, Senaste, Rapporterade, Alla)
 // alltid är kompletta, även med importerade träningar långt fram i tiden.
@@ -77,6 +78,8 @@ function monthLabel(dateStr: string) {
 }
 
 export default function Trainings() {
+  // Spelare och Anhörig ser träningarna men ändrar inget
+  const editor = canEdit()
   const { data, loading, trigger } = useGetTrainings()
   const { trigger: markReported } = useMarkAsReported()
   // Träningar som just nu markeras, och svaret direkt i listan innan den laddats om
@@ -234,6 +237,7 @@ export default function Trainings() {
           </div>
           <div className="flex items-center gap-3">
             <AttendanceStatsButton />
+            {editor && <>
             <button
               onClick={() => setWeekDialogOpen(true)}
               className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
@@ -249,6 +253,7 @@ export default function Trainings() {
             >
               <Plus className="w-5 h-5" />
             </button>
+            </>}
           </div>
         </div>
       </div>
@@ -364,6 +369,7 @@ export default function Trainings() {
                         ))}
                       </div>
                     </button>
+                    {editor && <>
                     <button
                       onClick={(e) => { e.stopPropagation(); openEditDialog(t) }}
                       className="absolute top-2 right-2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors"
@@ -383,6 +389,7 @@ export default function Trainings() {
                     >
                       {reporting.has(t.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardCheck className="w-4 h-4" />}
                     </button>
+                    </>}
                   </div>
                 ))}
               </div>

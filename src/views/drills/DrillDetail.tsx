@@ -1,5 +1,6 @@
 'use client'
 
+import LeadersOnly from '../../components/LeadersOnly'
 import { useRouter } from '../../lib/nav'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -126,6 +127,12 @@ function Legend() {
 }
 
 export default function DrillDetail() {
+  // Spelare och Anhörig når inte den här sidan
+  if (!canEdit()) return <LeadersOnly what="Övningsbanken" />
+  return <DrillDetailPage />
+}
+
+function DrillDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const q = useGetDrill()

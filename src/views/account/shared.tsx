@@ -5,13 +5,17 @@ import type { ReactNode } from 'react'
 import { ArrowLeft } from 'lucide-react'
 
 export const ROLE_LABEL: Record<string, string> = {
-  viewer: 'Läsbehörighet',
+  player: 'Spelare',
+  relative: 'Anhörig',
+  viewer: 'Anhörig',
   leader: 'Ledare',
   admin: 'Admin',
 }
 
 export const ROLE_HELP: Record<string, string> = {
-  viewer: 'Ser schema, resultat och närvaro. Ser inte födelsedatum, frånvaroorsaker, anteckningar eller rank.',
+  player: 'Spelaren själv. Ser schema, resultat och närvaro, och statistik för sin kopplade spelare. Ändrar inget.',
+  relative: 'Förälder eller annan anhörig. Ser schema, resultat och närvaro, och statistik för de kopplade spelarna. Ändrar inget.',
+  viewer: 'Ser schema, resultat och närvaro. Ändrar inget.',
   leader: 'Registrerar träningar, matcher, cuper och spelare.',
   admin: 'Som ledare, och godkänner medlemmar och ändrar lagets inställningar.',
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -76,6 +77,8 @@ const DEFAULT_SORT_DIR: Record<string, SortDir> = {
 }
 
 export default function Teams() {
+  // Spelare och Anhörig ser men ändrar inget
+  const editor = canEdit()
   const { data, loading, trigger: fetchTeams } = useGetTeams()
   const { trigger: createTeam } = useCreateTeam()
   const { trigger: updateTeam } = useUpdateTeam()
@@ -158,13 +161,13 @@ export default function Teams() {
               <p className="text-team-accent/70 text-sm">{filtered.length} lag</p>
             </div>
           </div>
-          <button
+          {editor && <button
               onClick={openNew}
               className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
               aria-label="Lägg till lag"
             >
               <Plus className="w-5 h-5" />
-            </button>
+            </button>}
         </div>
       </div>
 
@@ -263,20 +266,20 @@ export default function Teams() {
                     {t.matchcount ?? 0}
                   </span>
                 </button>
-                <button
+                {editor && <button
                   onClick={() => openEdit(t)}
                   aria-label="Redigera"
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Pencil className="w-4 h-4" />
-                </button>
-                <button
+                </button>}
+                {editor && <button
                   onClick={() => setDeleteTarget(t)}
                   aria-label="Ta bort"
                   className="p-2 text-muted-foreground hover:text-destructive transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </button>}
               </div>
             ))}
           </div>

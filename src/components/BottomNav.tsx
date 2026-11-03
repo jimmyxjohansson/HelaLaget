@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { LogOut, Menu, Moon, Repeat, Sun } from 'lucide-react'
 import { cn } from '../lib/shadcn/utils'
 import { isActivePath, signOut } from '../lib/navigation'
-import { getMe } from '../lib/squad-store'
+import { getMe, roleLabel } from '../lib/squad-store'
 import { Sheet, SheetContent, SheetTitle } from '../lib/shadcn/sheet'
 import SquadLogo from './SquadLogo'
 import { isItemActive, mainItems, navGroups } from './navItems'
@@ -76,7 +76,7 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
               <SheetTitle className="truncate text-base font-bold text-foreground">{squad?.squadName ?? 'Hela Laget'}</SheetTitle>
               <p className="truncate text-xs text-muted-foreground">
                 {squad?.organizationName}
-                {squad?.role === 'viewer' && ' · Läsbehörighet'}
+                {squad?.role === 'viewer' && ` · ${roleLabel(squad)}`}
               </p>
             </div>
             <Link

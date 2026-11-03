@@ -32,8 +32,9 @@ export function navGroups(): NavGroup[] {
   laget.push(
     { to: '/players', icon: Users, label: 'Spelare' },
     { to: '/statistik', icon: BarChart3, label: 'Statistik' },
-    { to: '/ovningar', icon: BookOpen, label: 'Övningsbank' },
   )
+  // Övningsbanken är för ledare; Spelare och Anhörig ser övningarna i träningsplanen
+  if (role !== 'viewer') laget.push({ to: '/ovningar', icon: BookOpen, label: 'Övningsbank' })
 
   const tavling: NavItem[] = [
     { to: '/serier', icon: ListOrdered, label: 'Serier' },
@@ -42,10 +43,11 @@ export function navGroups(): NavGroup[] {
 
   // Lagets egna länkar, med namnen admin har gett dem
   const lankar: NavItem[] = []
-  if (me?.current?.siteUrl) {
+  // Spelare och Anhörig ser inte lagets länkar (servern skickar dem inte heller)
+  if (role !== 'viewer' && me?.current?.siteUrl) {
     lankar.push({ to: me.current.siteUrl, icon: ExternalLink, label: me.current.siteName || 'Lagets sida', external: true })
   }
-  if (me?.current?.docsUrl) {
+  if (role !== 'viewer' && me?.current?.docsUrl) {
     lankar.push({ to: me.current.docsUrl, icon: FileText, label: me.current.docsName || 'Dokument', external: true })
   }
 

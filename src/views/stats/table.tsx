@@ -1,5 +1,6 @@
 'use client'
 
+import { canEdit } from '../../lib/squad-store'
 import { useMemo, useState, type ReactNode } from 'react'
 import { cn } from '../../lib/shadcn/utils'
 import { SortHead, sortRows, type SortState } from '../planning/shared'
@@ -40,6 +41,8 @@ export function DataTable<T extends { shortname: string | null }>({
   empty?: string
   footerLabel?: string
 }) {
+  // Rank (Nivå per spelare) visas inte för Spelare och Anhörig
+  if (!canEdit()) columns = columns.filter((c) => c.key !== 'rank')
   const [sort, setSort] = useState<SortState<string>>(initialSort)
   const sorted = useMemo(() => {
     const col = sort && columns.find((c) => c.key === sort.key)

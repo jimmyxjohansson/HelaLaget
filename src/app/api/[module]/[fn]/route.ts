@@ -13,7 +13,7 @@ type Context = { params: Promise<{ module: string; fn: string }> }
 
 const ROLE_ERROR: Record<SquadRole, string> = {
   viewer: 'Du har inte åtkomst till det här laget.',
-  leader: 'Du har bara läsbehörighet i det här laget.',
+  leader: 'Som spelare eller anhörig kan du inte ändra i det här laget.',
   admin: 'Det här kräver adminbehörighet i laget.',
 }
 

@@ -1,10 +1,17 @@
-// Fält som läsrollen (t.ex. föräldrar) inte ska se. Tas bort ur alla svar,
+// Fält som läsrollen (Spelare och Anhörig) inte ska se. Tas bort ur alla svar,
 // på alla nivåer, innan de skickas till en användare med rollen 'viewer'.
+// Frånvaroanledningar (reason, reasontime) syns, så att alla ser vem som kommer och varför inte.
 const HIDDEN_FOR_VIEWERS = new Set([
   'birthdate',
-  'reason',
-  'reasontime',
   'notes',
+  // Länkar till Svenskalag visas inte för Spelare och Anhörig
+  'svenskalag',
+  'shirt_size',
+  'shorts_size',
+  'sock_size',
+  'shirtSize',
+  'shortsSize',
+  'sockSize',
   'comment',
   'rank',
   'grouprank',

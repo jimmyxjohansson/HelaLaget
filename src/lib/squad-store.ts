@@ -36,6 +36,23 @@ export function canEdit(): boolean {
   return role === 'leader' || role === 'admin'
 }
 
+/** Spelare eller Anhörig (läsbehörighet): ser men ändrar inget. */
+export function isReadOnly(): boolean {
+  return me?.current?.role === 'viewer'
+}
+
+/** Spelarna en Spelare/Anhörig är kopplad till (tom lista för ledare och admin). */
+export function linkedPlayerIds(): number[] {
+  return me?.current?.role === 'viewer' ? me.current.linkedPlayerIds ?? [] : []
+}
+
+/** Rollens namn i appen: Spelare, Anhörig, Ledare eller Admin. */
+export function roleLabel(m: { role: string; memberKind?: string | null } | null | undefined): string {
+  if (!m) return ''
+  if (m.role === 'viewer') return m.memberKind === 'player' ? 'Spelare' : 'Anhörig'
+  return m.role === 'admin' ? 'Admin' : 'Ledare'
+}
+
 /** Hex (#RRGGBB) → "r g b" för CSS-variablerna --team-primary/--team-accent. */
 export function hexToRgbChannels(hex: string): string | null {
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex)

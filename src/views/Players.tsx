@@ -37,6 +37,8 @@ interface Player {
   shirt_size: string | null
   shorts_size: string | null
   sock_size: string | null
+  /** Spelare och Anhörig ser inte statistik för spelare de inte är kopplade till */
+  stats_hidden?: boolean
   matches: number
   goals: number
   assists: number
@@ -143,7 +145,9 @@ export default function Players() {
   const { data, loading, trigger } = useGetPlayers()
   const router = useRouter()
   const [search, setSearch] = useState('')
-  const [sort, setSort] = usePersistentState('players.sort', 'rank')
+  const [savedSort, setSort] = usePersistentState('players.sort', 'rank')
+  // Rank visas inte för Spelare och Anhörig: sortera på namn i stället
+  const sort = !canEdit() && savedSort === 'rank' ? 'name' : savedSort
   const [sortDir, setSortDir] = usePersistentState<SortDir>('players.sortDir', 'asc')
   const [statusFilter, setStatusFilter] = usePersistentState<string[]>('players.statusFilter', ['Aktiv', 'Aktiv, ej matchklar'])
   const [statusRefresh, setStatusRefresh] = useState(0)
@@ -304,7 +308,7 @@ export default function Players() {
         </div>
         {/* Sort options */}
         <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
-          {SORT_OPTIONS.map(opt => {
+          {SORT_OPTIONS.filter((o) => canEdit() || o.value !== 'rank').map(opt => {
             const active = sort === opt.value
             return (
               <button
@@ -347,12 +351,12 @@ export default function Players() {
                   <tr className="border-b border-border text-left">
                     <Th label="Nr" field="number" sort={sort} dir={sortDir} onSort={handleSort} className="w-12 pl-4" />
                     <Th label="Spelare" field="name" sort={sort} dir={sortDir} onSort={handleSort} />
-                    <Th label="Rank" field="rank" sort={sort} dir={sortDir} onSort={handleSort} />
+                    {editor && <Th label="Rank" field="rank" sort={sort} dir={sortDir} onSort={handleSort} />}
                     <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
-                    <Th label="Ålder" field="age" sort={sort} dir={sortDir} onSort={handleSort} />
+                    {editor && <Th label="Ålder" field="age" sort={sort} dir={sortDir} onSort={handleSort} />}
                     <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Positioner</th>
                     <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Fot</th>
-                    <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground" title="Tröja · shorts · strumpor">Storlekar</th>
+                    {editor && <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground" title="Tröja · shorts · strumpor">Storlekar</th>}
                     <Th label="Närvaro" field="pct" sort={sort} dir={sortDir} onSort={handleSort} align="right" />
                     <Th label="Matcher" field="matches" sort={sort} dir={sortDir} onSort={handleSort} align="right" />
                     <Th label="Mål" field="goals" sort={sort} dir={sortDir} onSort={handleSort} align="right" />
@@ -380,18 +384,21 @@ export default function Players() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-2 py-2">
+                        {editor && <td className="px-2 py-2">
                           {p.rank ? <span className="rounded px-1.5 py-0.5 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span> : <span className="text-muted-foreground">–</span>}
-                        </td>
+                        </td>}
                         <td className="px-2 py-2">
                           <span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_BADGE[p.status] ?? 'bg-muted text-muted-foreground'}`}>{p.status}</span>
                         </td>
-                        <td className="whitespace-nowrap px-2 py-2 tabular-nums" title={p.birthdate ?? undefined}>{a != null ? `${a} år` : '–'}</td>
+                        {editor && <td className="whitespace-nowrap px-2 py-2 tabular-nums" title={p.birthdate ?? undefined}>{a != null ? `${a} år` : '–'}</td>}
                         <td className="px-2 py-2"><Positions p={p} /></td>
                         <td className="px-2 py-2 text-muted-foreground">{p.foot || '–'}</td>
-                        <td className="whitespace-nowrap px-2 py-2 text-xs tabular-nums text-muted-foreground" title="Tröja · shorts · strumpor">
+                        {editor && <td className="whitespace-nowrap px-2 py-2 text-xs tabular-nums text-muted-foreground" title="Tröja · shorts · strumpor">
                           {p.shirt_size || p.shorts_size || p.sock_size ? `${p.shirt_size || '–'} · ${p.shorts_size || '–'} · ${p.sock_size || '–'}` : '–'}
-                        </td>
+                        </td>}
+                        {p.stats_hidden ? (
+                          <td colSpan={anySaves ? 5 : 4} className="px-2 py-2 text-right text-xs text-muted-foreground">–</td>
+                        ) : (<>
                         <td className="px-2 py-2 text-right">
                           <span className={`font-semibold tabular-nums ${pctColor(attendPct)}`}>{attendPct}%</span>
                           <span className="block text-[11px] tabular-nums text-muted-foreground">{p.sessions_attended} av {p.total_sessions}</span>
@@ -400,6 +407,7 @@ export default function Players() {
                         <td className="px-2 py-2 text-right tabular-nums font-medium">{p.goals}</td>
                         <td className="px-2 py-2 text-right tabular-nums">{p.assists}</td>
                         {anySaves && <td className="px-2 py-2 text-right tabular-nums">{p.saves || ''}</td>}
+                        </>)}
                         {editor && (
                           <td className="py-2 pl-2 pr-4 text-right">
                             <button type="button" onClick={(e) => { e.stopPropagation(); edit(p.id) }}
@@ -442,9 +450,9 @@ export default function Players() {
                         {a != null && <span>· {a} år</span>}
                         {POSITIONS.some((x) => p[x.key]) && <Positions p={p} />}
                       </div>
-                      <div className="text-xs tabular-nums text-muted-foreground">
+                      {!p.stats_hidden && <div className="text-xs tabular-nums text-muted-foreground">
                         {p.matches} matcher · {p.goals} mål · {p.assists} ass{p.saves ? ` · ${p.saves} rädd` : ''}
-                      </div>
+                      </div>}
                       {(p.shirt_size || p.shorts_size || p.sock_size) && (
                         <div className="text-[11px] text-muted-foreground">
                           Tröja {p.shirt_size || '–'} · Shorts {p.shorts_size || '–'} · Strumpor {p.sock_size || '–'}
@@ -452,10 +460,10 @@ export default function Players() {
                       )}
                     </div>
                     <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
-                      <span className="flex flex-col items-end leading-tight">
+                      {!p.stats_hidden && <span className="flex flex-col items-end leading-tight">
                         <span className={`text-sm font-bold ${pctColor(attendPct)}`}>{attendPct}%</span>
                         <span className="text-[10px] tabular-nums text-muted-foreground">{p.sessions_attended}/{p.total_sessions}</span>
-                      </span>
+                      </span>}
                       {editor ? (
                         <button type="button" onClick={(e) => { e.stopPropagation(); edit(p.id) }} aria-label={`Redigera ${p.shortname}`}
                           className="flex h-7 w-7 items-center justify-center rounded-md border border-border hover:bg-muted">

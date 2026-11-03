@@ -1,5 +1,6 @@
 'use client'
 
+import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useState } from 'react'
 import { useLiveRefresh } from '../components/LiveScore'
@@ -55,6 +56,7 @@ function monthLabel(dateStr: string) {
 }
 
 export default function Matches() {
+  const editor = canEdit()
   const { data, loading, trigger } = useGetMatches()
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -127,13 +129,13 @@ export default function Matches() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
+            {editor && <button
               onClick={() => router.push('/matches/new')}
               className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
               aria-label="Lägg till match"
             >
               <Plus className="w-5 h-5" />
-            </button>
+            </button>}
           </div>
         </div>
 

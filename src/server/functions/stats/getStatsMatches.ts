@@ -1,6 +1,7 @@
 import { db } from '@/server/db'
 import { PLAYED_MATCH, betweenDatesOf } from '@/server/attendance'
-import type { User } from '@/server/types'
+import { statsPlayerScope } from '@/server/members-kind'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   from?: string | null
@@ -11,7 +12,7 @@ type Params = {
  * Spelade matcher per spelare, matchtyp och nivå, med mål, assist och
  * räddningar. Filtrering och summering görs i appen.
  */
-export default async function getStatsMatches(req: { params: Params; user: User }) {
+export default async function getStatsMatches(req: { params: Params; user: User; squad?: SquadAccess }) {
   const from = req.params.from || null
   const to = req.params.to || null
 
@@ -50,5 +51,11 @@ export default async function getStatsMatches(req: { params: Params; user: User 
       [from, to],
     ),
   ])
+  // Spelare och Anhörig ser bara de kopplade spelarna
+  const scope = await statsPlayerScope(req.squad, req.user.id)
+  if (scope) {
+    const mine = (r: { id: number }) => scope.includes(Number(r.id))
+    return { rows: rows.data.filter(mine), people: people.data.filter(mine), held: held.data }
+  }
   return { rows: rows.data, people: people.data, held: held.data }
 }

@@ -25,6 +25,10 @@ export type Membership = {
   siteName: string | null
   docsUrl: string | null
   docsName: string | null
+  /** För läsbehörighet: Spelare eller Anhörig */
+  memberKind: 'player' | 'relative' | null
+  /** För läsbehörighet: spelarna som personen är kopplad till */
+  linkedPlayerIds: number[]
 }
 
 /** Inloggad användare, alla lag hen är med i eller har ansökt till, och valt lag. */
@@ -46,7 +50,11 @@ export default async function getMe(req: { params: Params; user: User }) {
          s.primary_color AS "primaryColor", s.accent_color AS "accentColor", s.logo_url AS "logoUrl",
          s.planning_url AS "planningUrl",
          s.svenskalag_url AS "siteUrl", s.site_name AS "siteName",
-         s.docs_url AS "docsUrl", s.docs_name AS "docsName"
+         s.docs_url AS "docsUrl", s.docs_name AS "docsName",
+         CASE WHEN sa.is_super OR oa.user_id IS NOT NULL OR m.role <> 'viewer' THEN NULL
+              ELSE COALESCE(m.member_kind, 'relative') END AS "memberKind",
+         COALESCE((SELECT array_agg(smp.player_id ORDER BY smp.player_id) FROM squad_member_players smp
+                   WHERE smp.squad_id = s.id AND smp.user_id = $1), '{}') AS "linkedPlayerIds"
        FROM squads s
        JOIN organizations o ON o.id = s.organization_id
        CROSS JOIN (SELECT EXISTS (SELECT 1 FROM app_admins WHERE user_id = $1) AS is_super) sa
@@ -61,6 +69,18 @@ export default async function getMe(req: { params: Params; user: User }) {
       [userId],
     ),
   ])
+
+  // Spelare och anhöriga ser inte lagets länkar (Svenskalag, dokument, planering)
+  for (const m of memberships.data) {
+    if (m.role === 'viewer') {
+      m.siteUrl = null
+      m.siteName = null
+      m.docsUrl = null
+      m.docsName = null
+      m.planningUrl = null
+    }
+    m.linkedPlayerIds = (m.linkedPlayerIds ?? []).map(Number)
+  }
 
   // Samma val som servern gör (access.ts): begärt lag om det är godkänt, annars första godkända.
   const approved = memberships.data.filter((m) => m.status === 'approved')

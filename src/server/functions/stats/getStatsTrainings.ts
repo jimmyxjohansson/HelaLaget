@@ -1,6 +1,7 @@
 import { db } from '@/server/db'
 import { betweenDatesOf } from '@/server/attendance'
-import type { User } from '@/server/types'
+import { statsPlayerScope } from '@/server/members-kind'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   /** ÅÅÅÅ-MM-DD eller null (alla) */
@@ -14,7 +15,7 @@ type Params = {
  * träningstyp och status för genomförda träningar i perioden. Summering och
  * filtrering på typ görs i appen.
  */
-export default async function getStatsTrainings(req: { params: Params; user: User }) {
+export default async function getStatsTrainings(req: { params: Params; user: User; squad?: SquadAccess }) {
   const from = req.params.from || null
   const to = req.params.to || null
 
@@ -54,5 +55,11 @@ export default async function getStatsTrainings(req: { params: Params; user: Use
       [from, to],
     ),
   ])
+  // Spelare och Anhörig ser bara de kopplade spelarna
+  const scope = await statsPlayerScope(req.squad, req.user.id)
+  if (scope) {
+    const mine = (r: { kind: string; id: number }) => r.kind === 'player' && scope.includes(Number(r.id))
+    return { rows: rows.data.filter(mine), people: people.data.filter(mine), held: held.data }
+  }
   return { rows: rows.data, people: people.data, held: held.data }
 }

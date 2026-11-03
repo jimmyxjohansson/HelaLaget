@@ -12,7 +12,7 @@ import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../lib/shadcn/select'
 import DatePicker from '../components/DatePicker'
-import { canEdit } from '../lib/squad-store'
+import { canEdit, linkedPlayerIds } from '../lib/squad-store'
 import PlayerStats, { StatsSummary } from './player/PlayerStats'
 import { cn } from '../lib/shadcn/utils'
 
@@ -99,10 +99,13 @@ export default function PlayerDetail() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
+  // Spelare och Anhörig ser bara statistik för de spelare de är kopplade till
+  const showStats = canEdit() || linkedPlayerIds().includes(Number(id))
+
   useEffect(() => {
     if (!id) return
     trigger({ id: Number(id), months })
-    stats.trigger({ playerId: Number(id), months }).catch(() => {})
+    if (showStats) stats.trigger({ playerId: Number(id), months }).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, months])
 
@@ -305,8 +308,14 @@ export default function PlayerDetail() {
                 </button>
               ))}
             </div>
-            <StatsSummary data={stats.data} loading={stats.loading} />
-            <PlayerStats data={stats.data} loading={stats.loading} />
+            {showStats ? (
+              <>
+                <StatsSummary data={stats.data} loading={stats.loading} />
+                <PlayerStats data={stats.data} loading={stats.loading} />
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Statistik visas bara för spelare du är kopplad till.</p>
+            )}
           </div>
 
           {/* Edit / View form */}
@@ -543,13 +552,13 @@ export default function PlayerDetail() {
                   <InfoRow label="Efternamn" value={player?.lastname ?? null} />
                   <InfoRow label="Smeknamn" value={player?.shortname ?? null} />
                   <InfoRow label="Tröjnummer" value={player?.number != null ? String(player.number) : null} />
-                  <InfoRow label="Födelsedag" value={player?.birthdate ? player.birthdate.slice(0, 10) : null} />
-                  <InfoRow label="Nivå" value={player?.rank ?? null} />
+                  {canEdit() && <InfoRow label="Födelsedag" value={player?.birthdate ? player.birthdate.slice(0, 10) : null} />}
+                  {canEdit() && <InfoRow label="Nivå" value={player?.rank ?? null} />}
                   <InfoRow label="Fot" value={player?.foot ?? null} />
                   <InfoRow label="Kön" value={player?.gender ?? null} />
-                  <InfoRow label="Tröja" value={player?.shirt_size ?? null} />
-                  <InfoRow label="Shorts" value={player?.shorts_size ?? null} />
-                  <InfoRow label="Strumpor" value={player?.sock_size ?? null} />
+                  {canEdit() && <InfoRow label="Tröja" value={player?.shirt_size ?? null} />}
+                  {canEdit() && <InfoRow label="Shorts" value={player?.shorts_size ?? null} />}
+                  {canEdit() && <InfoRow label="Strumpor" value={player?.sock_size ?? null} />}
                 </div>
 
                 {/* Positions */}

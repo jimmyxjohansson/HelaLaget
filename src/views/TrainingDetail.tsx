@@ -106,6 +106,8 @@ const REASON_GROUPS = TRAINING_GROUPS
 const REASON_GROUP_DEFAULT_RANK = GROUP_DEFAULT_RANK
 
 export default function TrainingDetail() {
+  // Spelare och Anhörig ser träningen men ändrar inget
+  const editor = canEdit()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetTrainingDetail()
@@ -493,7 +495,7 @@ export default function TrainingDetail() {
           >
             <ArrowLeft className="w-4 h-4" /> Tillbaka
           </button>
-          {training && (
+          {training && editor && (
               <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -569,6 +571,7 @@ export default function TrainingDetail() {
                 </a>
               )}
               <AttendanceStatsButton />
+              {editor && <>
               <button
                 onClick={() => router.push(`/trainings/${id}/groups`)}
                 className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
@@ -598,6 +601,7 @@ export default function TrainingDetail() {
                   <ClipboardCheck className="w-5 h-5" />
                 </button>
               )}
+              </>}
             </div>
           </>
         )}
@@ -659,14 +663,14 @@ export default function TrainingDetail() {
         ) : orderedPeopleGroups.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-8">
             <p className="text-center text-muted-foreground text-sm">Inga deltagare inbjudna</p>
-            <div className="flex items-center gap-4">
+            {editor && <div className="flex items-center gap-4">
               <button onClick={openAddSheet} className="flex items-center gap-1.5 text-sm text-primary font-medium">
                 <UserPlus className="w-4 h-4" /> Lägg till spelare
               </button>
               <button onClick={openAddLeaderSheet} className="flex items-center gap-1.5 text-sm text-primary font-medium">
                 <UserPlus className="w-4 h-4" /> Lägg till ledare
               </button>
-            </div>
+            </div>}
           </div>
         ) : (
           <>
@@ -689,7 +693,7 @@ export default function TrainingDetail() {
                 <ChevronsUpDown className="w-3.5 h-3.5" />
                 {orderedPeopleGroups.every(k => collapsedGroups.has(k)) ? 'Expandera' : 'Komprimera'}
               </button>
-              <DropdownMenu>
+              {editor && <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1 text-xs text-primary font-medium">
                     <UserPlus className="w-3.5 h-3.5" /> Lägg till
@@ -699,7 +703,7 @@ export default function TrainingDetail() {
                   <DropdownMenuItem onClick={() => setTimeout(openAddSheet, 0)}>Spelare</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setTimeout(openAddLeaderSheet, 0)}>Ledare</DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
+              </DropdownMenu>}
             </div>
           </div>
           {orderedPeopleGroups.map(statusKey => {
@@ -715,12 +719,12 @@ export default function TrainingDetail() {
               <div key={statusKey}>
                 {/* Group header with select-all checkbox */}
                 <div className="flex items-center gap-2 mb-2">
-                  <Checkbox
+                  {editor && <Checkbox
                     checked={allGroupSelected ? true : someGroupSelected ? 'indeterminate' : false}
                     onCheckedChange={() => togglePeopleGroup(group)}
                     className="w-4 h-4"
                     aria-label={`Välj alla ${label}`}
-                  />
+                  />}
                   <button
                     onClick={() => toggleCollapsed(statusKey)}
                     className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider flex-1 text-left"
@@ -740,14 +744,14 @@ export default function TrainingDetail() {
                       className="w-full flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
                       style={{ backgroundColor: rowBgColor(statusKey, person.reason, person.reasontime) }}
                     >
-                      <Checkbox
+                      {editor && <Checkbox
                         checked={isPersonSelected(person)}
                         onCheckedChange={() => togglePerson(person)}
                         className="flex-shrink-0"
                         aria-label={`Välj ${person.name}`}
-                      />
+                      />}
                       <button
-                        onClick={() => togglePerson(person)}
+                        onClick={() => editor && togglePerson(person)}
                         className="flex flex-col min-w-0 flex-1 text-left"
                       >
                         <span className="flex items-center gap-1.5 min-w-0">
@@ -770,14 +774,14 @@ export default function TrainingDetail() {
                           {person.group}
                         </span>
                       )}
-                      <button
+                      {editor && <button
                         onClick={() => person.kind === 'player' ? openReasonDialog(person.attendee!) : openLeaderReasonDialog(person.leader!)}
                         className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
                         aria-label={`Ange anledning för ${person.name}`}
                         title="Ange anledning"
                       >
                         <MessageSquare className="w-4 h-4" />
-                      </button>
+                      </button>}
                     </div>
                   ))}
                 </div>

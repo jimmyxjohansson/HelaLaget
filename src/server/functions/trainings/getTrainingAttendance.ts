@@ -1,6 +1,7 @@
 import { db } from '@/server/db'
 import { ATTENDED_STATUSES, betweenDates } from '@/server/attendance'
-import type { User } from '@/server/types'
+import { statsPlayerScope } from '@/server/members-kind'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   // ÅÅÅÅ-MM-DD. Genomförda träningar från date1 till och med date2 (se server/attendance.ts).
@@ -12,7 +13,7 @@ type Params = {
 
 const DEFAULT_STATUSES = ['Aktiv', 'Provspelare', 'Gästspelare', 'Vilande', 'Slutat']
 
-export default async function getTrainingAttendance(req: { params: Params; user: User }) {
+export default async function getTrainingAttendance(req: { params: Params; user: User; squad?: SquadAccess }) {
   const { date1, date2 } = req.params
   const statuses = req.params.statuses && req.params.statuses.length > 0
     ? req.params.statuses
@@ -45,7 +46,10 @@ export default async function getTrainingAttendance(req: { params: Params; user:
     [date1, date2, statuses]
   )
 
-  return result.data.map(r => ({
+  // Spelare och Anhörig ser bara de kopplade spelarna
+  const scope = await statsPlayerScope(req.squad, req.user.id)
+  const rows = scope ? result.data.filter((r) => scope.includes(Number(r.id))) : result.data
+  return rows.map(r => ({
     id: r.id,
     shortname: r.shortname,
     rank: r.rank,

@@ -1,5 +1,7 @@
 'use client'
 
+import LeadersOnly from '../components/LeadersOnly'
+import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -83,6 +85,12 @@ function formatTime(dateStr: string) {
 }
 
 export default function TrainingGroups() {
+  // Spelare och Anhörig når inte den här sidan
+  if (!canEdit()) return <LeadersOnly what="Träningsgrupperna" />
+  return <TrainingGroupsPage />
+}
+
+function TrainingGroupsPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetTrainingGroups()

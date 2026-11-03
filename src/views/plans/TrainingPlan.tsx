@@ -510,9 +510,11 @@ function ItemView({ i, groupCount, wide, onInfo }: { i: Item; groupCount: (g: st
                 <p className="text-muted-foreground">{[d.area, d.equipment].filter(Boolean).join(' · ')}</p>
               )}
               {d.description && <p className="whitespace-pre-wrap">{d.description}</p>}
+{canEdit() && (
               <Link href={`/ovningar/${d.id}`} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
                 <ExternalLink className="h-3.5 w-3.5" /> Öppna övningen
               </Link>
+              )}
             </div>
           )}
           </div>

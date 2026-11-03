@@ -1,5 +1,6 @@
 'use client'
 
+import LeadersOnly from '../../components/LeadersOnly'
 import Link, { useRouter } from '../../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
 import { BookOpen, Download, Loader2, Plus, Search, SlidersHorizontal } from 'lucide-react'
@@ -110,6 +111,12 @@ export function DrillCard({ d, onClick, href, compact }: { d: DrillListItem; onC
 
 /** Föreningens övningsbank. */
 export default function DrillBank() {
+  // Spelare och Anhörig når inte den här sidan
+  if (!canEdit()) return <LeadersOnly what="Övningsbanken" />
+  return <DrillBankPage />
+}
+
+function DrillBankPage() {
   const router = useRouter()
   const drills = useGetDrills()
   const importer = useImportStarterDrills()

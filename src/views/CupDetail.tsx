@@ -1,5 +1,6 @@
 'use client'
 
+import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
@@ -102,6 +103,8 @@ function outcomeText(outcome: string): string {
 }
 
 export default function CupDetail() {
+  // Spelare och Anhörig ser men ändrar inget
+  const editor = canEdit()
 const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetCup()
@@ -161,13 +164,13 @@ const { id } = useParams<{ id: string }>()
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm">Cuper</span>
           </button>
-          <button
+          {editor && <button
             onClick={() => router.push(`/cups/${cup.id}/edit`)}
             className="flex items-center gap-1 text-team-accent/80 hover:text-team-accent transition-colors"
           >
             <Pencil className="w-4 h-4" />
             <span className="text-sm">Redigera</span>
-          </button>
+          </button>}
         </div>
 
         <div className="flex items-start gap-3">
@@ -235,13 +238,13 @@ const { id } = useParams<{ id: string }>()
       <div className="flex-1 px-4 py-3">
         {activeTab === 'matcher' && (
           <div className="flex flex-col gap-2">
-            <button
+            {editor && <button
               onClick={() => router.push(`/matches/new?cup=${cup.id}`)}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-primary/40 text-primary text-sm font-medium hover:bg-primary/5 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Lägg till match
-            </button>
+            </button>}
 
             {matches.length === 0 ? (
               <p className="text-center text-muted-foreground py-8 text-sm">Inga matcher kopplade till cupen ännu</p>
@@ -293,13 +296,13 @@ const { id } = useParams<{ id: string }>()
 
         {activeTab === 'deltagare' && (
           <div className="flex flex-col gap-2">
-            <button
+            {editor && <button
               onClick={() => router.push(`/cups/${cup.id}/participants`)}
               className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:bg-muted/40 transition-colors"
             >
               <UserCog className="w-4 h-4" />
               Hantera deltagare
-            </button>
+            </button>}
             {participants.length === 0 ? (
               <p className="text-center text-muted-foreground py-8 text-sm">Inga deltagare registrerade</p>
             ) : (
@@ -384,13 +387,13 @@ const { id } = useParams<{ id: string }>()
               </div>
             )}
 
-            <button
+            {editor && <button
               onClick={() => router.push(`/cups/${cup.id}/edit`)}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/15 transition-colors"
             >
               <Pencil className="w-4 h-4" />
               Redigera information
-            </button>
+            </button>}
           </div>
         )}
 

@@ -1,6 +1,8 @@
 import { db } from '@/server/db'
 import { ATTENDED_STATUSES, NOW_WALLCLOCK, PAST_TRAINING, withinMonthsOf } from '@/server/attendance'
-import type { User } from '@/server/types'
+import { AccessError } from '@/server/access'
+import { statsPlayerScope } from '@/server/members-kind'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   playerId: number
@@ -16,8 +18,11 @@ type Params = {
  * ägt rum (avslutad eller starttiden passerad). En cup räknas när spelaren
  * har status Kommer och cupen har börjat.
  */
-export default async function getPlayerStats(req: { params: Params; user: User }) {
+export default async function getPlayerStats(req: { params: Params; user: User; squad?: SquadAccess }) {
   const playerId = req.params.playerId
+  // Spelare och Anhörig ser bara statistik för de kopplade spelarna
+  const scope = await statsPlayerScope(req.squad, req.user.id)
+  if (scope && !scope.includes(Number(playerId))) throw new AccessError('Statistik visas bara för spelare du är kopplad till.', 403)
   const months = Math.max(0, Math.floor(req.params.months ?? 0))
 
   const PLAYED = `pm.status::text = 'Kommer' AND pm.leader IS NULL

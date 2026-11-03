@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Check, Copy, Eye, ImageIcon, Loader2, Plus, RefreshCw, ShieldCheck, Trash2, Upload, UserCheck, X } from 'lucide-react'
+import { Check, Copy, Heart, ImageIcon, Loader2, Plus, RefreshCw, ShieldCheck, Shirt, Trash2, Upload, UserCheck, X } from 'lucide-react'
 import { uploadImage } from '../../lib/storage'
 import {
   useDecideMember,
+  useGetLinkablePlayers,
   useGetMembers,
   useGetSquadSettings,
   useRegenerateJoinCode,
@@ -27,19 +28,26 @@ import { Label } from '../../lib/shadcn/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../lib/shadcn/select'
 import { ErrorText, PageHeader, ROLE_HELP, ROLE_LABEL, Section } from './shared'
 
-type Role = 'viewer' | 'leader' | 'admin'
-const ROLES: Role[] = ['viewer', 'leader', 'admin']
-const ROLE_ICON: Record<Role, typeof Eye> = { admin: ShieldCheck, leader: UserCheck, viewer: Eye }
+/** Roller som admin väljer. Spelare och Anhörig är läsbehörighet kopplad till spelare. */
+type Role = 'player' | 'relative' | 'leader' | 'admin'
+const ROLES: Role[] = ['player', 'relative', 'leader', 'admin']
+const ROLE_ICON: Record<Role, typeof Heart> = { admin: ShieldCheck, leader: UserCheck, player: Shirt, relative: Heart }
 const ROLE_TONE: Record<Role, string> = {
   admin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300',
   leader: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
-  viewer: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300',
+  player: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+  relative: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300',
+}
+
+function memberRole(m: { role: string; memberKind?: string | null }): Role {
+  if (m.role === 'viewer') return m.memberKind === 'player' ? 'player' : 'relative'
+  return m.role === 'admin' ? 'admin' : 'leader'
 }
 
 function RoleSelect({ value, onChange, disabled }: { value: Role; onChange: (r: Role) => void; disabled?: boolean }) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v as Role)} disabled={disabled}>
-      <SelectTrigger className="w-36 h-8 text-xs">
+      <SelectTrigger className="w-32 h-8 text-xs">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -53,6 +61,50 @@ function RoleSelect({ value, onChange, disabled }: { value: Role; onChange: (r: 
   )
 }
 
+type LinkablePlayer = { id: number; name: string; status: string | null }
+
+/** Kopplade spelare som etiketter, och en lista för att lägga till. Spelare kopplas till en, Anhörig till flera. */
+function PlayerLinks({ role, value, players, onChange, disabled }: {
+  role: Role
+  value: number[]
+  players: LinkablePlayer[]
+  onChange: (ids: number[]) => void
+  disabled?: boolean
+}) {
+  const single = role === 'player'
+  const chosen = value.map((id) => players.find((p) => p.id === id)).filter(Boolean) as LinkablePlayer[]
+  const rest = players.filter((p) => !value.includes(p.id))
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {chosen.map((p) => (
+        <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+          {p.name}
+          <button type="button" disabled={disabled} onClick={() => onChange(value.filter((v) => v !== p.id))}
+            aria-label={`Ta bort kopplingen till ${p.name}`} className="text-muted-foreground hover:text-foreground">
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      ))}
+      {(!single || chosen.length === 0) && (
+        <select
+          value=""
+          disabled={disabled}
+          onChange={(e) => {
+            const id = Number(e.target.value)
+            if (id) onChange(single ? [id] : [...value, id])
+          }}
+          className={`h-7 rounded-md border bg-background px-2 text-xs ${chosen.length === 0 ? 'border-amber-500' : 'border-border'}`}
+        >
+          <option value="">{chosen.length ? '+ Spelare' : 'Koppla till spelare…'}</option>
+          {rest.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}{p.status && p.status !== 'Aktiv' ? ` (${p.status})` : ''}</option>
+          ))}
+        </select>
+      )}
+    </div>
+  )
+}
+
 /** Lagets medlemmar, inbjudan, inställningar och ledare. Bara för lagets admins. */
 export default function SquadSettings() {
   const squad = currentSquad()
@@ -60,6 +112,7 @@ export default function SquadSettings() {
   const settings = useGetSquadSettings()
   const leaders = useGetLeaders()
   const decide = useDecideMember()
+  const linkable = useGetLinkablePlayers()
   const update = useUpdateMember()
   const remove = useRemoveMember()
   const regenerate = useRegenerateJoinCode()
@@ -72,6 +125,7 @@ export default function SquadSettings() {
 
   const [error, setError] = useState<string | null>(null)
   const [approveRole, setApproveRole] = useState<Record<string, Role>>({})
+  const [approveLinks, setApproveLinks] = useState<Record<string, number[]>>({})
   const [copied, setCopied] = useState(false)
   const [form, setForm] = useState({
     name: '',
@@ -120,6 +174,7 @@ export default function SquadSettings() {
 
   useEffect(() => {
     members.trigger().catch(() => {})
+    linkable.trigger().catch(() => {})
     reloadLeaders().catch(() => {})
     settings
       .trigger()
@@ -190,15 +245,26 @@ export default function SquadSettings() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <RoleSelect
-                    value={approveRole[m.userId] ?? 'viewer'}
-                    onChange={(r) => setApproveRole((s) => ({ ...s, [m.userId]: r }))}
+                    value={approveRole[m.userId] ?? 'relative'}
+                    onChange={(r) => {
+                      setApproveRole((s) => ({ ...s, [m.userId]: r }))
+                      if (r === 'player') setApproveLinks((s) => ({ ...s, [m.userId]: (s[m.userId] ?? []).slice(0, 1) }))
+                    }}
                   />
+                  {['player', 'relative'].includes(approveRole[m.userId] ?? 'relative') && (
+                    <PlayerLinks
+                      role={approveRole[m.userId] ?? 'relative'}
+                      value={approveLinks[m.userId] ?? []}
+                      players={linkable.data ?? []}
+                      onChange={(ids) => setApproveLinks((s) => ({ ...s, [m.userId]: ids }))}
+                    />
+                  )}
                   <Button
                     size="sm"
                     disabled={decide.loading}
                     onClick={() =>
                       run(
-                        () => decide.trigger({ userId: m.userId, approve: true, role: approveRole[m.userId] ?? 'viewer' }),
+                        () => decide.trigger({ userId: m.userId, approve: true, role: approveRole[m.userId] ?? 'relative', playerIds: approveLinks[m.userId] ?? [] }),
                         () => members.trigger(),
                       )
                     }
@@ -257,8 +323,8 @@ export default function SquadSettings() {
 
       <Section title={`Medlemmar (${approved.length})`}>
         <div className="flex flex-col gap-4">
-          {(['admin', 'leader', 'viewer'] as Role[]).map((r) => {
-            const group = approved.filter((m) => m.role === r)
+          {(['admin', 'leader', 'player', 'relative'] as Role[]).map((r) => {
+            const group = approved.filter((m) => memberRole(m) === r)
             const Icon = ROLE_ICON[r]
             return (
               <div key={r} className="overflow-hidden rounded-xl border border-border">
@@ -274,7 +340,7 @@ export default function SquadSettings() {
                   </div>
                 </div>
                 {group.length === 0 ? (
-                  <p className="px-3 py-2.5 text-xs text-muted-foreground">Ingen med {ROLE_LABEL[r].toLowerCase()} ännu.</p>
+                  <p className="px-3 py-2.5 text-xs text-muted-foreground">Ingen {r === 'admin' ? 'admin' : r === 'leader' ? 'ledare' : r === 'player' ? 'spelare' : 'anhörig'} ännu.</p>
                 ) : (
                   <ul className="divide-y divide-border">
                     {group.map((m) => {
@@ -290,11 +356,25 @@ export default function SquadSettings() {
                               {display} {m.isMe && <span className="font-normal text-muted-foreground">(du)</span>}
                             </p>
                             {m.name && <p className="truncate text-xs text-muted-foreground">{m.email}</p>}
+                            {(r === 'player' || r === 'relative') && (
+                              <div className="mt-1">
+                                <PlayerLinks
+                                  role={r}
+                                  value={m.playerIds ?? []}
+                                  players={linkable.data ?? []}
+                                  disabled={update.loading}
+                                  onChange={(ids) => run(() => update.trigger({ userId: m.userId, role: r, playerIds: ids }), () => members.trigger())}
+                                />
+                              </div>
+                            )}
                           </div>
                           <RoleSelect
-                            value={m.role}
+                            value={memberRole(m)}
                             disabled={m.isMe || update.loading}
-                            onChange={(nr) => run(() => update.trigger({ userId: m.userId, role: nr }), () => members.trigger())}
+                            onChange={(nr) => run(
+                              () => update.trigger({ userId: m.userId, role: nr, playerIds: nr === 'player' ? (m.playerIds ?? []).slice(0, 1) : m.playerIds ?? [] }),
+                              () => members.trigger(),
+                            )}
                           />
                           {!m.isMe && (
                             <Button

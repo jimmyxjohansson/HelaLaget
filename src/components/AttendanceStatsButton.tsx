@@ -1,5 +1,6 @@
 'use client'
 
+import { canEdit } from '../lib/squad-store'
 import { useEffect, useMemo, useState } from 'react'
 import { BarChart3, ArrowUp, ArrowDown, ChevronsUpDown, RotateCcw } from 'lucide-react'
 import { useGetTrainingAttendance } from '../hooks/backend/trainings'
@@ -33,6 +34,8 @@ type StatsSortKey = 'name' | 'rank' | 'coming' | 'percent'
 
 /** Circular header button that opens the training attendance stats popup. */
 export function AttendanceStatsButton() {
+  // Rank visas inte för Spelare och Anhörig
+  const showRank = canEdit()
   const { data: statsData, loading: statsLoading, trigger: fetchStats } = useGetTrainingAttendance()
   const [statsOpen, setStatsOpen] = useState(false)
   const [statsDate1, setStatsDate1] = useState('')
@@ -181,11 +184,11 @@ export function AttendanceStatsButton() {
                           Namn {sortIcon('name')}
                         </button>
                       </th>
-                      <th className="py-2 px-1 font-semibold text-center">
+                      {showRank && <th className="py-2 px-1 font-semibold text-center">
                         <button onClick={() => toggleStatsSort('rank')} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
                           Rank {sortIcon('rank')}
                         </button>
-                      </th>
+                      </th>}
                       <th className="py-2 px-1 font-semibold text-center">
                         <button onClick={() => toggleStatsSort('coming')} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
                           Kom/Tot {sortIcon('coming')}
@@ -208,11 +211,11 @@ export function AttendanceStatsButton() {
                           className="border-b border-border last:border-0 cursor-pointer hover:bg-muted/40 transition-colors"
                         >
                           <td className="py-1.5 pl-1 pr-1 text-foreground truncate">{r.shortname ?? '–'}</td>
-                          <td className="py-1.5 px-1 text-center">
+                          {showRank && <td className="py-1.5 px-1 text-center">
                             {r.rank ? (
                               <span className="text-[9px] font-bold px-1 py-0.5 rounded" style={rankStyle(r.rank)}>{r.rank}</span>
                             ) : '–'}
-                          </td>
+                          </td>}
                           <td className="py-1.5 px-1 text-center tabular-nums text-muted-foreground whitespace-nowrap">{r.coming}/{r.total}</td>
                           <td className="py-1.5 pr-1 pl-1 text-right tabular-nums font-semibold text-foreground">{pct != null ? `${pct}%` : '–'}</td>
                         </tr>

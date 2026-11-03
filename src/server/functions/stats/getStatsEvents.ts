@@ -1,6 +1,7 @@
 import { db } from '@/server/db'
 import { betweenDatesOf } from '@/server/attendance'
-import type { User } from '@/server/types'
+import { statsPlayerScope } from '@/server/members-kind'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   from?: string | null
@@ -8,7 +9,7 @@ type Params = {
 }
 
 /** Alla mål, assist och räddningar av lagets spelare i perioden, en rad per händelse. */
-export default async function getStatsEvents(req: { params: Params; user: User }) {
+export default async function getStatsEvents(req: { params: Params; user: User; squad?: SquadAccess }) {
   const from = req.params.from || null
   const to = req.params.to || null
   const { data } = await db.query<{
@@ -39,5 +40,8 @@ export default async function getStatsEvents(req: { params: Params; user: User }
      ORDER BY m.date DESC, e.minute DESC NULLS LAST, e.id DESC`,
     [from, to],
   )
+  // Spelare och Anhörig ser bara händelser där en kopplad spelare var med
+  const scope = await statsPlayerScope(req.squad, req.user.id)
+  if (scope) return data.filter((e) => [e.goal, e.assist, e.save].some((p) => p != null && scope.includes(Number(p))))
   return data
 }

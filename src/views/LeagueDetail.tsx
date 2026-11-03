@@ -1,5 +1,6 @@
 'use client'
 
+import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -95,6 +96,8 @@ function parseTeamSuffix(teamname: string | null) {
 }
 
 export default function LeagueDetail() {
+  // Spelare och Anhörig ser men ändrar inget
+  const editor = canEdit()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetLeagueMatches()
@@ -308,11 +311,11 @@ export default function LeagueDetail() {
       {/* Standings table */}
       {tab === 'tabell' && (
         <div className="flex-1 px-2 py-3">
-          <div className="flex justify-end px-1 mb-2">
+          {editor && <div className="flex justify-end px-1 mb-2">
             <Button size="sm" variant="outline" onClick={openNewStanding} className="gap-1">
               <Plus className="w-4 h-4" /> Lägg till lag
             </Button>
-          </div>
+          </div>}
           {loading && !result ? (
             <p className="text-center text-muted-foreground py-10 text-sm">Laddar…</p>
           ) : standings.length === 0 ? (
@@ -363,20 +366,20 @@ export default function LeagueDetail() {
                         <td className="py-2 pr-1 pl-1 text-center tabular-nums font-bold text-foreground">{s.p}</td>
                         <td className="py-2 pr-2 pl-1 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-0.5">
-                            <button
+                            {editor && <button
                               onClick={() => openEditStanding(s)}
                               aria-label="Redigera"
                               className="p-1 text-muted-foreground hover:text-foreground transition-colors"
                             >
                               <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
+                            </button>}
+                            {editor && <button
                               onClick={() => setDeleteTarget(s)}
                               aria-label="Ta bort"
                               className="p-1 text-muted-foreground hover:text-destructive transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>

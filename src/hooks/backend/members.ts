@@ -2,6 +2,7 @@
 
 import { createBackendHook } from './_core'
 import type decideMember from '../../server/functions/members/decideMember'
+import type getLinkablePlayers from '../../server/functions/members/getLinkablePlayers'
 import type getMembers from '../../server/functions/members/getMembers'
 import type getSquadSettings from '../../server/functions/members/getSquadSettings'
 import type regenerateJoinCode from '../../server/functions/members/regenerateJoinCode'
@@ -13,6 +14,11 @@ export const useDecideMember = createBackendHook<
   Parameters<typeof decideMember>[0]['params'],
   Awaited<ReturnType<typeof decideMember>>
 >('members/decideMember')
+
+export const useGetLinkablePlayers = createBackendHook<
+  Parameters<typeof getLinkablePlayers>[0]['params'],
+  Awaited<ReturnType<typeof getLinkablePlayers>>
+>('members/getLinkablePlayers')
 
 export const useGetMembers = createBackendHook<
   Parameters<typeof getMembers>[0]['params'],

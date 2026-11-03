@@ -1,5 +1,6 @@
 'use client'
 
+import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useState, Fragment, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
@@ -169,6 +170,7 @@ function parseTeamSuffix(teamname: string | null) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MatchDetail() {
+  const editor = canEdit()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetMatch()
@@ -341,7 +343,7 @@ export default function MatchDetail() {
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
-          <DropdownMenu>
+          {editor && <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Meny"
@@ -379,7 +381,7 @@ export default function MatchDetail() {
                 Radera match
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>}
           </div>
 
           <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
@@ -587,15 +589,15 @@ export default function MatchDetail() {
                 <div className="text-sm text-muted-foreground text-center py-8">Inga deltagare registrerade</div>
               )}
 
-              <button
+              {editor && <button
                 onClick={() => router.push(`/matches/${id}/participants`)}
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-border bg-card text-sm font-medium text-foreground hover:bg-muted/40 transition-colors"
               >
                 <UserCog className="w-4 h-4" />
                 Hantera deltagare & målvakt
-              </button>
+              </button>}
 
-              {match.cup != null && (
+              {editor && match.cup != null && (
                 <button
                   onClick={() => setConfirmSyncOpen(true)}
                   disabled={syncing}
@@ -633,13 +635,13 @@ export default function MatchDetail() {
                     </button>
                   ))}
                 </div>
-                <button
+                {editor && <button
                   onClick={() => router.push(`/matches/${match.id}/timeline`)}
                   className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   Redigera tidslinje
-                </button>
+                </button>}
               </div>
 
               {/* Timeline */}

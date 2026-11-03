@@ -1,12 +1,13 @@
 import { db } from '@/server/db'
 import { ATTENDED_STATUSES, PAST_TRAINING, PLAYED_MATCH, withinMonths, withinMonthsOf } from '@/server/attendance'
-import type { User } from '@/server/types'
+import { statsPlayerScope } from '@/server/members-kind'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   months?: number | null
 }
 
-export default async function getPlayers(req: { params: Params; user: User }) {
+export default async function getPlayers(req: { params: Params; user: User; squad?: SquadAccess }) {
   // 0 means "all time"; positive integer means filter to last N months
   const months = req.params.months ?? 0
 
@@ -66,5 +67,10 @@ export default async function getPlayers(req: { params: Params; user: User }) {
     ORDER BY p.shortname`,
     [months]
   )
-  return result.data
+  // Spelare och Anhörig ser bara statistiken för de kopplade spelarna
+  const scope = await statsPlayerScope(req.squad, req.user.id)
+  if (!scope) return result.data.map((r) => ({ ...r, stats_hidden: false }))
+  return result.data.map((r) => scope.includes(Number(r.id))
+    ? { ...r, stats_hidden: false }
+    : { ...r, stats_hidden: true, sessions_attended: '0', total_sessions: '0', matches: 0, goals: 0, assists: 0, saves: 0 })
 }
