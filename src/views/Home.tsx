@@ -8,7 +8,7 @@ import { useGetTrainings } from '../hooks/backend/trainings'
 import { useGetUpcomingMatches } from '../hooks/backend/matches'
 import { useGetUpcomingBirthdays } from '../hooks/backend/players'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
-import { MapPin, ChevronRight, Cake, Check, Repeat } from 'lucide-react'
+import { MapPin, ChevronRight, Cake, Check, ClipboardList, Repeat } from 'lucide-react'
 import { ownTeamName } from '../utils/constants'
 import { wallDayIso } from '../utils/dateWindow'
 import SquadLogo from '../components/SquadLogo'
@@ -37,6 +37,8 @@ interface Training {
   l_anmald: string
   l_kallad: string
   l_ej: string
+  plan_blocks: number
+  plan_minutes: number
 }
 
 interface Match {
@@ -186,6 +188,11 @@ export default function Home() {
                           {s.p}<span className="opacity-75">+{s.l}</span>
                         </span>
                       ))}
+                      {t.plan_blocks > 0 && (
+                        <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-medium text-foreground" title="Träningsplanen är upplagd">
+                          <ClipboardList className="w-3 h-3" /> Plan{t.plan_minutes ? ` · ${t.plan_minutes} min` : ''}
+                        </span>
+                      )}
                     </div>
                   </button>
                 ))}

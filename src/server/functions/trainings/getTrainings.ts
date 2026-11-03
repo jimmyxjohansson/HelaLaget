@@ -33,6 +33,9 @@ export default async function getTrainings(req: { params: Params; user: User }) 
     l_anmald: string
     l_kallad: string
     l_ej: string
+    /** Antal block i träningsplanen (0 = ingen plan) och planens längd i minuter */
+    plan_blocks: number
+    plan_minutes: number
   }>(
     `SELECT
       t.id, t.type, t.date1, t.date, t.indooroutdoor, t.notes, t.svenskalag, t.reported,
@@ -46,7 +49,9 @@ export default async function getTrainings(req: { params: Params; user: User }) 
       COUNT(CASE WHEN pt.leader IS NOT NULL AND pt.status::text = 'Närvarande'                                                        THEN 1 END) AS l_narvarande,
       COUNT(CASE WHEN pt.leader IS NOT NULL AND pt.status::text = 'Anmäld'                                                            THEN 1 END) AS l_anmald,
       COUNT(CASE WHEN pt.leader IS NOT NULL AND pt.status::text = 'Kallad'                                                            THEN 1 END) AS l_kallad,
-      COUNT(CASE WHEN pt.leader IS NOT NULL AND pt.status::text IN ('Ej närvarande','Anmäld, kom ej','Annan aktivitet')               THEN 1 END) AS l_ej
+      COUNT(CASE WHEN pt.leader IS NOT NULL AND pt.status::text IN ('Ej närvarande','Anmäld, kom ej','Annan aktivitet')               THEN 1 END) AS l_ej,
+      (SELECT COUNT(*) FROM training_blocks b WHERE b.training_id = t.id)::int AS plan_blocks,
+      (SELECT COALESCE(SUM(b.minutes), 0) FROM training_blocks b WHERE b.training_id = t.id)::int AS plan_minutes
     FROM trainings t
     LEFT JOIN participantstrainings pt ON pt.training = t.id
     WHERE ($2::timestamptz IS NULL OR t.date >= $2::timestamptz)
