@@ -1,6 +1,6 @@
 'use client'
 
-import SyncRepliesButton from './svar/SyncRepliesButton'
+import SyncRepliesButton, { SyncStatusLine, type SyncStatus } from './svar/SyncRepliesButton'
 import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -106,7 +106,7 @@ function outcomeText(outcome: string): string {
 export default function CupDetail() {
   // Spelare och Anhörig ser men ändrar inget
   const editor = canEdit()
-  const [syncError, setSyncError] = useState<string | null>(null)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null)
 const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetCup()
@@ -170,7 +170,10 @@ const { id } = useParams<{ id: string }>()
           {editor && cup.svenskalag && (
             <SyncRepliesButton
               url={cup.svenskalag}
-              onError={setSyncError}
+              kind={'cup'}
+                id={cup.id}
+                onStatus={setSyncStatus}
+                onSynced={() => trigger({ id: Number(id) }, { skipCache: true })}
               className="flex items-center justify-center w-8 h-8 rounded-full text-team-accent/80 hover:text-team-accent hover:bg-white/10 transition-colors disabled:opacity-50"
             />
           )}
@@ -183,7 +186,7 @@ const { id } = useParams<{ id: string }>()
           </button>}
           </div>
         </div>
-        {syncError && <p className="mb-3 rounded-md bg-black/25 px-2 py-1 text-xs text-white">{syncError}</p>}
+        <SyncStatusLine status={syncStatus} onDismiss={() => setSyncStatus(null)} className={`mb-3 w-fit max-w-full rounded-md px-2 py-1 text-xs text-white ${syncStatus?.ok ? 'bg-black/20' : 'bg-black/35'}`} />
 
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 rounded-full bg-team-accent/15 flex items-center justify-center flex-shrink-0">

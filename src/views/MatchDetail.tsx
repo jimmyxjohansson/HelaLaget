@@ -1,6 +1,6 @@
 'use client'
 
-import SyncRepliesButton from './svar/SyncRepliesButton'
+import SyncRepliesButton, { SyncStatusLine, type SyncStatus } from './svar/SyncRepliesButton'
 import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useState, Fragment, type ReactNode } from 'react'
@@ -172,7 +172,7 @@ function parseTeamSuffix(teamname: string | null) {
 
 export default function MatchDetail() {
   const editor = canEdit()
-  const [syncError, setSyncError] = useState<string | null>(null)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null)
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetMatch()
@@ -339,7 +339,10 @@ export default function MatchDetail() {
             {editor && match?.svenskalag && (
               <SyncRepliesButton
                 url={match.svenskalag}
-                onError={setSyncError}
+                kind={'match'}
+                id={match.id}
+                onStatus={setSyncStatus}
+                onSynced={() => trigger({ id: Number(id) }, { skipCache: true })}
                 className="flex items-center justify-center w-8 h-8 rounded-full text-team-accent/80 hover:text-team-accent hover:bg-white/10 transition-colors disabled:opacity-50"
               />
             )}
@@ -414,7 +417,7 @@ export default function MatchDetail() {
             </AlertDialogContent>
           </AlertDialog>
         </div>
-        {syncError && <p className="mb-2 rounded-md bg-black/25 px-2 py-1 text-xs text-white">{syncError}</p>}
+        <SyncStatusLine status={syncStatus} onDismiss={() => setSyncStatus(null)} className={`mb-2 w-fit max-w-full rounded-md px-2 py-1 text-xs text-white ${syncStatus?.ok ? 'bg-black/20' : 'bg-black/35'}`} />
 
         {!match || (loading && match.id !== Number(id)) ? (
           <div className="h-24 animate-pulse rounded-xl bg-white/10" />

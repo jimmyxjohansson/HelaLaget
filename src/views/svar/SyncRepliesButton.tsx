@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { CloudDownload, Loader2 } from 'lucide-react'
 import { useRouter } from '../../lib/nav'
+import { useSyncSvenskalagReplies } from '../../hooks/backend/replies'
 
 export const STORE_KEY = 'hl_svenskalag_svar'
 
@@ -40,29 +41,41 @@ export function fetchReplies(url: string): Promise<unknown> {
   })
 }
 
+export type SyncStatus = { ok: boolean; text: string; unknown?: string[]; payload?: unknown }
+
 /**
- * Knappen Synka svar på en träning eller match. Visas bara när tillägget finns.
- * Svaren sparas och kvittensen visas på sidan Svar från Svenskalag.
+ * Knappen Synka svar på en träning, match eller cup. Visas bara när tillägget finns.
+ * Svaren hämtas och sparas direkt, och resultatet rapporteras via onStatus.
  */
-export default function SyncRepliesButton({ url, className, onError }: { url: string; className?: string; onError: (msg: string | null) => void }) {
+export default function SyncRepliesButton({ kind, id, url, className, onStatus, onSynced }: {
+  kind: 'training' | 'match' | 'cup'
+  id: number
+  url: string
+  className?: string
+  onStatus: (status: SyncStatus | null) => void
+  onSynced?: () => void
+}) {
   const has = useSvenskalagExtension()
-  const router = useRouter()
+  const syncReplies = useSyncSvenskalagReplies()
   const [busy, setBusy] = useState(false)
   if (!has) return null
 
   async function sync() {
     setBusy(true)
-    onError(null)
+    onStatus(null)
     try {
-      const payload = await fetchReplies(url)
-      try {
-        sessionStorage.setItem(STORE_KEY, JSON.stringify(payload))
-      } catch {
-        throw new Error('Kunde inte spara svaren i webbläsaren.')
-      }
-      router.push('/svenskalag/svar')
+      const payload = (await fetchReplies(url)) as { lists: Parameters<typeof syncReplies.trigger>[0]['lists'] }
+      const res = await syncReplies.trigger({ kind, id, lists: payload.lists })
+      onStatus({
+        ok: true,
+        text: `${res.saved} svar sparade${res.changed ? `, ${res.changed} ändrade` : ''}`,
+        unknown: res.unknown,
+        payload,
+      })
+      onSynced?.()
     } catch (e) {
-      onError(e instanceof Error ? e.message : 'Kunde inte hämta svaren.')
+      onStatus({ ok: false, text: e instanceof Error ? e.message : 'Kunde inte hämta svaren.' })
+    } finally {
       setBusy(false)
     }
   }
@@ -71,5 +84,39 @@ export default function SyncRepliesButton({ url, className, onError }: { url: st
     <button onClick={sync} disabled={busy} className={className} aria-label="Synka svar från Svenskalag" title="Synka svar från Svenskalag">
       {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <CloudDownload className="w-5 h-5" />}
     </button>
+  )
+}
+
+/** Statusraden efter en synk. Okända namn kopplas på sidan Svar från Svenskalag. */
+export function SyncStatusLine({ status, className, onDismiss }: { status: SyncStatus | null; className?: string; onDismiss?: () => void }) {
+  const router = useRouter()
+  if (!status) return null
+  const unknown = status.unknown ?? []
+
+  function openUnknown() {
+    if (!status?.payload) return
+    try {
+      sessionStorage.setItem(STORE_KEY, JSON.stringify(status.payload))
+    } catch {
+      return
+    }
+    router.push('/svenskalag/svar')
+  }
+
+  return (
+    <p className={className}>
+      {status.ok ? '✓ ' : ''}{status.text}
+      {unknown.length > 0 && (
+        <>
+          {' · '}
+          <button type="button" onClick={openUnknown} className="font-medium underline underline-offset-2">
+            {unknown.length === 1 ? '1 okänt namn' : `${unknown.length} okända namn`} – koppla
+          </button>
+        </>
+      )}
+      {onDismiss && (
+        <button type="button" onClick={onDismiss} aria-label="Stäng" className="ml-2 opacity-70 hover:opacity-100">✕</button>
+      )}
+    </p>
   )
 }
