@@ -45,7 +45,7 @@ export default async function applySvenskalagReplies(req: { params: Params; user
     const comment = /[\p{L}\d]/u.test(trimmed) ? trimmed : null
     // Kan ej utan kommentar: skriv "Ingen anledning", men bara om det inte redan står en anledning
     const noReason = it.list === 'notattending' && !comment
-    const time = it.time && /^\d{2}:\d{2}$/.test(it.time) ? it.time : null
+    const time = it.list === 'notattending' && it.time && /^\d{2}:\d{2}$/.test(it.time) ? it.time : null
 
     if (kind === 'training') {
       const status = TRAINING_STATUS[it.list]

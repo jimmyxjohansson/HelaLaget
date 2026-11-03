@@ -65,7 +65,8 @@ export async function buildRows(kind: Kind, id: number, lists: Partial<Record<Li
       name: r.name,
       comment: r.comment,
       answered: r.answered,
-      time: r.answeredDay && r.answeredDay === day ? r.answeredTime : null,
+      // Klockslaget behövs bara för Kan ej, och bara när svaret kom samma dag
+      time: r.list === 'notattending' && r.answeredDay && r.answeredDay === day ? r.answeredTime : null,
       match,
       current: cur,
       next: statusMap[r.list],
