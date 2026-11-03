@@ -1,7 +1,8 @@
 'use client'
 
+import { useSvenskalagExtension } from './SyncRepliesButton'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bookmark, Check, ExternalLink, Loader2, Lock } from 'lucide-react'
+import { Bookmark, CloudDownload, Check, ExternalLink, Loader2, Lock } from 'lucide-react'
 import Link from '../../lib/nav'
 import { ANY_SQUAD } from '../../lib/team-routes'
 import { setTabSquad } from '../../lib/squad-cookie'
@@ -339,30 +340,60 @@ function ReplyItem({ row: r, tone, choice, editing, players, leaders, onChoice, 
 /** Hur man lägger till och använder bokmärket. */
 export function Instructions() {
   const ref = useRef<HTMLAnchorElement>(null)
+  const hasExtension = useSvenskalagExtension()
   useEffect(() => {
     // React tillåter inte javascript:-länkar i href, så den sätts direkt på elementet
     ref.current?.setAttribute('href', bookmarkletHref(window.location.origin))
   }, [])
   return (
     <Section title="Kallelsesvar">
-      <div className="text-sm space-y-3">
+      <div className="text-sm space-y-4">
         <p>
-          Svenskalag kräver inloggning, så svaren läses av ett bokmärke i din egen webbläsare. Det läser listorna
-          Kommer, Kan ej och Kallade på en aktivitet och sparar svaren direkt i Hela Laget.
+          Svenskalag kräver inloggning, så svaren läses i din egen webbläsare där du är inloggad. De sparas direkt i
+          Hela Laget: Kommer blir Anmäld, Kan ej blir Ej närvarande och Kallade blir Kallad.
         </p>
-        <ol className="list-decimal pl-5 space-y-1">
-          <li>Dra knappen nedan till bokmärkesfältet i webbläsaren (görs en gång, på datorn).</li>
-          <li>Öppna träningen eller matchen på Svenskalag, inloggad som ledare.</li>
-          <li>Klicka på bokmärket. Svaren sparas och en kvittens öppnas i en ny flik.</li>
-        </ol>
-        <a
-          ref={ref}
-          onClick={(e) => e.preventDefault()}
-          className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 font-medium cursor-grab"
-          title="Dra till bokmärkesfältet"
-        >
-          <Bookmark className="w-4 h-4" /> Svar till Hela Laget
-        </a>
+
+        <div className="rounded-lg border border-border p-3 space-y-2">
+          <p className="font-medium flex items-center gap-2">
+            <CloudDownload className="w-4 h-4" /> Synka med en knapp (Chrome eller Edge på datorn)
+            {hasExtension && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">Installerat</span>}
+          </p>
+          <p className="text-muted-foreground">
+            Med tillägget får träningar och matcher en knapp, Synka svar, som hämtar svaren från Svenskalag åt dig.
+          </p>
+          {!hasExtension && (
+            <>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li><a href="/hela-laget-svenskalag.zip" download className="font-medium underline underline-offset-4">Ladda ner tillägget</a> och packa upp filen.</li>
+                <li>Skriv <span className="font-mono text-xs">chrome://extensions</span> (eller <span className="font-mono text-xs">edge://extensions</span>) i adressfältet.</li>
+                <li>Slå på <span className="font-medium">Utvecklarläge</span> uppe till höger.</li>
+                <li>Välj <span className="font-medium">Läs in okomprimerat</span> och välj den uppackade mappen hela-laget-svenskalag.</li>
+                <li>Ladda om Hela Laget. Var inloggad på Svenskalag i samma webbläsare.</li>
+              </ol>
+            </>
+          )}
+          {hasExtension && (
+            <p>Tryck på molnet med pilen på en träning eller match som är hämtad från Svenskalag.</p>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-border p-3 space-y-2">
+          <p className="font-medium flex items-center gap-2"><Bookmark className="w-4 h-4" /> Eller med ett bokmärke</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Dra knappen nedan till bokmärkesfältet i webbläsaren (görs en gång, på datorn).</li>
+            <li>Öppna träningen eller matchen på Svenskalag, inloggad som ledare.</li>
+            <li>Klicka på bokmärket. Svaren sparas och en kvittens öppnas i en ny flik.</li>
+          </ol>
+          <a
+            ref={ref}
+            onClick={(e) => e.preventDefault()}
+            className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 font-medium cursor-grab"
+            title="Dra till bokmärkesfältet"
+          >
+            <Bookmark className="w-4 h-4" /> Svar till Hela Laget
+          </a>
+        </div>
+
         <p className="text-xs text-muted-foreground">
           Aktiviteten måste redan finnas i Hela Laget (hämtad via Svenskalag-synk). Rapporterad närvaro skrivs aldrig
           över, och namn som appen inte känner igen får du koppla själv.

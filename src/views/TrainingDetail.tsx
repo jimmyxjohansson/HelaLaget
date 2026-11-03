@@ -1,5 +1,6 @@
 'use client'
 
+import SyncRepliesButton from './svar/SyncRepliesButton'
 import { useRouter } from '../lib/nav'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -108,6 +109,7 @@ const REASON_GROUP_DEFAULT_RANK = GROUP_DEFAULT_RANK
 export default function TrainingDetail() {
   // Spelare och Anhörig ser träningen men ändrar inget
   const editor = canEdit()
+  const [syncError, setSyncError] = useState<string | null>(null)
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetTrainingDetail()
@@ -570,6 +572,13 @@ export default function TrainingDetail() {
                   <ExternalLink className="w-5 h-5" />
                 </a>
               )}
+              {training.svenskalag && editor && (
+                <SyncRepliesButton
+                  url={training.svenskalag}
+                  onError={setSyncError}
+                  className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors disabled:opacity-60"
+                />
+              )}
               <AttendanceStatsButton />
               {editor && <>
               <button
@@ -603,6 +612,7 @@ export default function TrainingDetail() {
               )}
               </>}
             </div>
+            {syncError && <p className="mt-2 rounded-md bg-black/25 px-2 py-1 text-xs text-white">{syncError}</p>}
           </>
         )}
       </div>

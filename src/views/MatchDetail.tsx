@@ -1,5 +1,6 @@
 'use client'
 
+import SyncRepliesButton from './svar/SyncRepliesButton'
 import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useState, Fragment, type ReactNode } from 'react'
@@ -171,6 +172,7 @@ function parseTeamSuffix(teamname: string | null) {
 
 export default function MatchDetail() {
   const editor = canEdit()
+  const [syncError, setSyncError] = useState<string | null>(null)
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetMatch()
@@ -334,6 +336,13 @@ export default function MatchDetail() {
             <span className="text-sm">Tillbaka</span>
           </button>
           <div className="flex items-center gap-1">
+            {editor && match?.svenskalag && (
+              <SyncRepliesButton
+                url={match.svenskalag}
+                onError={setSyncError}
+                className="flex items-center justify-center w-8 h-8 rounded-full text-team-accent/80 hover:text-team-accent hover:bg-white/10 transition-colors disabled:opacity-50"
+              />
+            )}
             <button
               onClick={() => { if (id) trigger({ id: Number(id) }, { skipCache: true }) }}
               disabled={loading}
@@ -405,6 +414,7 @@ export default function MatchDetail() {
             </AlertDialogContent>
           </AlertDialog>
         </div>
+        {syncError && <p className="mb-2 rounded-md bg-black/25 px-2 py-1 text-xs text-white">{syncError}</p>}
 
         {!match || (loading && match.id !== Number(id)) ? (
           <div className="h-24 animate-pulse rounded-xl bg-white/10" />

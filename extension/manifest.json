@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Hela Laget – Svenskalag-synk",
+  "version": "1.0.0",
+  "description": "Hämtar kallelsesvar från Svenskalag till Hela Laget med din egen inloggning på Svenskalag.",
+  "icons": {
+    "128": "icon-128.png"
+  },
+  "permissions": [
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.svenskalag.se/*",
+    "https://svenskalag.se/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://hela-laget.vercel.app/*",
+        "https://*.vercel.app/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}
