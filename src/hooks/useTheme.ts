@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 
 type Theme = 'light' | 'dark'
 
-const STORAGE_KEY = 'app-theme'
+// Ny nyckel: ljust tema är standard, och bara ett eget val sparas.
+// (Den gamla nyckeln sparade även systemets läge automatiskt.)
+const STORAGE_KEY = 'hl-theme'
 
 function safeGetStoredTheme(): Theme | null {
   try {
@@ -23,13 +25,7 @@ function safeSetStoredTheme(theme: Theme) {
 }
 
 function getInitialTheme(): Theme {
-  const stored = safeGetStoredTheme()
-  if (stored) return stored
-  try {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  } catch {
-    return 'light'
-  }
+  return safeGetStoredTheme() ?? 'light'
 }
 
 function applyTheme(theme: Theme) {
@@ -42,14 +38,19 @@ export function useTheme() {
   // Apply on mount and whenever theme changes
   useEffect(() => {
     applyTheme(theme)
-    safeSetStoredTheme(theme)
   }, [theme])
 
+  // Bara när användaren själv väljer sparas temat
   const toggleTheme = useCallback(() => {
-    setThemeState(prev => (prev === 'dark' ? 'light' : 'dark'))
+    setThemeState(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      safeSetStoredTheme(next)
+      return next
+    })
   }, [])
 
   const setTheme = useCallback((next: Theme) => {
+    safeSetStoredTheme(next)
     setThemeState(next)
   }, [])
 

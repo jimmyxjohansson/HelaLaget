@@ -25,15 +25,14 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
-    { media: '(prefers-color-scheme: dark)', color: '#18181b' },
-  ],
+  // Ljust tema är standard, oavsett telefonens inställning
+  themeColor: '#fafafa',
 }
 
-// Sätter mörkt/ljust läge innan sidan ritas, så att det inte blinkar.
+// Sätter mörkt läge innan sidan ritas om användaren valt det, så att det inte blinkar.
+// Annars är temat ljust.
 // Samma nyckel och logik som hooks/useTheme.
-const themeScript = `(function(){try{var t=localStorage.getItem('app-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}})()`
+const themeScript = `(function(){try{if(localStorage.getItem('hl-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}})()`
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
