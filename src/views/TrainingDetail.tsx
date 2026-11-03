@@ -543,7 +543,7 @@ export default function TrainingDetail() {
             {training.notes && (
               <p className="text-team-accent/60 text-xs mt-1 italic">{training.notes}</p>
             )}
-            {/* Vanligaste knapparna: Svenskalag, Statistik, Grupper och Rapportera */}
+            {/* Vanligaste knapparna: Svenskalag, Statistik, Grupper och Rapportera, alla i samma stil */}
             <div className="flex items-center gap-2 mt-3">
               {training.svenskalag && (
                 <a
@@ -580,8 +580,7 @@ export default function TrainingDetail() {
                 <button
                   onClick={() => handleMarkReported(true)}
                   disabled={markingReported}
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: 'rgb(var(--team-accent))', color: 'rgb(var(--team-primary))' }}
+                  className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
                   aria-label="Markera som rapporterad"
                   title="Markera som rapporterad"
                 >
