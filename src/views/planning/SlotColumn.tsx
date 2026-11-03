@@ -3,9 +3,9 @@
 import Link from '../../lib/nav'
 import GenderBadge from '../../components/GenderBadge'
 import { byGender, genderSummary } from '../../utils/gender'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowLeft, ArrowRight, ClipboardList, ExternalLink, Hand, Loader2, MessageSquare, Plus, Trash2, UserPlus, X,
+  ArrowLeft, ArrowRight, ClipboardList, CloudDownload, ExternalLink, Hand, Loader2, MessageSquare, Plus, Trash2, UserPlus, X,
 } from 'lucide-react'
 import {
   useAddPlanningLeaders,
@@ -18,6 +18,9 @@ import {
   useSetPlanningGoalkeeper,
   useSetPlanningStatus,
 } from '../../hooks/backend/planning'
+import { useSyncSvenskalagReplies } from '../../hooks/backend/replies'
+import { fetchReplies, STORE_KEY } from '../svar/SyncRepliesButton'
+import { useRouter } from '../../lib/nav'
 import { Combobox } from '../../components/Combobox'
 import { VisualCheckbox } from '../../components/VisualCheckbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../lib/shadcn/select'
@@ -55,6 +58,12 @@ type Props = {
   onOpenAnswers: (id: number, title: string) => void
   onOpenSummary: () => void
   className?: string
+  /** Webbläsartillägget för Svenskalag finns: visa Synka svar */
+  canSync: boolean
+  /** Ökas av Synka alla på planeringen */
+  syncAllKey: number
+  /** Kör synkningar en i taget, även när flera kolumner synkar samtidigt */
+  enqueue: (job: () => Promise<void>) => Promise<void>
 }
 
 /** En kolumn i planeringen: välj match/cup, sätt svar, lägg till och flytta spelare. */
@@ -76,6 +85,11 @@ export default function SlotColumn(props: Props) {
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [playerSort, setPlayerSort] = useState<SortState<PlayerSort>>(null)
+  const router = useRouter()
+  const syncReplies = useSyncSvenskalagReplies()
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<{ ok: boolean; text: string; unknown?: string[]; payload?: unknown } | null>(null)
+  const handledSyncKey = useRef(props.syncAllKey)
   const statusKey = playerStatuses.join(',')
 
   useEffect(() => {
@@ -83,7 +97,51 @@ export default function SlotColumn(props: Props) {
     setSelectedCandidates(new Set())
     setError(null)
     setInfo(null)
+    setSyncResult(null)
   }, [eventId, kind])
+
+  /** Hämtar svaren från Svenskalag via tillägget och sparar dem direkt. */
+  function syncFromSvenskalag(url: string, id: number) {
+    setSyncing(true)
+    setSyncResult(null)
+    return props.enqueue(async () => {
+      try {
+        const payload = (await fetchReplies(url)) as { lists: Parameters<typeof syncReplies.trigger>[0]['lists'] }
+        const res = await syncReplies.trigger({ kind, id, lists: payload.lists })
+        setSyncResult({
+          ok: true,
+          text: `${res.saved} svar sparade${res.changed ? `, ${res.changed} ändrade` : ''}`,
+          unknown: res.unknown,
+          payload,
+        })
+        onChanged()
+      } catch (e) {
+        setSyncResult({ ok: false, text: e instanceof Error ? e.message : 'Kunde inte hämta svaren.' })
+      } finally {
+        setSyncing(false)
+      }
+    })
+  }
+
+  // Synka alla på planeringen
+  useEffect(() => {
+    if (props.syncAllKey === handledSyncKey.current) return
+    handledSyncKey.current = props.syncAllKey
+    const ev = slot.data?.event
+    if (props.canSync && ev?.svenskalag) syncFromSvenskalag(ev.svenskalag, ev.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.syncAllKey])
+
+  /** Okända namn kopplas på sidan Svar från Svenskalag, med samma svar. */
+  function openUnknown() {
+    if (!syncResult?.payload) return
+    try {
+      sessionStorage.setItem(STORE_KEY, JSON.stringify(syncResult.payload))
+    } catch {
+      return
+    }
+    router.push('/svenskalag/svar')
+  }
 
   useEffect(() => {
     if (!eventId) return
@@ -238,6 +296,13 @@ export default function SlotColumn(props: Props) {
                   ))}
                 </SelectContent>
               </Select>
+              {ev.svenskalag && props.canSync && (
+                <button type="button" onClick={() => syncFromSvenskalag(ev.svenskalag!, ev.id)} disabled={syncing}
+                  title="Synka svar från Svenskalag" aria-label="Synka svar från Svenskalag"
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background hover:bg-muted disabled:opacity-60">
+                  {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CloudDownload className="h-3.5 w-3.5" />}
+                </button>
+              )}
               {ev.svenskalag && (
                 <a href={ev.svenskalag} target="_blank" rel="noreferrer" title="Öppna i Svenskalag"
                   className="flex h-8 items-center gap-1 rounded-md border border-border bg-background px-2 text-xs hover:bg-muted">
@@ -279,6 +344,19 @@ export default function SlotColumn(props: Props) {
             )
           })()}
 
+          {syncResult && (
+            <p className={cn('text-xs', syncResult.ok ? 'text-muted-foreground' : 'text-destructive')}>
+              {syncResult.ok ? '✓ ' : ''}{syncResult.text}
+              {syncResult.unknown && syncResult.unknown.length > 0 && (
+                <>
+                  {' · '}
+                  <button type="button" onClick={openUnknown} className="font-medium text-amber-700 underline underline-offset-2 dark:text-amber-400">
+                    {syncResult.unknown.length === 1 ? '1 okänt namn' : `${syncResult.unknown.length} okända namn`} – koppla
+                  </button>
+                </>
+              )}
+            </p>
+          )}
           {error && <p className="text-xs text-destructive">{error}</p>}
           {info && <p className="text-xs text-muted-foreground">{info}</p>}
 

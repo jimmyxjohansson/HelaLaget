@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { CloudDownload, Loader2 } from 'lucide-react'
 import { useRouter } from '../../lib/nav'
 
-const STORE_KEY = 'hl_svenskalag_svar'
+export const STORE_KEY = 'hl_svenskalag_svar'
 
 /** Sant när webbläsartillägget "Hela Laget – Svenskalag-synk" är installerat. */
 export function useSvenskalagExtension() {
@@ -21,7 +21,7 @@ export function useSvenskalagExtension() {
 }
 
 /** Ber tillägget läsa svaren på aktiviteten i Svenskalag, med användarens egen inloggning där. */
-function fetchReplies(url: string): Promise<unknown> {
+export function fetchReplies(url: string): Promise<unknown> {
   const id = Math.random().toString(36).slice(2)
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => { window.removeEventListener('message', on); reject(new Error('Svenskalag svarade inte. Försök igen.')) }, 45000)

@@ -2,7 +2,7 @@ import 'server-only'
 import { db } from '@/server/db'
 import { AccessError } from '@/server/access'
 import { parseLists, type ListKey } from './parse'
-import { eventDay, matchPerson, MATCH_STATUS, REPORTED_TRAINING, squadPeople, TRAINING_STATUS, type Kind, type Person } from './people'
+import { eventDay, matchPerson, MATCH_STATUS, participantTable, REPORTED_TRAINING, squadPeople, TRAINING_STATUS, type Kind, type Person } from './people'
 
 /** Dagens datum i Sverige, som UTC-midnatt (för "Idag"/"Igår" i Svenskalag). */
 export function stockholmToday() {
@@ -18,6 +18,12 @@ export async function loadEvent(kind: Kind, id: number) {
     if (!data[0]) throw new AccessError('Träningen hittades inte i laget.', 404)
     return { kind, id, ...data[0] }
   }
+  if (kind === 'cup') {
+    const { data } = await db.query<{ date: string; title: string | null }>(
+      `SELECT startdate AS date, name AS title FROM cups WHERE id = $1`, [id])
+    if (!data[0]) throw new AccessError('Cupen hittades inte i laget.', 404)
+    return { kind, id, ...data[0], reported: false }
+  }
   const { data } = await db.query<{ date: string; title: string | null }>(
     `SELECT m.date, COALESCE(t.team, m.teamname) AS title FROM matches m LEFT JOIN teams t ON t.id = m.vs WHERE m.id = $1`, [id])
   if (!data[0]) throw new AccessError('Matchen hittades inte i laget.', 404)
@@ -25,8 +31,7 @@ export async function loadEvent(kind: Kind, id: number) {
 }
 
 export async function currentStatuses(kind: Kind, id: number) {
-  const table = kind === 'training' ? 'participantstrainings' : 'participantsmatches'
-  const fk = kind === 'training' ? 'training' : 'match'
+  const { table, fk } = participantTable(kind)
   const { data } = await db.query<{ player: number | null; leader: number | null; status: string | null }>(
     `SELECT player, leader, status::text AS status FROM ${table} WHERE ${fk} = $1`, [id])
   const map = new Map<string, string | null>()

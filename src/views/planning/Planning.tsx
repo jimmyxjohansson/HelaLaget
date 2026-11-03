@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { ClipboardList, Image as ImageIcon, SlidersHorizontal, Users } from 'lucide-react'
+import { useSvenskalagExtension } from '../svar/SyncRepliesButton'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ClipboardList, CloudDownload, Image as ImageIcon, Loader2, SlidersHorizontal, Users } from 'lucide-react'
 import { useGetPlanningEvents } from '../../hooks/backend/planning'
 import { useGetSquadGenders } from '../../hooks/backend/players'
 import { GENDERS, GENDER_PLURAL } from '../../utils/gender'
@@ -44,6 +45,17 @@ export default function Planning() {
   const [overviewOpen, setOverviewOpen] = useState(false)
   const [totalOpen, setTotalOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  // Synka svar från Svenskalag (kräver webbläsartillägget): en i taget, i kö
+  const canSync = useSvenskalagExtension()
+  const [syncAllKey, setSyncAllKey] = useState(0)
+  const [syncPending, setSyncPending] = useState(0)
+  const syncQueue = useRef<Promise<void>>(Promise.resolve())
+  function enqueue(job: () => Promise<void>) {
+    setSyncPending((n) => n + 1)
+    const next = syncQueue.current.then(job).catch(() => {}).finally(() => setSyncPending((n) => n - 1))
+    syncQueue.current = next
+    return next
+  }
   const events = useGetPlanningEvents()
   const squadGenders = useGetSquadGenders()
   const statusVisible = useSquadStatuses()
@@ -124,6 +136,13 @@ export default function Planning() {
               className={cn('flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm md:hidden', filtersOpen && 'bg-muted')}>
               <SlidersHorizontal className="h-4 w-4" /> Filter
             </button>
+            {canSync && (
+              <button type="button" onClick={() => setSyncAllKey((k) => k + 1)} disabled={filled.length === 0 || syncPending > 0}
+                title="Hämta kallelsesvaren från Svenskalag för alla valda"
+                className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-muted disabled:opacity-50">
+                {syncPending > 0 ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />} Synka svar
+              </button>
+            )}
             <button type="button" onClick={() => setTotalOpen(true)}
               className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-muted">
               <Users className="h-4 w-4" /> Totalt
@@ -216,6 +235,9 @@ export default function Planning() {
               next={neighbor(i + 1)}
               onOpenAnswers={(eid, title) => setAnswers({ id: eid, title })}
               onOpenSummary={() => setSummaryOpen(true)}
+              canSync={canSync}
+              syncAllKey={syncAllKey}
+              enqueue={enqueue}
             />
           )
         })}

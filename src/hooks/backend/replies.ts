@@ -4,6 +4,7 @@ import { createBackendHook } from './_core'
 import type applySvenskalagReplies from '../../server/functions/replies/applySvenskalagReplies'
 import type findSvenskalagActivity from '../../server/functions/replies/findSvenskalagActivity'
 import type previewSvenskalagReplies from '../../server/functions/replies/previewSvenskalagReplies'
+import type syncSvenskalagReplies from '../../server/functions/replies/syncSvenskalagReplies'
 
 export const useApplySvenskalagReplies = createBackendHook<
   Parameters<typeof applySvenskalagReplies>[0]['params'],
@@ -19,3 +20,8 @@ export const usePreviewSvenskalagReplies = createBackendHook<
   Parameters<typeof previewSvenskalagReplies>[0]['params'],
   Awaited<ReturnType<typeof previewSvenskalagReplies>>
 >('replies/previewSvenskalagReplies')
+
+export const useSyncSvenskalagReplies = createBackendHook<
+  Parameters<typeof syncSvenskalagReplies>[0]['params'],
+  Awaited<ReturnType<typeof syncSvenskalagReplies>>
+>('replies/syncSvenskalagReplies')

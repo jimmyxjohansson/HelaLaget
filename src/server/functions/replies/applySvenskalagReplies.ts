@@ -1,7 +1,7 @@
 import { db } from '@/server/db'
 import { AccessError } from '@/server/access'
 import { nameKey, type ListKey } from '@/server/replies/parse'
-import { MATCH_STATUS, REPORTED_TRAINING, TRAINING_STATUS } from '@/server/replies/people'
+import { MATCH_STATUS, parseKind, participantTable, REPORTED_TRAINING, TRAINING_STATUS } from '@/server/replies/people'
 import { currentStatuses, loadEvent } from '@/server/replies/rows'
 import type { SquadAccess, User } from '@/server/types'
 
@@ -19,17 +19,16 @@ type Item = {
   linkName?: string | null
 }
 
-type Params = { kind: 'training' | 'match'; id: number; items: Item[] }
+type Params = { kind: 'training' | 'match' | 'cup'; id: number; items: Item[] }
 
-/** Sparar svaren från Svenskalag på träningen eller matchen. */
+/** Sparar svaren från Svenskalag på träningen, matchen eller cupen. */
 export default async function applySvenskalagReplies(req: { params: Params; user: User; squad?: SquadAccess }) {
-  const kind = req.params.kind === 'match' ? 'match' : 'training'
+  const kind = parseKind(req.params.kind)
   const id = Number(req.params.id)
   const items = (req.params.items ?? []).slice(0, 200)
   await loadEvent(kind, id)
   const current = await currentStatuses(kind, id)
-  const table = kind === 'training' ? 'participantstrainings' : 'participantsmatches'
-  const fk = kind === 'training' ? 'training' : 'match'
+  const { table, fk } = participantTable(kind)
   let changed = 0
   let skipped = 0
 

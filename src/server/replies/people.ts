@@ -2,7 +2,19 @@ import 'server-only'
 import { db } from '@/server/db'
 import { nameKey, type ListKey, type ParsedReply } from './parse'
 
-export type Kind = 'training' | 'match'
+export type Kind = 'training' | 'match' | 'cup'
+
+/** Tolkar typen som skickas från appen. */
+export function parseKind(v: unknown): Kind {
+  return v === 'match' || v === 'cup' ? v : 'training'
+}
+
+/** Deltagartabellen och kolumnen som pekar på aktiviteten. */
+export function participantTable(kind: Kind) {
+  if (kind === 'training') return { table: 'participantstrainings', fk: 'training' }
+  if (kind === 'match') return { table: 'participantsmatches', fk: 'match' }
+  return { table: 'participantscups', fk: 'cup' }
+}
 export type Person = { type: 'player' | 'leader'; id: number; name: string }
 
 /** Lagets spelare och ledare, och sparade kopplingar från Svenskalag-namn. */

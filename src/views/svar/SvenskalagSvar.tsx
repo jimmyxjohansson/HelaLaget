@@ -132,8 +132,10 @@ export default function SvenskalagSvar() {
 
   if (!ready) return null
 
-  const kindWord = result?.event.kind === 'training' ? 'träningen' : 'matchen'
-  const eventPath = result ? `/${result.event.kind === 'training' ? 'trainings' : 'matches'}/${result.event.id}` : null
+  const kindWord = result?.event.kind === 'training' ? 'träningen' : result?.event.kind === 'cup' ? 'cupen' : 'matchen'
+  const PATH = { training: 'trainings', match: 'matches', cup: 'cups' } as const
+  const LABEL = { training: 'Träning', match: 'Match', cup: 'Cup' } as const
+  const eventPath = result ? `/${PATH[result.event.kind]}/${result.event.id}` : null
   const listOf = (r: Row) => LISTS.find((l) => l.key === r.list)!
 
   return (
@@ -155,10 +157,10 @@ export default function SvenskalagSvar() {
 
       {result && done && (
         <>
-          <Section title={result.event.kind === 'training' ? 'Träning' : 'Match'}>
+          <Section title={LABEL[result.event.kind]}>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="font-medium truncate">{result.event.title || (result.event.kind === 'training' ? 'Träning' : 'Match')}</div>
+                <div className="font-medium truncate">{result.event.title || LABEL[result.event.kind]}</div>
                 <div className="text-sm text-muted-foreground">{formatDate(result.event.date)}</div>
               </div>
               {payload?.url && (

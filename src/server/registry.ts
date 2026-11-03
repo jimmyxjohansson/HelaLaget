@@ -108,6 +108,7 @@ import players_updatePlayer from './functions/players/updatePlayer'
 import replies_applySvenskalagReplies from './functions/replies/applySvenskalagReplies'
 import replies_findSvenskalagActivity from './functions/replies/findSvenskalagActivity'
 import replies_previewSvenskalagReplies from './functions/replies/previewSvenskalagReplies'
+import replies_syncSvenskalagReplies from './functions/replies/syncSvenskalagReplies'
 import stats_getStatsEvents from './functions/stats/getStatsEvents'
 import stats_getStatsMatches from './functions/stats/getStatsMatches'
 import stats_getStatsOpponents from './functions/stats/getStatsOpponents'
@@ -256,6 +257,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'replies/applySvenskalagReplies': { handler: replies_applySvenskalagReplies, access: 'leader' },
   'replies/findSvenskalagActivity': { handler: replies_findSvenskalagActivity, access: 'user' },
   'replies/previewSvenskalagReplies': { handler: replies_previewSvenskalagReplies, access: 'leader' },
+  'replies/syncSvenskalagReplies': { handler: replies_syncSvenskalagReplies, access: 'leader' },
   'stats/getStatsEvents': { handler: stats_getStatsEvents, access: 'viewer' },
   'stats/getStatsMatches': { handler: stats_getStatsMatches, access: 'viewer' },
   'stats/getStatsOpponents': { handler: stats_getStatsOpponents, access: 'viewer' },

@@ -14,7 +14,7 @@ export default async function findSvenskalagActivity(req: { params: Params; user
   const activityId = String(req.params.activityId ?? '').replace(/\D/g, '')
   if (!activityId) throw new AccessError('Aktiviteten saknar nummer.', 400)
   const pattern = `/aktivitet/${activityId}(/|$|[?#])`
-  const { data } = await adminDb.query<{ kind: 'training' | 'match'; id: number; squad_id: number; date: string; title: string | null }>(
+  const { data } = await adminDb.query<{ kind: 'training' | 'match' | 'cup'; id: number; squad_id: number; date: string; title: string | null }>(
     `WITH mine AS (
        SELECT s.id FROM squads s
        WHERE EXISTS (SELECT 1 FROM app_admins a WHERE a.user_id = $2)
@@ -28,6 +28,9 @@ export default async function findSvenskalagActivity(req: { params: Params; user
      SELECT 'match' AS kind, m.id, m.squad_id, m.date, COALESCE(tm.team, m.teamname) AS title
        FROM matches m LEFT JOIN teams tm ON tm.id = m.vs
        WHERE m.squad_id IN (SELECT id FROM mine) AND m.svenskalag ~ $1
+     UNION ALL
+     SELECT 'cup' AS kind, c.id, c.squad_id, c.startdate AS date, c.name AS title
+       FROM cups c WHERE c.squad_id IN (SELECT id FROM mine) AND c.svenskalag ~ $1
      ORDER BY date DESC LIMIT 1`,
     [pattern, req.user.id],
   )
