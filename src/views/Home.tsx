@@ -12,7 +12,7 @@ import { MapPin, ChevronRight, Cake, Check, Repeat } from 'lucide-react'
 import { ownTeamName } from '../utils/constants'
 import { wallDayIso } from '../utils/dateWindow'
 import SquadLogo from '../components/SquadLogo'
-import { currentSquad, getMe } from '../lib/squad-store'
+import { canEdit, currentSquad, getMe } from '../lib/squad-store'
 import { setSquadCookie } from '../lib/squad-cookie'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -109,7 +109,8 @@ export default function Home() {
     // Bara intervallet som visas, så att importerade träningar långt fram inte tränger undan veckans
     triggerTrainings({ limit: 200, from: wallDayIso(0), to: wallDayIso(8) })
     triggerMatches({ limit: 10 })
-    triggerBirthdays({ days: 14 })
+    // Kommande födelsedagar visas bara för ledare och admin
+    if (canEdit()) triggerBirthdays({ days: 14 })
   }, [])
 
   const typedMatches = upcomingMatches as unknown as Match[] | undefined
@@ -220,7 +221,7 @@ export default function Home() {
 
         </div>
 {/* Birthdays in the coming two weeks */}
-        {birthdays && birthdays.length > 0 && (
+        {canEdit() && birthdays && birthdays.length > 0 && (
           <div>
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               Kommande födelsedagar

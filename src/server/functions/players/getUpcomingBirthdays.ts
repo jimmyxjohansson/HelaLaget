@@ -1,11 +1,13 @@
 import { db } from '@/server/db'
-import type { User } from '@/server/types'
+import type { SquadAccess, User } from '@/server/types'
 
 type Params = {
   days?: number
 }
 
-export default async function getUpcomingBirthdays(req: { params: Params; user: User }) {
+export default async function getUpcomingBirthdays(req: { params: Params; user: User; squad?: SquadAccess }) {
+  // Födelsedagar visas inte för Spelare och Anhörig
+  if (req.squad?.role === 'viewer') return []
   const days = req.params.days ?? 14
 
   const result = await db.query<{
