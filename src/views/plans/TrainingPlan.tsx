@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ChevronDown, ClipboardList, Clock, ExternalLink,
-  Info, LayoutTemplate, Loader2, Pencil, Plus, Send, Trash2, X,
+  Info, LayoutTemplate, Loader2, Pencil, Plus, Send, Trash2, Users, X,
 } from 'lucide-react'
 import { useGetTrainingDetail } from '../../hooks/backend/trainings'
 import { useGetDrills } from '../../hooks/backend/drills'
@@ -233,6 +233,11 @@ export default function TrainingPlan() {
               <button onClick={() => { setTemplatesOpen(true); if (!drills.data) drills.trigger().catch(() => {}) }}
                 className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm hover:bg-primary-foreground/30">
                 <LayoutTemplate className="h-4 w-4" /> Mallar
+              </button>
+              <button onClick={() => router.push(`/trainings/${trainingId}/groups`)} title="Träningsgrupper" aria-label="Grupper"
+                className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-2 py-1.5 text-sm hover:bg-primary-foreground/30 sm:px-3">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Grupper</span>
               </button>
               {!editing && blocks.length > 0 && (
                 <button onClick={sendToLeaders} disabled={notify.loading} title="Skicka notis till lagets ledare om att planen är klar"
