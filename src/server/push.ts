@@ -121,6 +121,25 @@ export async function sendToSquadLeaders(squadId: number, payload: PushPayload, 
   return { ...result, people: new Set(data.map((d) => d.user_id)).size }
 }
 
+/**
+ * Skicka till lagets admin och föreningens admin, på alla deras enheter, oavsett
+ * vilka lag de följer (t.ex. en ansökan som väntar på godkännande).
+ */
+export async function sendToSquadAdmins(squadId: number, payload: PushPayload) {
+  if (!pushConfigured()) return { sent: 0, removed: 0 }
+  const { data } = await adminDb.query<Subscription>(
+    `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth
+     FROM push_subscriptions ps
+     JOIN squads s ON s.id = $1
+     WHERE EXISTS (SELECT 1 FROM squad_members m
+                   WHERE m.squad_id = s.id AND m.user_id = ps.user_id AND m.status = 'approved' AND m.role = 'admin')
+        OR EXISTS (SELECT 1 FROM organization_admins oa
+                   WHERE oa.organization_id = s.organization_id AND oa.user_id = ps.user_id)`,
+    [squadId],
+  )
+  return send(data, payload)
+}
+
 /** Skicka till alla användarens enheter (testnotis). */
 export async function sendToUser(userId: string, payload: PushPayload) {
   if (!pushConfigured()) return { sent: 0, removed: 0 }

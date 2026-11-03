@@ -1,5 +1,6 @@
 import { adminDb } from '@/server/db'
 import { AccessError } from '@/server/access'
+import { sendToSquadAdmins } from '@/server/push'
 import type { User } from '@/server/types'
 
 export const access = 'user'
@@ -23,6 +24,12 @@ export default async function requestJoin(req: { params: Params; user: User }) {
   const squad = squads[0]
   if (!squad) throw new AccessError('Hittade inget lag med den koden. Kontrollera koden med lagets ledare.', 404)
 
+  const { data: before } = await adminDb.query<{ status: string }>(
+    `SELECT status::text FROM squad_members WHERE squad_id = $1 AND user_id = $2`,
+    [squad.id, req.user.id],
+  )
+  const previous = before[0]?.status ?? null
+
   // En nekad ansökan kan skickas igen; en godkänd eller väntande ändras inte.
   const { data } = await adminDb.query<{ status: string }>(
     `INSERT INTO squad_members (squad_id, user_id, role, status, message)
@@ -34,6 +41,28 @@ export default async function requestJoin(req: { params: Params; user: User }) {
      RETURNING status::text`,
     [squad.id, req.user.id, req.params.message?.trim() || null],
   )
+
+  // Ny ansökan (eller en nekad som skickats igen): tala om det för lagets admin
+  if (data[0].status === 'pending' && (previous === null || previous === 'rejected')) {
+    try {
+      const { data: who } = await adminDb.query<{ name: string | null; email: string | null; logo: string | null }>(
+        `SELECT u.raw_user_meta_data->>'name' AS name, u.email, s.logo_url AS logo
+         FROM auth.users u, squads s WHERE u.id = $1 AND s.id = $2`,
+        [req.user.id, squad.id],
+      )
+      const person = who[0]?.name?.trim() || who[0]?.email || 'Någon'
+      await sendToSquadAdmins(squad.id, {
+        title: `Ny ansökan till ${squad.name}`,
+        body: `${person} vill gå med i ${squad.organization_name} ${squad.name}. Tryck för att godkänna.`,
+        icon: who[0]?.logo || undefined,
+        url: `/lag/installningar?lag=${squad.id}`,
+        tag: `join-${squad.id}`,
+      })
+    } catch (e) {
+      // Ansökan är sparad även om notisen inte gick iväg
+      console.error('[requestJoin] kunde inte skicka notis', e)
+    }
+  }
 
   return { squadId: squad.id, squadName: squad.name, organizationName: squad.organization_name, status: data[0].status }
 }
