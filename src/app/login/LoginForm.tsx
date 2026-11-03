@@ -3,7 +3,8 @@
 import Link from '../../lib/nav'
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Mail, Users } from 'lucide-react'
+import PasswordInput from '../PasswordInput'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/lib/shadcn/button'
 import { Input } from '@/lib/shadcn/input'
@@ -41,45 +42,55 @@ export default function LoginForm() {
     window.location.href = safeNext(searchParams.get('next'))
   }
 
+  const next = safeNext(searchParams.get('next'))
+  const joining = next.startsWith('/join/')
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {joining && (
+        <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2 text-sm">
+          <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          Du har fått en inbjudan till ett lag. Logga in, eller skapa ett konto, så kommer du vidare till laget.
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         <Label htmlFor="email">E-post</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <div className="relative">
+          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            placeholder="namn@exempel.se"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="h-11 pl-9"
+          />
+        </div>
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="password">Lösenord</Label>
-        <Input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="current-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit" disabled={busy || !email || !password}>
+      {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      <Button type="submit" size="lg" className="mt-1 h-11" disabled={busy || !email || !password}>
         {busy && <Loader2 className="animate-spin" />}
         Logga in
       </Button>
-      <p className="text-sm text-muted-foreground">
-        Ny här?{' '}
-        <Link
-          href={`/registrera?next=${encodeURIComponent(safeNext(searchParams.get('next')))}`}
-          className="underline underline-offset-4"
-        >
-          Skapa konto
-        </Link>
-      </p>
-      <p className="text-xs text-muted-foreground">Glömt lösenordet? Kontakta en administratör.</p>
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" /> Ny i Hela Laget? <span className="h-px flex-1 bg-border" />
+      </div>
+      <Button asChild variant="outline" size="lg" className="h-11">
+        <Link href={`/registrera?next=${encodeURIComponent(next)}`}>Skapa konto</Link>
+      </Button>
     </form>
   )
 }
