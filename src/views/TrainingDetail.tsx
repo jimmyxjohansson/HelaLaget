@@ -236,7 +236,21 @@ export default function TrainingDetail() {
     'leader-Kallad', 'leader-Anmäld', 'leader-Närvarande', 'leader-Ej närvarande', 'leader-Anmäld, kom ej', 'leader-Annan aktivitet',
   ]))
 
+  // Sifferrutorna högst upp: visa bara statusarna rutan räknar (spelare och ledare ligger i samma sektioner).
+  // Samma ruta igen fäller ihop allt.
+  const [focusedBox, setFocusedBox] = useState<string | null>(null)
+  function focusStatuses(box: string, statuses: string[]) {
+    if (focusedBox === box) {
+      setFocusedBox(null)
+      setCollapsedGroups(new Set(STATUS_ORDER))
+      return
+    }
+    setFocusedBox(box)
+    setCollapsedGroups(new Set(STATUS_ORDER.filter(k => !statuses.includes(k))))
+  }
+
   function toggleCollapsed(key: string) {
+    setFocusedBox(null)
     setCollapsedGroups(prev => {
       const next = new Set(prev)
       if (next.has(key)) next.delete(key)
@@ -318,32 +332,11 @@ export default function TrainingDetail() {
     l.status === 'Annan aktivitet'
   ).length
 
-  // Group by status
-  const grouped: Record<string, Attendee[]> = {}
-  for (const a of attendees) {
-    const key = a.status ?? 'Okänd'
-    if (!grouped[key]) grouped[key] = []
-    grouped[key]!.push(a)
-  }
-  const orderedGroups = STATUS_ORDER
-    .filter(s => grouped[s] && grouped[s]!.length > 0)
-    .concat(Object.keys(grouped).filter(k => !STATUS_ORDER.includes(k)))
-
   function togglePlayer(playerId: number) {
     setSelected(prev => {
       const next = new Set(prev)
       if (next.has(playerId)) next.delete(playerId)
       else next.add(playerId)
-      return next
-    })
-  }
-
-  function toggleGroup(playerIds: number[]) {
-    const allSelected = playerIds.every(id => selected.has(id))
-    setSelected(prev => {
-      const next = new Set(prev)
-      if (allSelected) playerIds.forEach(id => next.delete(id))
-      else playerIds.forEach(id => next.add(id))
       return next
     })
   }
@@ -377,50 +370,11 @@ export default function TrainingDetail() {
     }
   }
 
-  async function handleRemoveSelected() {
-    if (!id || selected.size === 0) return
-    await triggerRemove({ trainingId: Number(id), playerIds: Array.from(selected) })
-    clearSelection()
-    trigger({ trainingId: Number(id) }, { skipCache: true })
-  }
-
-  async function applyStatus(status: string) {
-    if (!id || !status || selected.size === 0) return
-    await triggerUpdate({
-      trainingId: Number(id),
-      playerIds: Array.from(selected),
-      status,
-    })
-    clearSelection()
-    trigger({ trainingId: Number(id) }, { skipCache: true })
-  }
-
-  // Leader helpers
-  const leaderGrouped: Record<string, Leader[]> = {}
-  for (const l of leaders) {
-    const key = l.status ?? 'Okänd'
-    if (!leaderGrouped[key]) leaderGrouped[key] = []
-    leaderGrouped[key]!.push(l)
-  }
-  const orderedLeaderGroups = STATUS_ORDER
-    .filter(s => leaderGrouped[s] && leaderGrouped[s]!.length > 0)
-    .concat(Object.keys(leaderGrouped).filter(k => !STATUS_ORDER.includes(k)))
-
   function toggleLeader(leaderId: number) {
     setSelectedLeaders(prev => {
       const next = new Set(prev)
       if (next.has(leaderId)) next.delete(leaderId)
       else next.add(leaderId)
-      return next
-    })
-  }
-
-  function toggleLeaderGroup(leaderIds: number[]) {
-    const allSel = leaderIds.every(i => selectedLeaders.has(i))
-    setSelectedLeaders(prev => {
-      const next = new Set(prev)
-      if (allSel) leaderIds.forEach(i => next.delete(i))
-      else leaderIds.forEach(i => next.add(i))
       return next
     })
   }
@@ -453,20 +407,77 @@ export default function TrainingDetail() {
     }
   }
 
-  async function handleRemoveLeadersSelected() {
-    if (!id || selectedLeaders.size === 0) return
-    await triggerRemoveLeader({ trainingId: Number(id), leaderIds: Array.from(selectedLeaders) })
+  // Spelare och ledare i samma lista, sorterade på namn inom varje status
+  type Person = {
+    kind: 'player' | 'leader'
+    id: number
+    name: string
+    status: string
+    reason: string | null
+    reasontime: string | null
+    comment: string | null
+    group: string | null
+    attendee?: Attendee
+    leader?: Leader
+  }
+  const people: Person[] = [
+    ...attendees.map((a): Person => ({
+      kind: 'player', id: a.player_id, name: a.shortname, status: a.status ?? 'Okänd',
+      reason: a.reason, reasontime: a.reasontime, comment: a.comment, group: a.group_name, attendee: a,
+    })),
+    ...leaders.map((l): Person => ({
+      kind: 'leader', id: l.leader_id, name: l.shortname, status: l.status ?? 'Okänd',
+      reason: l.reason, reasontime: l.reasontime, comment: null, group: null, leader: l,
+    })),
+  ]
+  const peopleGrouped: Record<string, Person[]> = {}
+  for (const p of people) (peopleGrouped[p.status] ??= []).push(p)
+  for (const list of Object.values(peopleGrouped)) list.sort((x, y) => (x.name ?? '').localeCompare(y.name ?? '', 'sv'))
+  const orderedPeopleGroups = STATUS_ORDER
+    .filter(s => peopleGrouped[s]?.length)
+    .concat(Object.keys(peopleGrouped).filter(k => !STATUS_ORDER.includes(k)))
+
+  const selectedCount = selected.size + selectedLeaders.size
+  const isPersonSelected = (p: Person) => (p.kind === 'player' ? selected.has(p.id) : selectedLeaders.has(p.id))
+  function togglePerson(p: Person) {
+    if (p.kind === 'player') togglePlayer(p.id)
+    else toggleLeader(p.id)
+  }
+  function togglePeopleGroup(group: Person[]) {
+    const allSel = group.every(isPersonSelected)
+    const players = group.filter(p => p.kind === 'player').map(p => p.id)
+    const leaderIds = group.filter(p => p.kind === 'leader').map(p => p.id)
+    setSelected(prev => {
+      const next = new Set(prev)
+      players.forEach(i => (allSel ? next.delete(i) : next.add(i)))
+      return next
+    })
+    setSelectedLeaders(prev => {
+      const next = new Set(prev)
+      leaderIds.forEach(i => (allSel ? next.delete(i) : next.add(i)))
+      return next
+    })
+  }
+
+  /** Byter status på alla markerade, spelare och ledare. */
+  async function applyStatusToSelected(status: string) {
+    if (!id || selectedCount === 0) return
+    await Promise.all([
+      selected.size ? triggerUpdate({ trainingId: Number(id), playerIds: Array.from(selected), status }) : null,
+      selectedLeaders.size ? triggerUpdateLeader({ trainingId: Number(id), leaderIds: Array.from(selectedLeaders), status }) : null,
+    ])
+    clearSelection()
     clearLeaderSelection()
     trigger({ trainingId: Number(id) }, { skipCache: true })
   }
 
-  async function applyLeaderStatus(status: string) {
-    if (!id || !status || selectedLeaders.size === 0) return
-    await triggerUpdateLeader({
-      trainingId: Number(id),
-      leaderIds: Array.from(selectedLeaders),
-      status,
-    })
+  async function removeSelectedPeople() {
+    if (!id || selectedCount === 0) return
+    await Promise.all([
+      selected.size ? triggerRemove({ trainingId: Number(id), playerIds: Array.from(selected) }) : null,
+      selectedLeaders.size ? triggerRemoveLeader({ trainingId: Number(id), leaderIds: Array.from(selectedLeaders) }) : null,
+    ])
+    clearSelection()
     clearLeaderSelection()
     trigger({ trainingId: Number(id) }, { skipCache: true })
   }
@@ -596,18 +607,25 @@ export default function TrainingDetail() {
         {/* Attendance summary */}
         {training && (
           <div className="grid grid-cols-4 gap-2">
-            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#008000', opacity: !presentCount && !leaderPresentCount ? 0.35 : undefined }}>
-              <p className="text-xl font-bold text-white">{presentCount}<span className="text-sm font-semibold opacity-75">+{leaderPresentCount}</span></p>
-            </div>
-            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#0000FF', opacity: !anmaldCount && !leaderAnmaldCount ? 0.35 : undefined }}>
-              <p className="text-xl font-bold text-white">{anmaldCount}<span className="text-sm font-semibold opacity-75">+{leaderAnmaldCount}</span></p>
-            </div>
-            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#FF0000', opacity: !ejNarvarandeCount && !leaderEjNarvarandeCount ? 0.35 : undefined }}>
-              <p className="text-xl font-bold text-white">{ejNarvarandeCount}<span className="text-sm font-semibold opacity-75">+{leaderEjNarvarandeCount}</span></p>
-            </div>
-            <div className="rounded-xl p-3 flex items-center justify-center" style={{ backgroundColor: '#9333ea', opacity: !kalladCount && !leaderKalladCount ? 0.35 : undefined }}>
-              <p className="text-xl font-bold text-white">{kalladCount}<span className="text-sm font-semibold opacity-75">+{leaderKalladCount}</span></p>
-            </div>
+            {[
+              { box: 'present', color: '#008000', p: presentCount, l: leaderPresentCount, statuses: ['Närvarande', 'Närvarande, ej hela'], label: 'Närvarande' },
+              { box: 'anmald', color: '#0000FF', p: anmaldCount, l: leaderAnmaldCount, statuses: ['Anmäld'], label: 'Anmälda' },
+              { box: 'ej', color: '#FF0000', p: ejNarvarandeCount, l: leaderEjNarvarandeCount, statuses: ['Ej närvarande', 'Anmäld, kom ej', 'Annan aktivitet'], label: 'Ej närvarande' },
+              { box: 'kallad', color: '#9333ea', p: kalladCount, l: leaderKalladCount, statuses: ['Kallad'], label: 'Kallade' },
+            ].map(b => (
+              <button
+                key={b.box}
+                type="button"
+                onClick={() => focusStatuses(b.box, b.statuses)}
+                className={`rounded-xl p-3 flex items-center justify-center transition-shadow ${focusedBox === b.box ? 'ring-2 ring-offset-2 ring-foreground/60 ring-offset-background' : ''}`}
+                style={{ backgroundColor: b.color, opacity: !b.p && !b.l ? 0.35 : undefined }}
+                aria-pressed={focusedBox === b.box}
+                aria-label={`Visa ${b.label.toLowerCase()}`}
+                title={`Visa ${b.label.toLowerCase()}`}
+              >
+                <span className="text-xl font-bold text-white">{b.p}<span className="text-sm font-semibold opacity-75">+{b.l}</span></span>
+              </button>
+            ))}
           </div>
         )}
 
@@ -631,19 +649,24 @@ export default function TrainingDetail() {
           </button>
         )}
 
-        {/* Player groups */}
+        {/* Deltagare: spelare och ledare tillsammans, en sektion per status */}
         {loading && !detail ? (
           <div className="flex flex-col gap-2">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="bg-card rounded-xl h-12 animate-pulse" />
             ))}
           </div>
-        ) : orderedGroups.length === 0 ? (
+        ) : orderedPeopleGroups.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-8">
             <p className="text-center text-muted-foreground text-sm">Inga deltagare inbjudna</p>
-            <button onClick={openAddSheet} className="flex items-center gap-1.5 text-sm text-primary font-medium">
-              <UserPlus className="w-4 h-4" /> Lägg till deltagare
-            </button>
+            <div className="flex items-center gap-4">
+              <button onClick={openAddSheet} className="flex items-center gap-1.5 text-sm text-primary font-medium">
+                <UserPlus className="w-4 h-4" /> Lägg till spelare
+              </button>
+              <button onClick={openAddLeaderSheet} className="flex items-center gap-1.5 text-sm text-primary font-medium">
+                <UserPlus className="w-4 h-4" /> Lägg till ledare
+              </button>
+            </div>
           </div>
         ) : (
           <>
@@ -652,33 +675,41 @@ export default function TrainingDetail() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
-                  const allCollapsed = orderedGroups.every(k => collapsedGroups.has(k))
+                  const allCollapsed = orderedPeopleGroups.every(k => collapsedGroups.has(k))
+                  setFocusedBox(null)
                   setCollapsedGroups(prev => {
                     const next = new Set(prev)
-                    if (allCollapsed) orderedGroups.forEach(k => next.delete(k))
-                    else orderedGroups.forEach(k => next.add(k))
+                    if (allCollapsed) orderedPeopleGroups.forEach(k => next.delete(k))
+                    else orderedPeopleGroups.forEach(k => next.add(k))
                     return next
                   })
                 }}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ChevronsUpDown className="w-3.5 h-3.5" />
-                {orderedGroups.every(k => collapsedGroups.has(k)) ? 'Expandera' : 'Komprimera'}
+                {orderedPeopleGroups.every(k => collapsedGroups.has(k)) ? 'Expandera' : 'Komprimera'}
               </button>
-              <button onClick={openAddSheet} className="flex items-center gap-1 text-xs text-primary font-medium">
-                <UserPlus className="w-3.5 h-3.5" /> Lägg till
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1 text-xs text-primary font-medium">
+                    <UserPlus className="w-3.5 h-3.5" /> Lägg till
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setTimeout(openAddSheet, 0)}>Spelare</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTimeout(openAddLeaderSheet, 0)}>Ledare</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-          {orderedGroups.map(statusKey => {
-            const group = grouped[statusKey] ?? []
+          {orderedPeopleGroups.map(statusKey => {
+            const group = peopleGrouped[statusKey] ?? []
             const cfg = STATUS_CONFIG[statusKey]
             const Icon = cfg?.icon ?? UserCheck
             const hex = cfg?.hex ?? '#888888'
             const label = cfg?.label ?? statusKey
-            const groupIds = group.map(a => a.player_id)
-            const allGroupSelected = groupIds.length > 0 && groupIds.every(id => selected.has(id))
-            const someGroupSelected = groupIds.some(id => selected.has(id))
+            const allGroupSelected = group.length > 0 && group.every(isPersonSelected)
+            const someGroupSelected = group.some(isPersonSelected)
             const isCollapsed = collapsedGroups.has(statusKey)
             return (
               <div key={statusKey}>
@@ -686,7 +717,7 @@ export default function TrainingDetail() {
                 <div className="flex items-center gap-2 mb-2">
                   <Checkbox
                     checked={allGroupSelected ? true : someGroupSelected ? 'indeterminate' : false}
-                    onCheckedChange={() => toggleGroup(groupIds)}
+                    onCheckedChange={() => togglePeopleGroup(group)}
                     className="w-4 h-4"
                     aria-label={`Välj alla ${label}`}
                   />
@@ -696,48 +727,53 @@ export default function TrainingDetail() {
                     style={{ color: hex }}
                   >
                     <Icon className="w-3.5 h-3.5" />
-                    {label} ({group.length})
+                    {label} ({group.filter(p => p.kind === 'player').length}+{group.filter(p => p.kind === 'leader').length})
                     <ChevronDown className={`w-3.5 h-3.5 ml-auto transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
                   </button>
                 </div>
 
                 {!isCollapsed && (
                 <div className="bg-card border border-border rounded-xl divide-y divide-border">
-                  {group.map(a => (
+                  {group.map(person => (
                     <div
-                      key={a.player_id}
+                      key={`${person.kind}-${person.id}`}
                       className="w-full flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
-                      style={{ backgroundColor: rowBgColor(statusKey, a.reason, a.reasontime) }}
+                      style={{ backgroundColor: rowBgColor(statusKey, person.reason, person.reasontime) }}
                     >
                       <Checkbox
-                        checked={selected.has(a.player_id)}
-                        onCheckedChange={() => togglePlayer(a.player_id)}
+                        checked={isPersonSelected(person)}
+                        onCheckedChange={() => togglePerson(person)}
                         className="flex-shrink-0"
-                        aria-label={`Välj ${a.shortname}`}
+                        aria-label={`Välj ${person.name}`}
                       />
                       <button
-                        onClick={() => togglePlayer(a.player_id)}
+                        onClick={() => togglePerson(person)}
                         className="flex flex-col min-w-0 flex-1 text-left"
                       >
-                        <span className="text-sm font-medium text-foreground truncate">{a.shortname}</span>
-                        {(a.reasontime || a.reason) && (
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-sm font-medium text-foreground truncate">{person.name}</span>
+                          {person.kind === 'leader' && (
+                            <span className="shrink-0 text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Ledare</span>
+                          )}
+                        </span>
+                        {(person.reasontime || person.reason) && (
                           <span className="text-xs text-muted-foreground truncate">
-                            {[a.reasontime, a.reason].filter(Boolean).join(' – ')}
+                            {[person.reasontime, person.reason].filter(Boolean).join(' – ')}
                           </span>
                         )}
-                        {a.comment && (
-                          <span className="text-xs text-muted-foreground/70 truncate italic">{a.comment}</span>
+                        {person.comment && (
+                          <span className="text-xs text-muted-foreground/70 truncate italic">{person.comment}</span>
                         )}
                       </button>
-                      {a.group_name && (
+                      {person.group && (
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0">
-                          {a.group_name}
+                          {person.group}
                         </span>
                       )}
                       <button
-                        onClick={() => openReasonDialog(a)}
+                        onClick={() => person.kind === 'player' ? openReasonDialog(person.attendee!) : openLeaderReasonDialog(person.leader!)}
                         className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
-                        aria-label={`Ange anledning för ${a.shortname}`}
+                        aria-label={`Ange anledning för ${person.name}`}
                         title="Ange anledning"
                       >
                         <MessageSquare className="w-4 h-4" />
@@ -753,17 +789,15 @@ export default function TrainingDetail() {
         )}
 
         {/* Bottom spacer so action bar doesn't cover last row */}
-        {selected.size > 0 && <div className="h-16" />}
+        {selectedCount > 0 && <div className="h-16" />}
       </div>
 
-      {/* Sticky action bar — appears when players are selected */}
-      {selected.size > 0 && (
-        <div className={`fixed left-0 right-0 z-40 max-w-[430px] mx-auto px-4 pb-3 pt-2 ${
-          selectedLeaders.size > 0 ? 'bottom-32' : 'bottom-16'
-        }`}>
+      {/* Verktygsrad när spelare eller ledare är markerade */}
+      {selectedCount > 0 && (
+        <div className="fixed bottom-16 left-0 right-0 z-40 max-w-[430px] mx-auto px-4 pb-3 pt-2">
           <div className="bg-card border border-border rounded-xl shadow-lg p-3 flex items-center gap-2">
             <span className="text-sm font-medium text-foreground shrink-0">
-              {selected.size}
+              {selectedCount}
             </span>
             <div className="flex-1 min-w-0 flex items-center gap-1.5 justify-center">
               {STATUS_ORDER.map(value => {
@@ -774,8 +808,8 @@ export default function TrainingDetail() {
                   <button
                     key={value}
                     type="button"
-                    onClick={() => applyStatus(value)}
-                    disabled={updating}
+                    onClick={() => applyStatusToSelected(value)}
+                    disabled={updating || updatingLeader}
                     aria-label={cfg.label}
                     title={cfg.label}
                     className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all opacity-90 hover:opacity-100 hover:scale-105 disabled:opacity-50"
@@ -787,8 +821,8 @@ export default function TrainingDetail() {
               })}
             </div>
             <button
-              onClick={handleRemoveSelected}
-              disabled={removing}
+              onClick={removeSelectedPeople}
+              disabled={removing || removingLeader}
               className="shrink-0 text-destructive hover:text-destructive/80 transition-colors disabled:opacity-50"
               aria-label="Ta bort valda"
               title="Ta bort från träning"
@@ -796,166 +830,7 @@ export default function TrainingDetail() {
               <Trash2 className="w-4 h-4" />
             </button>
             <button
-              onClick={clearSelection}
-              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Avmarkera alla"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Leaders section */}
-      <div className="px-4 pb-4 flex flex-col gap-3">
-        {loading && !detail ? (
-          <div className="flex flex-col gap-2">
-            {[1, 2].map(i => <div key={i} className="bg-card rounded-xl h-12 animate-pulse" />)}
-          </div>
-        ) : orderedLeaderGroups.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-8">
-            <p className="text-center text-muted-foreground text-sm">Inga ledare inbjudna</p>
-            <button onClick={openAddLeaderSheet} className="flex items-center gap-1.5 text-sm text-primary font-medium">
-              <UserPlus className="w-4 h-4" /> Lägg till ledare
-            </button>
-          </div>
-        ) : (
-          <>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ledare</span>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  const leaderKeys = orderedLeaderGroups.map(k => 'leader-' + k)
-                  const allCollapsed = leaderKeys.every(k => collapsedGroups.has(k))
-                  setCollapsedGroups(prev => {
-                    const next = new Set(prev)
-                    if (allCollapsed) leaderKeys.forEach(k => next.delete(k))
-                    else leaderKeys.forEach(k => next.add(k))
-                    return next
-                  })
-                }}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ChevronsUpDown className="w-3.5 h-3.5" />
-                {orderedLeaderGroups.map(k => 'leader-' + k).every(k => collapsedGroups.has(k)) ? 'Expandera' : 'Komprimera'}
-              </button>
-              <button onClick={openAddLeaderSheet} className="flex items-center gap-1 text-xs text-primary font-medium">
-                <UserPlus className="w-3.5 h-3.5" /> Lägg till
-              </button>
-            </div>
-          </div>
-          {orderedLeaderGroups.map(statusKey => {
-            const group = leaderGrouped[statusKey] ?? []
-            const cfg = STATUS_CONFIG[statusKey]
-            const Icon = cfg?.icon ?? UserCheck
-            const hex = cfg?.hex ?? '#888888'
-            const label = cfg?.label ?? statusKey
-            const groupIds = group.map(l => l.leader_id)
-            const allGroupSel = groupIds.length > 0 && groupIds.every(i => selectedLeaders.has(i))
-            const someGroupSel = groupIds.some(i => selectedLeaders.has(i))
-            const isCollapsed = collapsedGroups.has('leader-' + statusKey)
-            return (
-              <div key={statusKey}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Checkbox
-                    checked={allGroupSel ? true : someGroupSel ? 'indeterminate' : false}
-                    onCheckedChange={() => toggleLeaderGroup(groupIds)}
-                    className="w-4 h-4"
-                  />
-                  <button
-                    onClick={() => toggleCollapsed('leader-' + statusKey)}
-                    className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider flex-1 text-left"
-                    style={{ color: hex }}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {label} ({group.length})
-                    <ChevronDown className={`w-3.5 h-3.5 ml-auto transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
-                  </button>
-                </div>
-                {!isCollapsed && (
-                  <div className="bg-card border border-border rounded-xl divide-y divide-border">
-                    {group.map(l => (
-                      <div
-                        key={l.leader_id}
-                        className={`w-full flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 ${
-                          selectedLeaders.has(l.leader_id) ? 'bg-primary/10' : ''
-                        }`}
-                        style={{ backgroundColor: rowBgColor(statusKey, l.reason, l.reasontime) }}
-                      >
-                        <Checkbox
-                          checked={selectedLeaders.has(l.leader_id)}
-                          onCheckedChange={() => toggleLeader(l.leader_id)}
-                          className="flex-shrink-0"
-                        />
-                        <button
-                          onClick={() => toggleLeader(l.leader_id)}
-                          className="flex flex-col min-w-0 flex-1 text-left"
-                        >
-                          <span className="text-sm font-medium text-foreground truncate">{l.shortname}</span>
-                          {(l.reasontime || l.reason) && (
-                            <span className="text-xs text-muted-foreground truncate">
-                              {[l.reasontime, l.reason].filter(Boolean).join(' – ')}
-                            </span>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => openLeaderReasonDialog(l)}
-                          className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
-                          aria-label={`Ange anledning för ${l.shortname}`}
-                          title="Ange anledning"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-          </>
-        )}
-      </div>
-
-      {/* Leader action bar */}
-      {selectedLeaders.size > 0 && (
-        <div className="fixed bottom-16 left-0 right-0 z-50 max-w-[430px] mx-auto px-4 pb-3 pt-2">
-          <div className="bg-card border border-border rounded-xl shadow-lg p-3 flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground shrink-0">
-              {selectedLeaders.size}{selectedLeaders.size !== 1 ? '' : ''}
-            </span>
-            <div className="flex-1 min-w-0 flex items-center gap-1.5 justify-center">
-              {STATUS_ORDER.map(value => {
-                const cfg = STATUS_CONFIG[value]
-                if (!cfg) return null
-                const Icon = cfg.icon
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => applyLeaderStatus(value)}
-                    disabled={updatingLeader}
-                    aria-label={cfg.label}
-                    title={cfg.label}
-                    className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all opacity-90 hover:opacity-100 hover:scale-105 disabled:opacity-50"
-                    style={{ backgroundColor: cfg.hex }}
-                  >
-                    <Icon className="w-4 h-4 text-white" />
-                  </button>
-                )
-              })}
-            </div>
-            <button
-              onClick={handleRemoveLeadersSelected}
-              disabled={removingLeader}
-              className="shrink-0 text-destructive hover:text-destructive/80 transition-colors disabled:opacity-50"
-              aria-label="Ta bort valda ledare"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={clearLeaderSelection}
+              onClick={() => { clearSelection(); clearLeaderSelection() }}
               className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Avmarkera alla"
             >
