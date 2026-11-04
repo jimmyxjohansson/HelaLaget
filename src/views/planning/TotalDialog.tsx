@@ -5,7 +5,7 @@ import { ArrowLeft, ImageIcon, Loader2, Plus } from 'lucide-react'
 import { useAddPlanningPlayers, useGetPlanningCandidates } from '../../hooks/backend/planning'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
 import { CandidateList } from './SlotColumn'
-import { answerHex, PERIODS, type Kind } from './shared'
+import { answerHex, type Kind } from './shared'
 import { ShareImageBar } from './OverviewDialog'
 import { drawTotal } from './totalImage'
 import { currentSquad } from '../../lib/squad-store'
@@ -20,7 +20,6 @@ export default function TotalDialog({
   playerStatuses,
   genders,
   mixed,
-  months,
   onClose,
   onChanged,
 }: {
@@ -31,8 +30,6 @@ export default function TotalDialog({
   playerStatuses: string[]
   genders: string[]
   mixed: boolean
-  /** Närvaroperioden, för texten i bilden */
-  months: number
   onClose: () => void
   onChanged: () => void
 }) {
@@ -85,16 +82,14 @@ export default function TotalDialog({
     const canvas = canvasRef.current ?? document.createElement('canvas')
     canvasRef.current = canvas
     drawTotal(canvas, rows, {
-      heading,
-      events: slots.map((s) => `${s.index + 1}. ${s.title}`),
-      periodLabel: PERIODS.find((p) => p.months === months)?.label ?? '',
+      heading: `Kvar att kalla (${rows.length})`,
       primary: squad?.primaryColor || '#24282E',
       accent: squad?.accentColor || '#FFFFFF',
       mixed,
     })
     setPreview(canvas.toDataURL('image/png'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [asImage, rowsKey, candidates.data, months, mixed])
+  }, [asImage, rowsKey, candidates.data, mixed])
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>

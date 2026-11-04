@@ -17,7 +17,7 @@ export type TotalRow = {
 
 const W = 380
 const PAD = 12
-const HEAD_H = 62
+const HEAD_H = 34
 const LINE_H = 18
 
 /** Spelarna i bilden: rank först, sedan namn. */
@@ -33,7 +33,7 @@ export function totalRows(rows: TotalRow[]) {
 export function drawTotal(
   canvas: HTMLCanvasElement,
   rows: TotalRow[],
-  opts: { heading: string; events: string[]; periodLabel: string; primary: string; accent: string; mixed: boolean },
+  opts: { heading: string; primary: string; accent: string; mixed: boolean },
 ) {
   const list = totalRows(rows)
   const scale = 2
@@ -62,11 +62,8 @@ export function drawTotal(
   ctx.roundRect(x, PAD, w, HEAD_H, [8, 8, 0, 0])
   ctx.fill()
   ctx.fillStyle = opts.accent
-  ctx.font = `700 13px ${FONT}`
-  ctx.fillText(fit(ctx, opts.heading, w - 18), x + 9, PAD + 15)
-  ctx.font = `400 10px ${FONT}`
-  ctx.fillText(fit(ctx, opts.events.length ? opts.events.join(' · ') : '', w - 18), x + 9, PAD + 32)
-  ctx.fillText(fit(ctx, `Närvaro på träning: ${opts.periodLabel}`, w - 18), x + 9, PAD + 47)
+  ctx.font = `700 14px ${FONT}`
+  ctx.fillText(fit(ctx, opts.heading, w - 18), x + 9, PAD + HEAD_H / 2)
 
   const rankX = x + w - 150
   const lastRight = x + w - 88

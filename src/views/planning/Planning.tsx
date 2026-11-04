@@ -247,7 +247,7 @@ export default function Planning() {
       <SummaryDialog kind={kind} eventIds={filled.map((s) => s.id)} open={summaryOpen} onClose={() => setSummaryOpen(false)} />
       <OverviewDialog kind={kind} eventIds={filled.map((s) => s.id)} open={overviewOpen} from={from} months={months}
         onClose={() => setOverviewOpen(false)} />
-      <TotalDialog kind={kind} slots={filled} open={totalOpen} from={from} playerStatuses={playerStatuses} genders={genderFilter} mixed={mixed} months={months}
+      <TotalDialog kind={kind} slots={filled} open={totalOpen} from={from} playerStatuses={playerStatuses} genders={genderFilter} mixed={mixed}
         onClose={() => setTotalOpen(false)} onChanged={() => setRefreshKey((k) => k + 1)} />
     </div>
   )
