@@ -2,7 +2,7 @@
 
 import {
   BarChart3, Bell, BookOpen, Building2, CalendarDays, CalendarRange, ExternalLink, FileText, Home, ListOrdered,
-  Medal, RefreshCw, Repeat, Shield, Trophy, UserCog, Users,
+  LayoutTemplate, Medal, RefreshCw, Repeat, Shield, Trophy, UserCog, Users,
 } from 'lucide-react'
 import { getMe } from '../lib/squad-store'
 import { isActivePath } from '../lib/navigation'
@@ -34,7 +34,10 @@ export function navGroups(): NavGroup[] {
     { to: '/statistik', icon: BarChart3, label: 'Statistik' },
   )
   // Övningsbanken är för ledare; Spelare och Anhörig ser övningarna i träningsplanen
-  if (role !== 'viewer') laget.push({ to: '/ovningar', icon: BookOpen, label: 'Övningsbank' })
+  if (role !== 'viewer') {
+    laget.push({ to: '/ovningar', icon: BookOpen, label: 'Övningsbank' })
+    if (leader) laget.push({ to: '/ovningar/mallar', icon: LayoutTemplate, label: 'Träningsplansmallar' })
+  }
 
   const tavling: NavItem[] = [
     { to: '/serier', icon: ListOrdered, label: 'Serier' },

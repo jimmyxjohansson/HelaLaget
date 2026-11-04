@@ -38,15 +38,15 @@ type DrillInfo = {
   levels: Record<string, { text?: string | null; diagram?: unknown | null } | undefined> | null
 }
 
-type Item = { key: string; groupName: string | null; drillId: number | null; title: string; level: string | null; notes: string; drill: DrillInfo | null }
-type Block = { key: string; name: string; minutes: string; notes: string; items: Item[] }
+export type Item = { key: string; groupName: string | null; drillId: number | null; title: string; level: string | null; notes: string; drill: DrillInfo | null }
+export type Block = { key: string; name: string; minutes: string; notes: string; items: Item[] }
 
-const GROUP_OPTIONS = [...TRAINING_GROUPS, 'Station 1', 'Station 2', 'Station 3', 'Station 4']
+export const GROUP_OPTIONS = [...TRAINING_GROUPS, 'Station 1', 'Station 2', 'Station 3', 'Station 4']
 
 let keyCounter = 0
-const k = () => `k${++keyCounter}`
+export const k = () => `k${++keyCounter}`
 
-function toInfo(d: DrillListItem): DrillInfo {
+export function toInfo(d: DrillListItem): DrillInfo {
   return {
     id: d.id, name: d.name, summary: d.summary, coaching: d.coaching, description: d.description,
     durationMinutes: d.durationMinutes, area: d.area, equipment: d.equipment, intensity: d.intensity,
@@ -64,9 +64,34 @@ function dateTitle(iso: string) {
   return new Date(iso).toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
 }
 
-const blockMinutes = (b: Block) => {
+export const blockMinutes = (b: Block) => {
   const n = Number(b.minutes)
   return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+/** Mallens block (som de sparas) till redigerbara block, med övningarna från banken. */
+export function blocksFromTemplate(tblocks: TemplateBlocks, drills: DrillListItem[] | null | undefined): Block[] {
+  const byId = new Map((drills ?? []).map((d) => [d.id, d]))
+  return tblocks.map((b) => ({
+    key: k(), name: b.name, minutes: b.minutes != null ? String(b.minutes) : '', notes: b.notes ?? '',
+    items: b.items.map((i) => {
+      const d = i.drillId ? byId.get(i.drillId) : undefined
+      return {
+        key: k(), groupName: i.groupName ?? null, drillId: d ? d.id : null, title: i.title ?? '', level: i.level ?? null, notes: i.notes ?? '',
+        drill: d ? toInfo(d) : null,
+      }
+    }),
+  }))
+}
+
+/** Redigerbara block till det som skickas till servern. */
+export function blocksPayload(blocks: Block[]) {
+  return blocks.map((b) => ({
+    name: b.name.trim() || 'Block',
+    minutes: b.minutes ? Number(b.minutes) : null,
+    notes: b.notes,
+    items: b.items.map((i) => ({ groupName: i.groupName, drillId: i.drillId, title: i.title, level: i.level, notes: i.notes })),
+  }))
 }
 
 /** Träningsplan för ett pass: block i tidsordning med övningar per grupp. */
@@ -170,14 +195,7 @@ export default function TrainingPlan() {
     setPicker(null)
   }
 
-  function payload() {
-    return blocks.map((b) => ({
-      name: b.name.trim() || 'Block',
-      minutes: b.minutes ? Number(b.minutes) : null,
-      notes: b.notes,
-      items: b.items.map((i) => ({ groupName: i.groupName, drillId: i.drillId, title: i.title, level: i.level, notes: i.notes })),
-    }))
-  }
+  const payload = () => blocksPayload(blocks)
 
   async function save() {
     setError(null)
@@ -206,17 +224,7 @@ export default function TrainingPlan() {
   }
 
   function applyTemplate(tblocks: TemplateBlocks) {
-    const byId = new Map((drills.data ?? []).map((d) => [d.id, d]))
-    change(() => tblocks.map((b) => ({
-      key: k(), name: b.name, minutes: b.minutes != null ? String(b.minutes) : '', notes: b.notes ?? '',
-      items: b.items.map((i) => {
-        const d = i.drillId ? byId.get(i.drillId) : undefined
-        return {
-          key: k(), groupName: i.groupName ?? null, drillId: d ? d.id : null, title: i.title ?? '', level: i.level ?? null, notes: i.notes ?? '',
-          drill: d ? toInfo(d) : null,
-        }
-      }),
-    })))
+    change(() => blocksFromTemplate(tblocks, drills.data))
     setEditing(true)
     setTemplatesOpen(false)
   }
@@ -338,7 +346,7 @@ export default function TrainingPlan() {
 
 /* ───────────── Redigering ───────────── */
 
-function BlockEditor({ b, start, first, last, groups, groupCount, onChange, onItem, onRemoveItem, onAddItem, onPick, onInfo, onMove, onRemove }: {
+export function BlockEditor({ b, start, first, last, groups, groupCount, onChange, onItem, onRemoveItem, onAddItem, onPick, onInfo, onMove, onRemove }: {
   b: Block
   start: string | null
   first: boolean
@@ -531,7 +539,7 @@ function ItemView({ i, groupCount, wide, onInfo }: { i: Item; groupCount: (g: st
 
 /* ───────────── Mallar ───────────── */
 
-type TemplateBlocks = { name: string; minutes?: number | null; notes?: string | null; items: { groupName?: string | null; drillId?: number | null; title?: string | null; level?: string | null; notes?: string | null }[] }[]
+export type TemplateBlocks = { name: string; minutes?: number | null; notes?: string | null; items: { groupName?: string | null; drillId?: number | null; title?: string | null; level?: string | null; notes?: string | null }[] }[]
 
 function TemplatesDialog({ open, onClose, current, onApply }: {
   open: boolean
@@ -569,6 +577,7 @@ function TemplatesDialog({ open, onClose, current, onApply }: {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Mallar</DialogTitle></DialogHeader>
+        <Link href="/ovningar/mallar" className="-mt-2 text-sm text-primary underline-offset-4 hover:underline">Redigera mallarna under Träningsplansmallar</Link>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <p className="text-sm text-muted-foreground">Använd en sparad plan som utgångspunkt. Den ersätter planen som du redigerar (inget sparas förrän du trycker Spara).</p>

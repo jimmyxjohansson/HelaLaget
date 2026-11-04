@@ -94,6 +94,7 @@ import plans_getTrainingPlan from './functions/plans/getTrainingPlan'
 import plans_notifyTrainingPlan from './functions/plans/notifyTrainingPlan'
 import plans_savePlanTemplate from './functions/plans/savePlanTemplate'
 import plans_saveTrainingPlan from './functions/plans/saveTrainingPlan'
+import plans_updatePlanTemplate from './functions/plans/updatePlanTemplate'
 import players_addPlayersToSquad from './functions/players/addPlayersToSquad'
 import players_createPlayer from './functions/players/createPlayer'
 import players_getOrganizationPlayers from './functions/players/getOrganizationPlayers'
@@ -243,6 +244,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'plans/notifyTrainingPlan': { handler: plans_notifyTrainingPlan, access: 'leader' },
   'plans/savePlanTemplate': { handler: plans_savePlanTemplate, access: 'leader' },
   'plans/saveTrainingPlan': { handler: plans_saveTrainingPlan, access: 'leader' },
+  'plans/updatePlanTemplate': { handler: plans_updatePlanTemplate, access: 'leader' },
   'players/addPlayersToSquad': { handler: players_addPlayersToSquad, access: 'leader' },
   'players/createPlayer': { handler: players_createPlayer, access: 'leader' },
   'players/getOrganizationPlayers': { handler: players_getOrganizationPlayers, access: 'leader' },
