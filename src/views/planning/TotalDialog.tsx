@@ -1,11 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Loader2, Plus } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ImageIcon, Loader2, Plus } from 'lucide-react'
 import { useAddPlanningPlayers, useGetPlanningCandidates } from '../../hooks/backend/planning'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
 import { CandidateList } from './SlotColumn'
-import { answerHex, type Kind } from './shared'
+import { answerHex, PERIODS, type Kind } from './shared'
+import { ShareImageBar } from './OverviewDialog'
+import { drawTotal } from './totalImage'
+import { currentSquad } from '../../lib/squad-store'
 import { byGender, genderSummary } from '../../utils/gender'
 
 /** Spelare som inte är kallade till någon av kolumnernas matcher/cuper. */
@@ -17,6 +20,7 @@ export default function TotalDialog({
   playerStatuses,
   genders,
   mixed,
+  months,
   onClose,
   onChanged,
 }: {
@@ -27,6 +31,8 @@ export default function TotalDialog({
   playerStatuses: string[]
   genders: string[]
   mixed: boolean
+  /** Närvaroperioden, för texten i bilden */
+  months: number
   onClose: () => void
   onChanged: () => void
 }) {
@@ -34,6 +40,9 @@ export default function TotalDialog({
   const add = useAddPlanningPlayers()
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const [asImage, setAsImage] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const ids = slots.map((s) => s.id)
   const key = `${ids.join(',')}|${from}|${playerStatuses.join(',')}`
 
@@ -45,6 +54,7 @@ export default function TotalDialog({
     if (!open) return
     setSelected(new Set())
     setError(null)
+    setAsImage(false)
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, key, kind])
@@ -62,13 +72,61 @@ export default function TotalDialog({
   }
 
   const rows = byGender(candidates.data ?? [], genders)
+  const noun = kind === 'match' ? 'match' : 'cup'
+  const squad = currentSquad()
+  const heading = `Ej kallade till någon ${noun} (${rows.length}${mixed && genderSummary(rows) ? ` · ${genderSummary(rows)}` : ''})`
+  const imageTitle = `${squad ? `${squad.organizationName} ${squad.squadName}` : 'Hela Laget'} · Ej kallade`
+  const fileName = `ej-kallade-${new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}.png`
+  const rowsKey = rows.map((r) => r.id).join(',')
+
+  // Bilden ritas om när listan ändras medan bildläget är öppet
+  useEffect(() => {
+    if (!asImage || !candidates.data) return
+    const canvas = canvasRef.current ?? document.createElement('canvas')
+    canvasRef.current = canvas
+    drawTotal(canvas, rows, {
+      heading,
+      events: slots.map((s) => `${s.index + 1}. ${s.title}`),
+      periodLabel: PERIODS.find((p) => p.months === months)?.label ?? '',
+      primary: squad?.primaryColor || '#24282E',
+      accent: squad?.accentColor || '#FFFFFF',
+      mixed,
+    })
+    setPreview(canvas.toDataURL('image/png'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asImage, rowsKey, candidates.data, months, mixed])
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[85vh] w-[calc(100vw-1rem)] max-w-[520px] overflow-y-auto px-4">
         <DialogHeader>
-          <DialogTitle>Ej kallade till någon {kind === 'match' ? 'match' : 'cup'} ({rows.length}{mixed && genderSummary(rows) ? ` · ${genderSummary(rows)}` : ''})</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 pr-6">
+            {asImage && (
+              <button type="button" onClick={() => setAsImage(false)} aria-label="Tillbaka till listan" title="Tillbaka till listan"
+                className="-ml-1 rounded-md p-1 hover:bg-muted">
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )}
+            <span className="min-w-0 flex-1">{asImage ? 'Bild att skicka' : heading}</span>
+            {!asImage && slots.length > 0 && (
+              <button type="button" onClick={() => { setPreview(null); setAsImage(true) }} disabled={!candidates.data}
+                className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-normal hover:bg-muted disabled:opacity-50">
+                <ImageIcon className="h-3.5 w-3.5" /> Bild
+              </button>
+            )}
+          </DialogTitle>
         </DialogHeader>
+        {asImage ? (
+          <>
+            <ShareImageBar canvas={canvasRef} ready={!!preview} fileName={fileName} title={imageTitle} />
+            {!preview ? (
+              <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview} alt="Spelare som inte är kallade" className="mx-auto w-full max-w-[380px] rounded-lg border border-border" />
+            )}
+          </>
+        ) : (<>
         <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1.5 bg-background pb-2">
           {slots.length === 0 ? (
             <p className="text-xs text-muted-foreground">Välj {kind === 'match' ? 'matcher' : 'cuper'} i kolumnerna först.</p>
@@ -94,6 +152,7 @@ export default function TotalDialog({
           <CandidateList rows={rows} selected={selected} mixed={mixed}
             onToggle={(id) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })} />
         )}
+        </>)}
       </DialogContent>
     </Dialog>
   )

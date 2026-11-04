@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { Check, Copy, Download, Loader2, Share2 } from 'lucide-react'
 import { callBackend } from '../../hooks/backend/_core'
 import { currentSquad } from '../../lib/squad-store'
@@ -16,9 +16,9 @@ const GAP = 10
 const PAD = 12
 const HEAD_H = 56
 const LINE_H = 17
-const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+export const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
 
-function fit(ctx: CanvasRenderingContext2D, text: string, max: number) {
+export function fit(ctx: CanvasRenderingContext2D, text: string, max: number) {
   if (ctx.measureText(text).width <= max) return text
   let t = text
   while (t.length > 1 && ctx.measureText(`${t}…`).width > max) t = t.slice(0, -1)
@@ -262,7 +262,6 @@ export default function OverviewDialog({
   const [showDeclined, setShowDeclined] = useState(false)
   const [showShirts, setShowShirts] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<string | null>(null)
   const key = eventIds.join(',')
   const squad = currentSquad()
   const title = `${squad ? `${squad.organizationName} ${squad.squadName}` : 'Hela Laget'} · ${kind === 'match' ? 'Matcher' : 'Cuper'}`
@@ -272,7 +271,6 @@ export default function OverviewDialog({
     setSlots(null)
     setPreview(null)
     setError(null)
-    setDone(null)
     Promise.all(eventIds.map((id) => callBackend<Slot>('planning/getPlanningSlot', { kind, id, from })))
       .then(async (loaded) => {
         setLogos(kind === 'match' ? await Promise.all(loaded.map((s) => loadImage(s.event.imgurl))) : [])
@@ -299,12 +297,55 @@ export default function OverviewDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slots, showDeclined, showShirts])
 
-  const blob = () =>
-    new Promise<Blob>((resolve, reject) =>
-      canvasRef.current!.toBlob((b) => (b ? resolve(b) : reject(new Error('Kunde inte skapa bilden.'))), 'image/png'),
-    )
-
   const fileName = `kallelser-${new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}.png`
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] w-[calc(100vw-1rem)] max-w-[1100px] overflow-y-auto px-4">
+        <DialogHeader>
+          <DialogTitle>Översikt att skicka</DialogTitle>
+        </DialogHeader>
+        <ShareImageBar canvas={canvasRef} ready={!!preview} fileName={fileName} title={title}>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" checked={showDeclined} onChange={(e) => setShowDeclined(e.target.checked)} />
+            Visa nekat / ej svarat
+          </label>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" checked={showShirts} onChange={(e) => setShowShirts(e.target.checked)} />
+            Visa tröjstorlekar
+          </label>
+        </ShareImageBar>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        {eventIds.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Välj {kind === 'match' ? 'matcher' : 'cuper'} i kolumnerna först.</p>
+        ) : !preview ? (
+          <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt="Översikt över kallelserna" className="w-full rounded-lg border border-border" />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** Knapparna Kopiera bild, Dela och Ladda ner för en bild ritad på en canvas. */
+export function ShareImageBar({ canvas, ready, fileName, title, children }: {
+  canvas: RefObject<HTMLCanvasElement | null>
+  ready: boolean
+  fileName: string
+  title: string
+  /** Val som visas till höger, t.ex. kryssrutor */
+  children?: ReactNode
+}) {
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState<string | null>(null)
+
+  const blob = () =>
+    new Promise<Blob>((resolve, reject) => {
+      if (!canvas.current) return reject(new Error('Bilden är inte klar.'))
+      canvas.current.toBlob((b) => (b ? resolve(b) : reject(new Error('Kunde inte skapa bilden.'))), 'image/png')
+    })
 
   async function copy() {
     setError(null)
@@ -342,50 +383,28 @@ export default function OverviewDialog({
     navigator.canShare({ files: [new File([], 'x.png', { type: 'image/png' })] })
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] w-[calc(100vw-1rem)] max-w-[1100px] overflow-y-auto px-4">
-        <DialogHeader>
-          <DialogTitle>Översikt att skicka</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-wrap items-center gap-2">
-          {canCopy && (
-            <button type="button" onClick={copy} disabled={!preview}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
-              {done ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} Kopiera bild
-            </button>
-          )}
-          {canShare && (
-            <button type="button" onClick={share} disabled={!preview}
-              className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50">
-              <Share2 className="h-4 w-4" /> Dela
-            </button>
-          )}
-          <button type="button" onClick={download} disabled={!preview}
-            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50">
-            <Download className="h-4 w-4" /> Ladda ner
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        {canCopy && (
+          <button type="button" onClick={copy} disabled={!ready}
+            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
+            {done ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} Kopiera bild
           </button>
-          <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-1">
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <input type="checkbox" checked={showDeclined} onChange={(e) => setShowDeclined(e.target.checked)} />
-              Visa nekat / ej svarat
-            </label>
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <input type="checkbox" checked={showShirts} onChange={(e) => setShowShirts(e.target.checked)} />
-              Visa tröjstorlekar
-            </label>
-          </div>
-        </div>
-        {done && <p className="text-sm text-muted-foreground">{done}</p>}
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        {eventIds.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Välj {kind === 'match' ? 'matcher' : 'cuper'} i kolumnerna först.</p>
-        ) : !preview ? (
-          <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="Översikt över kallelserna" className="w-full rounded-lg border border-border" />
         )}
-      </DialogContent>
-    </Dialog>
+        {canShare && (
+          <button type="button" onClick={share} disabled={!ready}
+            className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50">
+            <Share2 className="h-4 w-4" /> Dela
+          </button>
+        )}
+        <button type="button" onClick={download} disabled={!ready}
+          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50">
+          <Download className="h-4 w-4" /> Ladda ner
+        </button>
+        {children && <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-1">{children}</div>}
+      </div>
+      {done && <p className="text-sm text-muted-foreground">{done}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
+    </>
   )
 }
