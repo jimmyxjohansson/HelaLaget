@@ -175,7 +175,7 @@ function wavyPath(from: Pt, to: Pt, u: number, bend = 0) {
 }
 
 /** Målvakt: en målvaktshandske. */
-function KeeperIcon({ x, y, r, u }: { x: number; y: number; r: number; u: number }) {
+export function KeeperIcon({ x, y, r, u }: { x: number; y: number; r: number; u: number }) {
   const sw = (u * 0.12) / r
   return (
     <g transform={`translate(${x} ${y}) scale(${r})`}>
@@ -194,7 +194,7 @@ function KeeperIcon({ x, y, r, u }: { x: number; y: number; r: number; u: number
 }
 
 /** Ledare: en person i mörk cirkel. */
-function LeaderIcon({ x, y, r, u }: { x: number; y: number; r: number; u: number }) {
+export function LeaderIcon({ x, y, r, u }: { x: number; y: number; r: number; u: number }) {
   const sw = (u * 0.12) / r
   return (
     <g transform={`translate(${x} ${y}) scale(${r})`}>

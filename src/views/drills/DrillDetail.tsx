@@ -6,11 +6,11 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { ArrowLeft, Copy, ExternalLink, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useDeleteDrill, useGetDrill, useSaveDrill } from '../../hooks/backend/drills'
-import DrillDiagram from '../../components/drills/DrillDiagram'
+import DrillDiagram, { KeeperIcon, LeaderIcon } from '../../components/drills/DrillDiagram'
 import { canEdit } from '../../lib/squad-store'
 import { cn } from '../../lib/shadcn/utils'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../../lib/shadcn/dropdown-menu'
-import { LEVELS, isDiagram, type Diagram } from '../../utils/diagram'
+import { ARROW_NAME, LEVELS, TEAM_HEX, isDiagram, type ArrowStyle, type Diagram, type Team } from '../../utils/diagram'
 import { LEVEL_COLOR } from '../../utils/drills'
 import { CategoryChip, DrillFacts, FormatChip } from './shared'
 
@@ -45,7 +45,7 @@ export function DrillContent({ drill, level, onLevel, compact }: { drill: DrillD
             <p className="whitespace-pre-wrap">{lv.text}</p>
           </div>
         )}
-        {!compact && <Legend />}
+        {!compact && diagram && <Legend diagram={diagram} />}
       </div>
 
       <div className="flex flex-col gap-4">
@@ -108,22 +108,37 @@ function LevelTab({ on, onClick, children, color }: { on: boolean; onClick: () =
   )
 }
 
-/** Förklaring av symbolerna. */
-function Legend() {
-  const item = (svg: React.ReactNode, label: string) => (
-    <span className="flex items-center gap-1.5">{svg}<span>{label}</span></span>
+/** Förklaring av symbolerna som finns i ritningen. */
+function Legend({ diagram }: { diagram: Diagram }) {
+  const item = (key: string, svg: React.ReactNode, label: string) => (
+    <span key={key} className="flex items-center gap-1.5">{svg}<span>{label}</span></span>
   )
-  return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-      {item(<svg width="20" height="8"><path d="M1,4 L15,4" stroke="currentColor" strokeWidth="1.6" /><path d="M13,1 L18,4 L13,7" fill="currentColor" /></svg>, 'Passning')}
-      {item(<svg width="20" height="8"><path d="M1,4 L15,4" stroke="currentColor" strokeWidth="1.6" strokeDasharray="3 2" /><path d="M13,1 L18,4 L13,7" fill="currentColor" /></svg>, 'Löpning')}
-      {item(<svg width="20" height="8"><path d="M1,4 Q3,1 5,4 T9,4 T13,4 L15,4" stroke="currentColor" strokeWidth="1.4" fill="none" /><path d="M13,1 L18,4 L13,7" fill="currentColor" /></svg>, 'Dribbling')}
-      {item(<svg width="20" height="8"><path d="M1,4 L15,4" stroke="#ca8a04" strokeWidth="2.4" /><path d="M13,1 L18,4 L13,7" fill="#ca8a04" /></svg>, 'Skott')}
-      {item(<svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#dc2626" /></svg>, 'Lag röd')}
-      {item(<svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#2563eb" /></svg>, 'Lag blå')}
-      {item(<svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#facc15" /></svg>, 'Joker/tränare')}
-    </div>
+  const head = (c: string) => <path d="M13,1 L18,4 L13,7" fill={c} />
+  const arrows: Record<ArrowStyle, React.ReactNode> = {
+    pass: <svg width="20" height="8"><path d="M1,4 L15,4" stroke="currentColor" strokeWidth="1.6" />{head('currentColor')}</svg>,
+    run: <svg width="20" height="8"><path d="M1,4 L15,4" stroke="currentColor" strokeWidth="1.6" strokeDasharray="3 2" />{head('currentColor')}</svg>,
+    dribble: <svg width="20" height="8"><path d="M1,4 Q3,1 5,4 T9,4 T13,4 L15,4" stroke="currentColor" strokeWidth="1.4" fill="none" />{head('currentColor')}</svg>,
+    shot: <svg width="20" height="8"><path d="M1,4 L15,4" stroke="#ca8a04" strokeWidth="2.4" />{head('#ca8a04')}</svg>,
+    line: <svg width="20" height="8"><path d="M1,4 L19,4" stroke="currentColor" strokeWidth="1.6" /></svg>,
+  }
+  const shapes = diagram.shapes ?? []
+  const styles = new Set(shapes.flatMap((s) => (s.kind === 'arrow' ? [s.style] : [])))
+  // Gamla gula prickar (N) visas som Gul
+  const teams = new Set<Team>(shapes.flatMap((s): Team[] => (s.kind === 'player' ? [s.team === 'N' ? 'Y' : s.team] : [])))
+  const dot = (c: string) => <svg width="10" height="10"><circle cx="5" cy="5" r="4.5" fill={c} /></svg>
+  const icon = (team: 'GK' | 'L') => (
+    <svg width="12" height="12" viewBox="-6 -6 12 12">
+      {team === 'GK' ? <KeeperIcon x={0} y={0} r={5.5} u={2} /> : <LeaderIcon x={0} y={0} r={5.5} u={2} />}
+    </svg>
   )
+
+  const items = [
+    ...(['pass', 'run', 'dribble', 'shot', 'line'] as ArrowStyle[]).filter((a) => styles.has(a)).map((a) => item(a, arrows[a], ARROW_NAME[a])),
+    ...(['A', 'B', 'Y', 'O', 'P'] as Team[]).filter((t) => teams.has(t)).map((t) => item(t, dot(TEAM_HEX[t].fill), `Lag ${TEAM_HEX[t].name.toLowerCase()}`)),
+    ...(['GK', 'L'] as const).filter((t) => teams.has(t)).map((t) => item(t, icon(t), TEAM_HEX[t].name)),
+  ]
+  if (items.length === 0) return null
+  return <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">{items}</div>
 }
 
 export default function DrillDetail() {
