@@ -95,7 +95,8 @@ export type SortDir = 'asc' | 'desc'
 export type SortState<K extends string> = { key: K; dir: SortDir } | null
 
 const RANK_ORDER: Record<string, number> = { A: 0, AB: 1, B: 2, BC: 3, C: 4, CD: 5, D: 6, X: 7 }
-const ANSWER_ORDER: Record<string, number> = { Kommer: 0, Inbjuden: 1, Förslag: 2, Reserv: 3, 'Ej svarat': 4, Nekat: 5 }
+/** Ordningen för svar i planeringen. Nekat och Ej svarat räknas som samma grupp. */
+const ANSWER_ORDER: Record<string, number> = { Förslag: 0, Inbjuden: 1, Kommer: 2, Nekat: 3, 'Ej svarat': 3, Reserv: 4 }
 
 export const rankIndex = (r: string | null | undefined) => (r ? RANK_ORDER[r.toUpperCase()] ?? 98 : 99)
 export const answerIndex = (s: string | null | undefined) => (s ? ANSWER_ORDER[s] ?? 98 : 99)

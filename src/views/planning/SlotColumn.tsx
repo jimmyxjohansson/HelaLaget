@@ -152,10 +152,11 @@ export default function SlotColumn(props: Props) {
 
   const data = eventId && slot.data?.event.id === eventId ? slot.data : null
   const ev = data?.event
-  const players = sortRows(data?.players ?? [], playerSort, (p, k) =>
+  // Utan vald sortering: svar (Förslag, Inbjuden, Kommer, Nekat/Ej svarat, Reserv) och sedan rank
+  const players = sortRows(data?.players ?? [], playerSort ?? { key: 'status', dir: 'asc' }, (p, k) =>
     k === 'name' ? p.shortname
       : k === 'rank' ? rankIndex(p.rank)
-        : k === 'status' ? answerIndex(p.status)
+        : k === 'status' ? answerIndex(p.status) * 1000 + rankIndex(p.rank)
           : percent(p.coming, p.total))
   const cands = eventId ? byGender(candidates.data ?? [], genders) : []
 
