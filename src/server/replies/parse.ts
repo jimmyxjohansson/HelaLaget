@@ -81,6 +81,8 @@ export function parseRow(list: ListKey, segments: string[], today: Date): Parsed
     if (s === '|') continue
     // Telefonnummer (finns dolda för utskrift på Svenskalag) ska aldrig följa med
     if (/^[\d\s+()\-,]{6,}$/.test(s)) continue
+    // Tröjnummer (matcher och cuper visar t.ex. "58." vid namnet) är ingen kommentar
+    if (/^#?\d{1,3}\.?$/.test(s)) continue
     if (ROLE.test(s)) { leaderRole = true; continue }
     if (IGNORE.has(s.toLowerCase())) continue
     const when = parseWhen(s, today)
