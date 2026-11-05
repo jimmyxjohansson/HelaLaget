@@ -30,6 +30,8 @@ export type Candidate = {
   lastmatch: number | null
   /** Serie- och träningsmatcher med svar Kommer under perioden */
   matches: number
+  /** Cuper med svar Kommer under perioden */
+  cups: number
 }
 
 /** Lagets spelare som inte är kallade till någon av de valda matcherna/cuperna. */
@@ -45,7 +47,8 @@ export default async function getPlanningCandidates(req: { params: Params; user:
             COALESCE(p.goalkeeper, false) AS "canGoalkeeper",
             COALESCE(a.coming, 0) AS coming, COALESCE(a.total, 0) AS total,
             ((now() AT TIME ZONE 'Europe/Stockholm')::date - lm.last::date) AS lastmatch,
-            COALESCE(lm.matches, 0)::int AS matches
+            COALESCE(lm.matches, 0)::int AS matches,
+            COALESCE(lc.cups, 0)::int AS cups
      FROM players p
      JOIN squad_players sp ON sp.player_id = p.id AND sp.squad_id = app.squad_id()
      ${attendanceLateral('$2')}
@@ -60,6 +63,14 @@ export default async function getPlanningCandidates(req: { params: Params; user:
        JOIN matches m ON m.id = pm.match
        WHERE pm.player = p.id AND pm.status::text = 'Kommer'
      ) lm ON true
+     LEFT JOIN LATERAL (
+       SELECT COUNT(*) AS cups
+       FROM participantscups pc
+       JOIN cups c ON c.id = pc.cup
+       WHERE pc.player = p.id AND pc.status::text = 'Kommer'
+         AND ($2::date IS NULL OR c.startdate >= ($2::date)::timestamp AT TIME ZONE 'UTC')
+         AND c.startdate < (((now() AT TIME ZONE 'Europe/Stockholm')::date + 1)::timestamp AT TIME ZONE 'UTC')
+     ) lc ON true
      WHERE (cardinality($3::text[]) = 0 OR p.status::text = ANY($3::text[]))
        AND NOT EXISTS (
          SELECT 1 FROM ${k.participants} x

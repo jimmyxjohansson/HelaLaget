@@ -238,6 +238,8 @@ export default function Planning() {
               canSync={canSync}
               syncAllKey={syncAllKey}
               enqueue={enqueue}
+              otherEventIds={filled.filter((f) => f.index !== i).map((f) => f.id)}
+              periodLabel={PERIODS.find((p) => p.months === months)?.label ?? ''}
             />
           )
         })}

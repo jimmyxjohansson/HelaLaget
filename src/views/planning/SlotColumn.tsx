@@ -5,7 +5,7 @@ import GenderBadge from '../../components/GenderBadge'
 import { byGender, genderSummary } from '../../utils/gender'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowLeft, ArrowRight, ClipboardList, CloudDownload, ExternalLink, Hand, Loader2, MessageSquare, Plus, Trash2, UserPlus, X,
+  ArrowLeft, ArrowRight, ClipboardList, CloudDownload, ExternalLink, Hand, Loader2, MessageSquare, Plus, Trash2, UserPlus, Wand2, X,
 } from 'lucide-react'
 import {
   useAddPlanningLeaders,
@@ -26,6 +26,7 @@ import { VisualCheckbox } from '../../components/VisualCheckbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../lib/shadcn/select'
 import { cn } from '../../lib/shadcn/utils'
 import { rankStyle } from '../../utils/rankColors'
+import SuggestDialog from './SuggestDialog'
 import type { PlanningEvent } from '../../server/functions/planning/getPlanningEvents'
 import {
   ANSWERS, answerHex, answerIndex, Counts, EVENT_STATUSES, formatCupDates, formatWhen, percent, percentClass,
@@ -64,6 +65,10 @@ type Props = {
   syncAllKey: number
   /** Kör synkningar en i taget, även när flera kolumner synkar samtidigt */
   enqueue: (job: () => Promise<void>) => Promise<void>
+  /** Matcher/cuper i de andra kolumnerna (för Föreslå spelare) */
+  otherEventIds: number[]
+  /** Närvaroperioden som text, t.ex. "2 mån" */
+  periodLabel: string
 }
 
 /** En kolumn i planeringen: välj match/cup, sätt svar, lägg till och flytta spelare. */
@@ -71,6 +76,7 @@ export default function SlotColumn(props: Props) {
   const { kind, index, eventId, from, playerStatuses, genders, mixed, refreshKey, onChanged } = props
   const slot = useGetPlanningSlot()
   const candidates = useGetPlanningCandidates()
+  const [suggestOpen, setSuggestOpen] = useState(false)
   const addPlayers = useAddPlanningPlayers()
   const addLeaders = useAddPlanningLeaders()
   const setStatus = useSetPlanningStatus()
@@ -549,6 +555,12 @@ export default function SlotColumn(props: Props) {
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ej kallade ({cands.length})</p>
+              {candIds.length === 0 && cands.length > 0 && (
+                <button type="button" onClick={() => setSuggestOpen(true)}
+                  className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium hover:bg-muted">
+                  <Wand2 className="h-3 w-3" /> Föreslå spelare
+                </button>
+              )}
               {candIds.length > 0 && (
                 <button type="button" disabled={busy}
                   onClick={() => run(() => addPlayers.trigger({ kind, id: ev.id, playerIds: candIds }))}
@@ -558,6 +570,21 @@ export default function SlotColumn(props: Props) {
                 </button>
               )}
             </div>
+            <SuggestDialog
+              open={suggestOpen}
+              kind={kind}
+              eventId={ev.id}
+              title={ev.title}
+              matchplayers={ev.matchplayers}
+              otherEventIds={props.otherEventIds}
+              from={from}
+              periodLabel={props.periodLabel}
+              playerStatuses={playerStatuses}
+              genders={genders}
+              mixed={mixed}
+              onClose={() => setSuggestOpen(false)}
+              onAdded={onChanged}
+            />
             <CandidateList
               rows={cands}
               mixed={mixed}
