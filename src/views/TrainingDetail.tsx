@@ -17,7 +17,7 @@ import { AttendanceStatsButton } from '../components/AttendanceStatsButton'
 import { VisualCheckbox } from '../components/VisualCheckbox'
 import TrainingForm from './ui/TrainingForm'
 import { canEdit } from '../lib/squad-store'
-import { useGetTrainingPlan } from '../hooks/backend/plans'
+import { useGetTrainingPlan, useGetTrainingPlanTemplate } from '../hooks/backend/plans'
 import DatePicker from '../components/DatePicker'
 import TimeInput from '../components/TimeInput'
 import { GROUP_DEFAULT_RANK, TRAINING_GROUPS, groupShort } from '../utils/trainingGroups'
@@ -114,8 +114,10 @@ export default function TrainingDetail() {
   const router = useRouter()
   const { data, loading, trigger } = useGetTrainingDetail()
   const plan = useGetTrainingPlan()
+  const planTemplate = useGetTrainingPlanTemplate()
   useEffect(() => {
     if (id) plan.trigger({ trainingId: Number(id) }).catch(() => {})
+    if (id) planTemplate.trigger({ trainingId: Number(id) }, { skipCache: true }).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
   const { trigger: triggerUpdate, loading: updating } = useUpdateAttendanceStatus()
@@ -655,7 +657,9 @@ export default function TrainingDetail() {
           >
             <ClipboardList className="h-5 w-5 shrink-0 text-primary" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">Träningsplan</p>
+              <p className="text-sm font-semibold">
+                Träningsplan{planTemplate.data && <span className="font-normal text-muted-foreground"> ({planTemplate.data.name})</span>}
+              </p>
               <p className="truncate text-xs text-muted-foreground">
                 {plan.data.length === 0
                   ? 'Ingen plan ännu – planera passet med övningar från övningsbanken'
