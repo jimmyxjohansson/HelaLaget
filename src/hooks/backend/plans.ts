@@ -5,6 +5,7 @@ import type deletePlanTemplate from '../../server/functions/plans/deletePlanTemp
 import type getPlanTemplateTrainings from '../../server/functions/plans/getPlanTemplateTrainings'
 import type getPlanTemplates from '../../server/functions/plans/getPlanTemplates'
 import type getTrainingPlan from '../../server/functions/plans/getTrainingPlan'
+import type getTrainingPlanTemplate from '../../server/functions/plans/getTrainingPlanTemplate'
 import type linkPlanTemplate from '../../server/functions/plans/linkPlanTemplate'
 import type notifyTrainingPlan from '../../server/functions/plans/notifyTrainingPlan'
 import type savePlanTemplate from '../../server/functions/plans/savePlanTemplate'
@@ -31,6 +32,11 @@ export const useGetTrainingPlan = createBackendHook<
   Parameters<typeof getTrainingPlan>[0]['params'],
   Awaited<ReturnType<typeof getTrainingPlan>>
 >('plans/getTrainingPlan')
+
+export const useGetTrainingPlanTemplate = createBackendHook<
+  Parameters<typeof getTrainingPlanTemplate>[0]['params'],
+  Awaited<ReturnType<typeof getTrainingPlanTemplate>>
+>('plans/getTrainingPlanTemplate')
 
 export const useLinkPlanTemplate = createBackendHook<
   Parameters<typeof linkPlanTemplate>[0]['params'],

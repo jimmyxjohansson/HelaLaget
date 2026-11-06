@@ -9,7 +9,9 @@ import {
 } from 'lucide-react'
 import { useGetTrainingDetail } from '../../hooks/backend/trainings'
 import { useGetDrills } from '../../hooks/backend/drills'
-import { useDeletePlanTemplate, useGetPlanTemplates, useGetTrainingPlan, useNotifyTrainingPlan, useSavePlanTemplate, useSaveTrainingPlan } from '../../hooks/backend/plans'
+import {
+  useDeletePlanTemplate, useGetPlanTemplates, useGetTrainingPlan, useGetTrainingPlanTemplate, useNotifyTrainingPlan, useSavePlanTemplate, useSaveTrainingPlan,
+} from '../../hooks/backend/plans'
 import DrillDiagram from '../../components/drills/DrillDiagram'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
 import { Button } from '../../lib/shadcn/button'
@@ -102,6 +104,8 @@ export default function TrainingPlan() {
   const editor = canEdit()
   const detail = useGetTrainingDetail()
   const plan = useGetTrainingPlan()
+  const linkedTemplate = useGetTrainingPlanTemplate()
+  const [chooseEdit, setChooseEdit] = useState(false)
   const drills = useGetDrills()
   const savePlan = useSaveTrainingPlan()
   const [blocks, setBlocks] = useState<Block[]>([])
@@ -113,7 +117,7 @@ export default function TrainingPlan() {
   const [picker, setPicker] = useState<{ block: string; item: string } | null>(null)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   // Mallen som valts under redigeringen; undefined = kopplingen lämnas som den är
-  const [appliedTemplate, setAppliedTemplate] = useState<number | undefined>(undefined)
+  const [appliedTemplate, setAppliedTemplate] = useState<number | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<number | null>(null)
 
@@ -137,6 +141,7 @@ export default function TrainingPlan() {
 
   useEffect(() => {
     detail.trigger({ trainingId }).catch(() => {})
+    linkedTemplate.trigger({ trainingId }, { skipCache: true }).catch(() => {})
     load().then((b) => { if (b.length === 0 && editor) startEditing() }).catch(() => setError('Kunde inte hämta planen.'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trainingId])
@@ -204,6 +209,7 @@ export default function TrainingPlan() {
     try {
       await savePlan.trigger({ trainingId, blocks: payload(), templateId: appliedTemplate })
       setAppliedTemplate(undefined)
+      linkedTemplate.trigger({ trainingId }, { skipCache: true }).catch(() => {})
       await load()
       setSavedAt(Date.now())
       setEditing(false)
@@ -260,7 +266,8 @@ export default function TrainingPlan() {
                 </button>
               )}
               {!editing && (
-                <button onClick={startEditing} className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm hover:bg-primary-foreground/30">
+                <button onClick={() => (linkedTemplate.data ? setChooseEdit(true) : startEditing())}
+                  className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm hover:bg-primary-foreground/30">
                   <Pencil className="h-4 w-4" /> Redigera
                 </button>
               )}
@@ -343,6 +350,34 @@ export default function TrainingPlan() {
 
       <DrillPreview drillId={preview?.id ?? null} initialLevel={preview?.level} onClose={() => setPreview(null)} />
       <DrillPicker open={!!picker} drills={drills.data} onClose={() => setPicker(null)} onPick={pick} />
+      <Dialog open={chooseEdit} onOpenChange={(o) => !o && setChooseEdit(false)}>
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[440px]">
+          <DialogHeader><DialogTitle>Vad vill du redigera?</DialogTitle></DialogHeader>
+          <p className="-mt-1 text-sm text-muted-foreground">
+            Planen kommer från mallen <b className="text-foreground">{linkedTemplate.data?.name}</b>.
+          </p>
+          <div className="flex flex-col gap-2">
+            <button type="button"
+              onClick={() => { setChooseEdit(false); router.push(`/ovningar/mallar/${linkedTemplate.data!.id}/redigera?fran=/trainings/${trainingId}/plan`) }}
+              className="flex items-start gap-3 rounded-lg border border-border p-3 text-left hover:bg-muted">
+              <LayoutTemplate className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <span>
+                <span className="block font-medium">Mallen</span>
+                <span className="block text-xs text-muted-foreground">Ändra mallen. När du sparar kan du välja att uppdatera alla kommande träningar som är kopplade till den.</span>
+              </span>
+            </button>
+            <button type="button"
+              onClick={() => { setChooseEdit(false); setAppliedTemplate(null); startEditing() }}
+              className="flex items-start gap-3 rounded-lg border border-border p-3 text-left hover:bg-muted">
+              <Pencil className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <span>
+                <span className="block font-medium">Bara den här träningen</span>
+                <span className="block text-xs text-muted-foreground">Ändringen gäller bara den här träningen. Den kopplas bort från mallen, så att ändringar i mallen inte skriver över den.</span>
+              </span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <TemplatesDialog open={templatesOpen} onClose={() => setTemplatesOpen(false)} current={payload()} onApply={applyTemplate} />
     </div>
   )

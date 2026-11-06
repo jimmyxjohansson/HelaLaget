@@ -199,7 +199,10 @@ function PlanTemplateEditPage() {
     setPicker(null)
   }
 
-  const back = id == null ? '/ovningar/mallar' : `/ovningar/mallar/${id}`
+  // Öppnad från en träningsplan: tillbaka dit efteråt
+  const from = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('fran') : null
+  const returnTo = from && /^\/trainings\/\d+\/plan$/.test(from) ? from : null
+  const back = returnTo ?? (id == null ? '/ovningar/mallar' : `/ovningar/mallar/${id}`)
 
   function save() {
     setError(null)
@@ -214,7 +217,7 @@ function PlanTemplateEditPage() {
     try {
       const r = await update.trigger({ id, name, blocks: blocksPayload(blocks), updateLinked })
       setDirty(false)
-      router.push(`/ovningar/mallar/${r.id}`)
+      router.push(returnTo ?? `/ovningar/mallar/${r.id}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Kunde inte spara mallen.')
     }
