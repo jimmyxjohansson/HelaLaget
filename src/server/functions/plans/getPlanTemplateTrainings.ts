@@ -20,7 +20,8 @@ export type TemplateTraining = {
 
 /**
  * Träningar för en mall: de som är kopplade till den (alla, senaste först)
- * och kommande träningar som går att koppla (närmast först, 60 dagar fram).
+ * och träningar som går att koppla: kommande (närmast först, 60 dagar fram)
+ * och tidigare (senaste först, 90 dagar bakåt).
  */
 export default async function getPlanTemplateTrainings(req: { params: Params; user: User }) {
   const id = Number(req.params.id)
@@ -28,7 +29,7 @@ export default async function getPlanTemplateTrainings(req: { params: Params; us
     (SELECT COUNT(*)::int FROM training_blocks b WHERE b.training_id = t.id) AS blocks,
     t.plan_template_id AS "templateId", pt.name AS "templateName",
     (${UPCOMING_SQL}) AS upcoming`
-  const [linked, upcoming] = await Promise.all([
+  const [linked, upcoming, past] = await Promise.all([
     db.query<TemplateTraining>(
       `SELECT ${cols} FROM trainings t LEFT JOIN plan_templates pt ON pt.id = t.plan_template_id
        WHERE t.plan_template_id = $1 ORDER BY t.date DESC`,
@@ -39,6 +40,11 @@ export default async function getPlanTemplateTrainings(req: { params: Params; us
        WHERE ${UPCOMING_SQL} AND t.date < now() + interval '60 days'
        ORDER BY t.date`,
     ),
+    db.query<TemplateTraining>(
+      `SELECT ${cols} FROM trainings t LEFT JOIN plan_templates pt ON pt.id = t.plan_template_id
+       WHERE NOT (${UPCOMING_SQL}) AND t.date >= now() - interval '90 days'
+       ORDER BY t.date DESC`,
+    ),
   ])
-  return { linked: linked.data, upcoming: upcoming.data }
+  return { linked: linked.data, upcoming: upcoming.data, past: past.data }
 }

@@ -432,6 +432,7 @@ function PlanTemplateViewPage() {
         templateId={id}
         templateName={name}
         upcoming={trainings.data?.upcoming ?? null}
+        past={trainings.data?.past ?? null}
         onClose={() => setLinkOpen(false)}
         onLinked={(n) => { setLinkOpen(false); setNotice(`Planen är lagd på ${n === 1 ? '1 träning' : `${n} träningar`}.`); loadTrainings() }}
       />
@@ -443,21 +444,25 @@ function PlanTemplateViewPage() {
 type TT = { id: number; date: string; type: string | null; blocks: number; templateId: number | null; templateName: string | null; upcoming: boolean }
 
 /** Välj kommande träningar som ska få mallens plan. Träningar som redan har en plan måste kryssas i aktivt. */
-function LinkDialog({ open, templateId, templateName, upcoming, onClose, onLinked }: {
+function LinkDialog({ open, templateId, templateName, upcoming, past, onClose, onLinked }: {
   open: boolean
   templateId: number
   templateName: string
   upcoming: TT[] | null
+  past: TT[] | null
   onClose: () => void
   onLinked: (n: number) => void
 }) {
   const link = useLinkPlanTemplate()
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const [showPast, setShowPast] = useState(false)
 
-  useEffect(() => { if (open) { setSelected(new Set()); setError(null) } }, [open])
+  useEffect(() => { if (open) { setSelected(new Set()); setError(null); setShowPast(false) } }, [open])
 
-  const replacing = (upcoming ?? []).filter((t) => selected.has(t.id) && t.blocks > 0 && t.templateId !== templateId).length
+  const list = showPast ? past : upcoming
+  const all = [...(upcoming ?? []), ...(past ?? [])]
+  const replacing = all.filter((t) => selected.has(t.id) && t.blocks > 0 && t.templateId !== templateId).length
 
   async function save() {
     setError(null)
@@ -473,14 +478,28 @@ function LinkDialog({ open, templateId, templateName, upcoming, onClose, onLinke
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[85vh] w-[calc(100vw-1rem)] max-w-[480px] overflow-y-auto px-4">
         <DialogHeader><DialogTitle>Koppla {templateName} till träning</DialogTitle></DialogHeader>
-        <p className="-mt-2 text-sm text-muted-foreground">Kommande träningar de närmaste 60 dagarna. Mallens block läggs som plan på de valda.</p>
-        {!upcoming ? (
+        <div className="flex gap-1 rounded-lg bg-muted p-1">
+          {([[false, 'Kommande'], [true, 'Tidigare']] as const).map(([p, label]) => {
+            const n = (p ? past : upcoming ?? []) ?? []
+            const chosen = n.filter((t) => selected.has(t.id)).length
+            return (
+              <button key={label} type="button" onClick={() => setShowPast(p)}
+                className={cn('flex-1 rounded-md px-2 py-1 text-sm font-medium', showPast === p ? 'bg-background shadow-sm' : 'text-muted-foreground')}>
+                {label}{chosen ? ` (${chosen})` : ''}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {showPast ? 'Träningar de senaste 90 dagarna, senaste först.' : 'Träningar de närmaste 60 dagarna.'} Mallens block läggs som plan på de valda.
+        </p>
+        {!list ? (
           <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-        ) : upcoming.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Inga kommande träningar.</p>
+        ) : list.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{showPast ? 'Inga tidigare träningar.' : 'Inga kommande träningar.'}</p>
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
-            {upcoming.map((t) => {
+            {list.map((t) => {
               const mine = t.templateId === templateId
               const on = selected.has(t.id)
               return (
