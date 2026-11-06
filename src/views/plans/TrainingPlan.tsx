@@ -112,6 +112,8 @@ export default function TrainingPlan() {
   const [dirty, setDirty] = useState(false)
   const [picker, setPicker] = useState<{ block: string; item: string } | null>(null)
   const [templatesOpen, setTemplatesOpen] = useState(false)
+  // Mallen som valts under redigeringen; undefined = kopplingen lämnas som den är
+  const [appliedTemplate, setAppliedTemplate] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<number | null>(null)
 
@@ -200,7 +202,8 @@ export default function TrainingPlan() {
   async function save() {
     setError(null)
     try {
-      await savePlan.trigger({ trainingId, blocks: payload() })
+      await savePlan.trigger({ trainingId, blocks: payload(), templateId: appliedTemplate })
+      setAppliedTemplate(undefined)
       await load()
       setSavedAt(Date.now())
       setEditing(false)
@@ -223,7 +226,8 @@ export default function TrainingPlan() {
     }
   }
 
-  function applyTemplate(tblocks: TemplateBlocks) {
+  function applyTemplate(tblocks: TemplateBlocks, templateId: number) {
+    setAppliedTemplate(templateId)
     change(() => blocksFromTemplate(tblocks, drills.data))
     setEditing(true)
     setTemplatesOpen(false)
@@ -329,7 +333,7 @@ export default function TrainingPlan() {
           <div className="mx-auto flex max-w-4xl items-center gap-2">
             <span className="text-sm text-muted-foreground">Totalt <b className="text-foreground">{total} min</b></span>
             <span className="ml-auto" />
-            <Button type="button" variant="outline" onClick={() => { if (!dirty || window.confirm('Släppa ändringarna?')) { load().catch(() => {}); setEditing(false) } }}>Avbryt</Button>
+            <Button type="button" variant="outline" onClick={() => { if (!dirty || window.confirm('Släppa ändringarna?')) { load().catch(() => {}); setAppliedTemplate(undefined); setEditing(false) } }}>Avbryt</Button>
             <Button type="button" onClick={save} disabled={savePlan.loading}>
               {savePlan.loading ? <Loader2 className="animate-spin" /> : <Check />} Spara
             </Button>
@@ -449,7 +453,7 @@ export function BlockEditor({ b, start, first, last, groups, groupCount, onChang
 
 /* ───────────── Visning (ute på planen) ───────────── */
 
-function BlockView({ b, start, groupCount, onInfo }: { b: Block; start: string | null; groupCount: (g: string) => number; onInfo: (id: number, level: string | null) => void }) {
+export function BlockView({ b, start, groupCount, onInfo }: { b: Block; start: string | null; groupCount: (g: string) => number; onInfo: (id: number, level: string | null) => void }) {
   const multi = b.items.length > 1
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
@@ -545,7 +549,7 @@ function TemplatesDialog({ open, onClose, current, onApply }: {
   open: boolean
   onClose: () => void
   current: { name: string; minutes: number | null; notes: string; items: { groupName: string | null; drillId: number | null; title: string; level: string | null; notes: string }[] }[]
-  onApply: (blocks: TemplateBlocks) => void
+  onApply: (blocks: TemplateBlocks, templateId: number) => void
 }) {
   const list = useGetPlanTemplates()
   const saveT = useSavePlanTemplate()
@@ -595,7 +599,7 @@ function TemplatesDialog({ open, onClose, current, onApply }: {
                         <p className="truncate text-sm font-medium">{t.name}</p>
                         <p className="text-xs text-muted-foreground">{t.blocks.length} block · {mins} min</p>
                       </div>
-                      <Button size="sm" variant="outline" onClick={() => onApply(t.blocks as TemplateBlocks)}>Använd</Button>
+                      <Button size="sm" variant="outline" onClick={() => onApply(t.blocks as TemplateBlocks, t.id)}>Använd</Button>
                       <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted" aria-label="Ta bort mallen"
                         onClick={async () => { if (window.confirm(`Ta bort mallen ”${t.name}”?`)) { await del.trigger({ id: t.id }).catch(() => {}); list.trigger().catch(() => {}) } }}>
                         <Trash2 className="h-4 w-4" />

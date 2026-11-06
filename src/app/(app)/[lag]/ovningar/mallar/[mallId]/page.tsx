@@ -1,5 +1,5 @@
-import { PlanTemplateEdit } from '@/views/plans/PlanTemplates'
+import { PlanTemplateView } from '@/views/plans/PlanTemplates'
 
 export default function Page() {
-  return <PlanTemplateEdit />
+  return <PlanTemplateView />
 }

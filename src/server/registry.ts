@@ -89,11 +89,14 @@ import planning_setPlanningGoalkeeper from './functions/planning/setPlanningGoal
 import planning_setPlanningStatus from './functions/planning/setPlanningStatus'
 import planning_updatePlanningAnswer from './functions/planning/updatePlanningAnswer'
 import plans_deletePlanTemplate from './functions/plans/deletePlanTemplate'
+import plans_getPlanTemplateTrainings from './functions/plans/getPlanTemplateTrainings'
 import plans_getPlanTemplates from './functions/plans/getPlanTemplates'
 import plans_getTrainingPlan from './functions/plans/getTrainingPlan'
+import plans_linkPlanTemplate from './functions/plans/linkPlanTemplate'
 import plans_notifyTrainingPlan from './functions/plans/notifyTrainingPlan'
 import plans_savePlanTemplate from './functions/plans/savePlanTemplate'
 import plans_saveTrainingPlan from './functions/plans/saveTrainingPlan'
+import plans_unlinkPlanTemplate from './functions/plans/unlinkPlanTemplate'
 import plans_updatePlanTemplate from './functions/plans/updatePlanTemplate'
 import players_addPlayersToSquad from './functions/players/addPlayersToSquad'
 import players_createPlayer from './functions/players/createPlayer'
@@ -239,11 +242,14 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'planning/setPlanningStatus': { handler: planning_setPlanningStatus, access: 'leader' },
   'planning/updatePlanningAnswer': { handler: planning_updatePlanningAnswer, access: 'leader' },
   'plans/deletePlanTemplate': { handler: plans_deletePlanTemplate, access: 'leader' },
+  'plans/getPlanTemplateTrainings': { handler: plans_getPlanTemplateTrainings, access: 'leader' },
   'plans/getPlanTemplates': { handler: plans_getPlanTemplates, access: 'viewer' },
   'plans/getTrainingPlan': { handler: plans_getTrainingPlan, access: 'viewer' },
+  'plans/linkPlanTemplate': { handler: plans_linkPlanTemplate, access: 'leader' },
   'plans/notifyTrainingPlan': { handler: plans_notifyTrainingPlan, access: 'leader' },
   'plans/savePlanTemplate': { handler: plans_savePlanTemplate, access: 'leader' },
   'plans/saveTrainingPlan': { handler: plans_saveTrainingPlan, access: 'leader' },
+  'plans/unlinkPlanTemplate': { handler: plans_unlinkPlanTemplate, access: 'leader' },
   'plans/updatePlanTemplate': { handler: plans_updatePlanTemplate, access: 'leader' },
   'players/addPlayersToSquad': { handler: players_addPlayersToSquad, access: 'leader' },
   'players/createPlayer': { handler: players_createPlayer, access: 'leader' },

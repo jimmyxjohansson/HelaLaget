@@ -1,5 +1,6 @@
 import 'server-only'
 import { AccessError } from '@/server/access'
+import { db } from '@/server/db'
 import { cleanInt, cleanText, LEVELS } from '@/server/drills/shared'
 
 /** En träningsplan som appen skickar och får: block i ordning med övningar per grupp. */
@@ -39,3 +40,27 @@ export function cleanBlocks(blocks: unknown): PlanBlockInput[] {
     }
   })
 }
+
+/** Skriver om en tränings plan (ersätter den tidigare). Blocken ska redan vara rensade med cleanBlocks. */
+export async function writePlan(trainingId: number, blocks: PlanBlockInput[]) {
+  await db.query(`DELETE FROM training_blocks WHERE training_id = $1`, [trainingId])
+  for (const [bi, b] of blocks.entries()) {
+    const { data } = await db.query<{ id: number }>(
+      `INSERT INTO training_blocks (training_id, position, name, minutes, notes) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [trainingId, bi, b.name, b.minutes, b.notes],
+    )
+    const blockId = data[0].id
+    for (const [ii, i] of b.items.entries()) {
+      if (!i.drillId && !i.title && !i.notes) continue
+      await db.query(
+        `INSERT INTO training_block_items (block_id, position, group_name, drill_id, title, level, notes)
+         SELECT $1, $2, $3, d.id, $5, $6, $7
+         FROM (SELECT $4::int AS want) w LEFT JOIN drills d ON d.id = w.want`,
+        [blockId, ii, i.groupName, i.drillId, i.title, i.level, i.notes],
+      )
+    }
+  }
+}
+
+/** Kommande = träningar från i dag (svensk tid) och framåt. */
+export const UPCOMING_SQL = `t.date >= ((now() AT TIME ZONE 'Europe/Stockholm')::date)::timestamp AT TIME ZONE 'Europe/Stockholm'`

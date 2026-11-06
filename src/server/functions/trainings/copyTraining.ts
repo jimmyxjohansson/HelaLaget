@@ -16,8 +16,9 @@ export default async function copyTraining(req: { params: Params; user: User }) 
     type: string
     indooroutdoor: string
     notes: string | null
+    plan_template_id: number | null
   }>(
-    `SELECT type, indooroutdoor, notes FROM trainings WHERE id = $1`,
+    `SELECT type, indooroutdoor, notes, plan_template_id FROM trainings WHERE id = $1`,
     [trainingId]
   )
 
@@ -26,10 +27,10 @@ export default async function copyTraining(req: { params: Params; user: User }) 
 
   // Create new training
   const newRes = await db.query<{ id: number }>(
-    `INSERT INTO trainings (type, date, date1, indooroutdoor, notes, svenskalag, reported, key)
-     VALUES ($1, $2::timestamptz, $3::date, $4, $5, $6, false, gen_random_uuid())
+    `INSERT INTO trainings (type, date, date1, indooroutdoor, notes, svenskalag, reported, key, plan_template_id)
+     VALUES ($1, $2::timestamptz, $3::date, $4, $5, $6, false, gen_random_uuid(), $7)
      RETURNING id`,
-    [orig.type, newDate, newDate, orig.indooroutdoor, orig.notes ?? null, svenskalag ?? null]
+    [orig.type, newDate, newDate, orig.indooroutdoor, orig.notes ?? null, svenskalag ?? null, orig.plan_template_id ?? null]
   )
 
   const newId = newRes.data[0]?.id

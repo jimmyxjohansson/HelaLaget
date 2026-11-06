@@ -2,20 +2,24 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, Check, Clock, LayoutTemplate, Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Check, Clock, LayoutTemplate, Link2, Loader2, Pencil, Plus, Trash2, Unlink } from 'lucide-react'
 import Link, { useRouter } from '../../lib/nav'
+import { cn } from '../../lib/shadcn/utils'
 import LeadersOnly from '../../components/LeadersOnly'
 import SquadLogo from '../../components/SquadLogo'
 import { Button } from '../../lib/shadcn/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
 import { canEdit } from '../../lib/squad-store'
 import { useGetDrills } from '../../hooks/backend/drills'
-import { useDeletePlanTemplate, useGetPlanTemplates, useUpdatePlanTemplate } from '../../hooks/backend/plans'
+import {
+  useDeletePlanTemplate, useGetPlanTemplates, useGetPlanTemplateTrainings, useLinkPlanTemplate, useUnlinkPlanTemplate, useUpdatePlanTemplate,
+} from '../../hooks/backend/plans'
 import { BLOCK_NAMES } from '../../utils/drills'
 import DrillPicker from './DrillPicker'
 import DrillPreview from '../drills/DrillPreview'
 import type { DrillListItem } from '../drills/DrillBank'
 import {
-  BlockEditor, blockMinutes, blocksFromTemplate, blocksPayload, GROUP_OPTIONS, k, toInfo,
+  BlockEditor, BlockView, blockMinutes, blocksFromTemplate, blocksPayload, GROUP_OPTIONS, k, toInfo,
   type Block, type Item, type TemplateBlocks,
 } from './TrainingPlan'
 
@@ -93,12 +97,13 @@ function PlanTemplatesPage() {
                     <p className="truncate font-medium">{t.name}</p>
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3 shrink-0" /> {minutesOf(blocks)} min · {blocks.length} block
+                      {t.linked > 0 && <> · <Link2 className="h-3 w-3 shrink-0" /> {t.linked} {t.linked === 1 ? 'träning' : 'träningar'}</>}
                     </p>
                     {blocks.length > 0 && (
                       <p className="truncate text-xs text-muted-foreground">{blocks.map((b) => b.name).join(' · ')}</p>
                     )}
                   </Link>
-                  <Link href={`/ovningar/mallar/${t.id}`} aria-label={`Redigera ${t.name}`} title="Redigera"
+                  <Link href={`/ovningar/mallar/${t.id}/redigera`} aria-label={`Redigera ${t.name}`} title="Redigera"
                     className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
                     <Pencil className="h-4 w-4" />
                   </Link>
@@ -139,6 +144,8 @@ function PlanTemplateEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [picker, setPicker] = useState<{ block: string; item: string } | null>(null)
   const [preview, setPreview] = useState<number | null>(null)
+  const [upcomingLinked, setUpcomingLinked] = useState(0)
+  const [ask, setAsk] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -149,6 +156,7 @@ function PlanTemplateEditPage() {
       const t = templates?.find((x) => x.id === id)
       if (!t) { setMissing(true); return }
       setName(t.name)
+      setUpcomingLinked(t.upcomingLinked)
       setBlocks(blocksFromTemplate(t.blocks as TemplateBlocks, d))
       setLoaded(true)
     }).catch((e: Error) => setError(e.message))
@@ -191,13 +199,22 @@ function PlanTemplateEditPage() {
     setPicker(null)
   }
 
-  async function save() {
+  const back = id == null ? '/ovningar/mallar' : `/ovningar/mallar/${id}`
+
+  function save() {
     setError(null)
     if (!name.trim()) { setError('Ge mallen ett namn.'); return }
+    // Kommande kopplade träningar: fråga om de ska få den nya planen
+    if (upcomingLinked > 0) setAsk(true)
+    else doSave(false)
+  }
+
+  async function doSave(updateLinked: boolean) {
+    setAsk(false)
     try {
-      await update.trigger({ id, name, blocks: blocksPayload(blocks) })
+      const r = await update.trigger({ id, name, blocks: blocksPayload(blocks), updateLinked })
       setDirty(false)
-      router.push('/ovningar/mallar')
+      router.push(`/ovningar/mallar/${r.id}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Kunde inte spara mallen.')
     }
@@ -205,7 +222,7 @@ function PlanTemplateEditPage() {
 
   function cancel() {
     if (dirty && !window.confirm('Släppa ändringarna?')) return
-    router.push('/ovningar/mallar')
+    router.push(back)
   }
 
   if (missing) {
@@ -221,7 +238,7 @@ function PlanTemplateEditPage() {
     <div className="flex flex-col pb-24">
       <div className="px-4 pb-4 pt-6 text-team-accent" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
         <button onClick={cancel} className="mb-3 flex items-center gap-1.5 text-sm text-team-accent/80">
-          <ArrowLeft className="h-4 w-4" /> Mallar
+          <ArrowLeft className="h-4 w-4" /> {id == null ? 'Mallar' : 'Tillbaka'}
         </button>
         <p className="text-sm font-medium uppercase tracking-widest text-team-accent/70">{id == null ? 'Ny mall' : 'Redigera mall'}</p>
         <input
@@ -291,6 +308,275 @@ function PlanTemplateEditPage() {
 
       <DrillPreview drillId={preview} onClose={() => setPreview(null)} />
       <DrillPicker open={!!picker} drills={drills.data} onClose={() => setPicker(null)} onPick={pick} />
+      <Dialog open={ask} onOpenChange={(o) => !o && setAsk(false)}>
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[420px]">
+          <DialogHeader><DialogTitle>Uppdatera kopplade träningar?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {upcomingLinked === 1 ? '1 kommande träning' : `${upcomingLinked} kommande träningar`} har en plan från den här mallen.
+            Ska de få den ändrade planen? Ändringar som gjorts direkt på träningarna skrivs då över. Tidigare träningar ändras inte.
+          </p>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => doSave(false)} disabled={update.loading}>Spara bara mallen</Button>
+            <Button onClick={() => doSave(true)} disabled={update.loading}>
+              {update.loading ? <Loader2 className="animate-spin" /> : <Check />} Spara och uppdatera
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+  )
+}
+
+/* ───────────── Läsvy ───────────── */
+
+const DAY = new Intl.DateTimeFormat('sv-SE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Stockholm' })
+const TIME = new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' })
+const when = (iso: string) => {
+  const d = DAY.format(new Date(iso))
+  return `${d.charAt(0).toUpperCase()}${d.slice(1)} ${TIME.format(new Date(iso))}`
+}
+
+/** En mall i läsläge, med knappar för att koppla till träningar, se kopplade och redigera. */
+export function PlanTemplateView() {
+  if (!canEdit()) return <LeadersOnly what="Träningsplansmallarna" />
+  return <PlanTemplateViewPage />
+}
+
+function PlanTemplateViewPage() {
+  const params = useParams<{ mallId?: string }>()
+  const id = Number(params.mallId)
+  const router = useRouter()
+  const list = useGetPlanTemplates()
+  const drills = useGetDrills()
+  const trainings = useGetPlanTemplateTrainings()
+  const [blocks, setBlocks] = useState<Block[] | null>(null)
+  const [name, setName] = useState('')
+  const [missing, setMissing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [preview, setPreview] = useState<number | null>(null)
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [linkedOpen, setLinkedOpen] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const loadTrainings = () => trainings.trigger({ id }, { skipCache: true }).catch((e: Error) => setError(e.message))
+
+  useEffect(() => {
+    Promise.all([drills.data ? Promise.resolve(drills.data) : drills.trigger(), list.trigger(undefined, { skipCache: true })])
+      .then(([d, templates]) => {
+        const t = templates.find((x) => x.id === id)
+        if (!t) { setMissing(true); return }
+        setName(t.name)
+        setBlocks(blocksFromTemplate(t.blocks as TemplateBlocks, d))
+      })
+      .catch((e: Error) => setError(e.message))
+    loadTrainings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  if (missing) {
+    return (
+      <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+        <p className="text-sm text-muted-foreground">Mallen finns inte längre.</p>
+        <Link href="/ovningar/mallar" className="text-sm font-medium text-primary">Till mallarna</Link>
+      </div>
+    )
+  }
+
+  const total = (blocks ?? []).reduce((a, b) => a + blockMinutes(b), 0)
+  const linked = trainings.data?.linked ?? []
+  const btn = 'flex flex-col items-center gap-1 rounded-xl bg-primary-foreground/15 px-2 py-2 text-xs font-medium hover:bg-primary-foreground/25'
+
+  return (
+    <div className="flex flex-col pb-8">
+      <div className="px-4 pb-4 pt-6 text-team-accent" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
+        <Link href="/ovningar/mallar" className="mb-3 flex w-fit items-center gap-1.5 text-sm text-team-accent/80">
+          <ArrowLeft className="h-4 w-4" /> Mallar
+        </Link>
+        <p className="text-sm font-medium uppercase tracking-widest text-team-accent/70">Träningsplansmall</p>
+        <h1 className="text-2xl font-bold">{name || ' '}</h1>
+        <p className="mt-1 flex items-center gap-3 text-sm text-team-accent/80">
+          <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {total} min</span>
+          <span>{blocks?.length ?? 0} block</span>
+        </p>
+        <div className="mt-4 grid max-w-md grid-cols-3 gap-2">
+          <button type="button" onClick={() => setLinkOpen(true)} className={btn}>
+            <CalendarPlus className="h-5 w-5" /> Koppla till träning
+          </button>
+          <button type="button" onClick={() => setLinkedOpen(true)} className={btn}>
+            <Link2 className="h-5 w-5" /> Kopplade{trainings.data ? ` (${linked.length})` : ''}
+          </button>
+          <button type="button" onClick={() => router.push(`/ovningar/mallar/${id}/redigera`)} className={btn}>
+            <Pencil className="h-5 w-5" /> Redigera
+          </button>
+        </div>
+      </div>
+
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-3 md:p-4">
+        {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+        {notice && <p className="flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400"><Check className="h-4 w-4" /> {notice}</p>}
+        {!blocks ? (
+          <div className="h-64 animate-pulse rounded-xl bg-muted" />
+        ) : blocks.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Mallen har inga block än. Tryck på Redigera för att bygga den.</p>
+        ) : (
+          blocks.map((b) => <BlockView key={b.key} b={b} start={null} groupCount={() => 0} onInfo={(drillId) => setPreview(drillId)} />)
+        )}
+      </div>
+
+      <DrillPreview drillId={preview} onClose={() => setPreview(null)} />
+      <LinkDialog
+        open={linkOpen}
+        templateId={id}
+        templateName={name}
+        upcoming={trainings.data?.upcoming ?? null}
+        onClose={() => setLinkOpen(false)}
+        onLinked={(n) => { setLinkOpen(false); setNotice(`Planen är lagd på ${n === 1 ? '1 träning' : `${n} träningar`}.`); loadTrainings() }}
+      />
+      <LinkedDialog open={linkedOpen} linked={trainings.data ? linked : null} onClose={() => setLinkedOpen(false)} onChanged={loadTrainings} />
+    </div>
+  )
+}
+
+type TT = { id: number; date: string; type: string | null; blocks: number; templateId: number | null; templateName: string | null; upcoming: boolean }
+
+/** Välj kommande träningar som ska få mallens plan. Träningar som redan har en plan måste kryssas i aktivt. */
+function LinkDialog({ open, templateId, templateName, upcoming, onClose, onLinked }: {
+  open: boolean
+  templateId: number
+  templateName: string
+  upcoming: TT[] | null
+  onClose: () => void
+  onLinked: (n: number) => void
+}) {
+  const link = useLinkPlanTemplate()
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => { if (open) { setSelected(new Set()); setError(null) } }, [open])
+
+  const replacing = (upcoming ?? []).filter((t) => selected.has(t.id) && t.blocks > 0 && t.templateId !== templateId).length
+
+  async function save() {
+    setError(null)
+    try {
+      const r = await link.trigger({ id: templateId, trainingIds: Array.from(selected) })
+      onLinked(r.linked)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Kunde inte koppla.')
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] w-[calc(100vw-1rem)] max-w-[480px] overflow-y-auto px-4">
+        <DialogHeader><DialogTitle>Koppla {templateName} till träning</DialogTitle></DialogHeader>
+        <p className="-mt-2 text-sm text-muted-foreground">Kommande träningar de närmaste 60 dagarna. Mallens block läggs som plan på de valda.</p>
+        {!upcoming ? (
+          <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+        ) : upcoming.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Inga kommande träningar.</p>
+        ) : (
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+            {upcoming.map((t) => {
+              const mine = t.templateId === templateId
+              const on = selected.has(t.id)
+              return (
+                <li key={t.id}>
+                  <label className={cn('flex items-center gap-2.5 px-3 py-2', mine ? 'opacity-60' : 'cursor-pointer hover:bg-muted/50')}>
+                    <input type="checkbox" checked={mine || on} disabled={mine}
+                      onChange={() => setSelected((s) => { const n = new Set(s); if (n.has(t.id)) n.delete(t.id); else n.add(t.id); return n })} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium">{when(t.date)}</span>
+                      <span className="block text-xs text-muted-foreground">{t.type ?? 'Träning'}</span>
+                    </span>
+                    {mine ? (
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Kopplad</span>
+                    ) : t.blocks > 0 ? (
+                      <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        Har plan{t.templateName ? `: ${t.templateName}` : ''}
+                      </span>
+                    ) : null}
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {replacing > 0 && (
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            {replacing === 1 ? '1 vald träning har' : `${replacing} valda träningar har`} redan en plan. Den ersätts av mallen.
+          </p>
+        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>Avbryt</Button>
+          <Button onClick={save} disabled={selected.size === 0 || link.loading}>
+            {link.loading ? <Loader2 className="animate-spin" /> : <CalendarPlus />} Koppla {selected.size || ''}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** Träningar vars plan kommer från mallen. Kopplingen kan tas bort; planen ligger då kvar. */
+function LinkedDialog({ open, linked, onClose, onChanged }: { open: boolean; linked: TT[] | null; onClose: () => void; onChanged: () => void }) {
+  const unlink = useUnlinkPlanTemplate()
+  const [error, setError] = useState<string | null>(null)
+  const coming = (linked ?? []).filter((t) => t.upcoming).reverse()
+  const past = (linked ?? []).filter((t) => !t.upcoming)
+
+  async function remove(trainingId: number) {
+    setError(null)
+    try {
+      await unlink.trigger({ trainingId })
+      onChanged()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Kunde inte ta bort kopplingen.')
+    }
+  }
+
+  const row = (t: TT) => (
+    <li key={t.id} className="flex items-center gap-2 px-3 py-2">
+      <Link href={`/trainings/${t.id}/plan`} className="min-w-0 flex-1">
+        <span className="block font-medium">{when(t.date)}</span>
+        <span className="block text-xs text-muted-foreground">{t.type ?? 'Träning'}</span>
+      </Link>
+      <button type="button" onClick={() => remove(t.id)} disabled={unlink.loading} title="Ta bort kopplingen (planen ligger kvar)"
+        aria-label="Ta bort kopplingen"
+        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50">
+        <Unlink className="h-4 w-4" />
+      </button>
+    </li>
+  )
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] w-[calc(100vw-1rem)] max-w-[440px] overflow-y-auto px-4">
+        <DialogHeader><DialogTitle>Kopplade träningar ({linked?.length ?? 0})</DialogTitle></DialogHeader>
+        {!linked ? (
+          <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+        ) : linked.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Ingen träning har en plan från den här mallen än.</p>
+        ) : (
+          <>
+            {coming.length > 0 && (
+              <section className="flex flex-col gap-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kommande</h3>
+                <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">{coming.map(row)}</ul>
+              </section>
+            )}
+            {past.length > 0 && (
+              <section className="flex flex-col gap-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tidigare</h3>
+                <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">{past.map(row)}</ul>
+              </section>
+            )}
+            <p className="text-xs text-muted-foreground">Tryck på en träning för att öppna dess plan. Länkikonen tar bort kopplingen men planen ligger kvar.</p>
+          </>
+        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </DialogContent>
+    </Dialog>
   )
 }
