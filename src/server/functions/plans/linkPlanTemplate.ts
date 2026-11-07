@@ -1,6 +1,6 @@
 import { db } from '@/server/db'
 import { AccessError } from '@/server/access'
-import { cleanBlocks, writePlan } from '@/server/plans/shared'
+import { cleanBlocks, withoutLeaders, writePlan } from '@/server/plans/shared'
 import { ids } from '@/server/planning/shared'
 import type { User } from '@/server/types'
 
@@ -13,7 +13,7 @@ export default async function linkPlanTemplate(req: { params: Params; user: User
   const id = Number(req.params.id)
   const { data } = await db.query<{ blocks: unknown }>(`SELECT blocks FROM plan_templates WHERE id = $1`, [id])
   if (!data[0]) throw new AccessError('Mallen finns inte längre.', 404)
-  const blocks = cleanBlocks(data[0].blocks)
+  const blocks = withoutLeaders(cleanBlocks(data[0].blocks))
   const trainingIds = ids(req.params.trainingIds)
   if (!trainingIds.length) throw new AccessError('Välj minst en träning.', 400)
 

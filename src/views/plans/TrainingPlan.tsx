@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ChevronDown, ClipboardList, Clock, ExternalLink,
-  Info, LayoutTemplate, Loader2, Pencil, Plus, Send, Trash2, Users, X,
+  Footprints, Info, LayoutTemplate, Loader2, Pencil, Plus, Send, Trash2, Users, X,
 } from 'lucide-react'
 import { useGetTrainingDetail } from '../../hooks/backend/trainings'
 import { useGetDrills } from '../../hooks/backend/drills'
+import { useGetLeaders } from '../../hooks/backend/leaders'
+import LeaderPicker, { holdersText, type LeaderOption } from './LeaderPicker'
 import {
-  useDeletePlanTemplate, useGetPlanTemplates, useGetTrainingPlan, useGetTrainingPlanTemplate, useNotifyTrainingPlan, useSavePlanTemplate, useSaveTrainingPlan,
+  useDeletePlanTemplate, useGetPlanTemplates, useGetTrainingPlan, useGetTrainingPlanInfo, useGetTrainingPlanTemplate, useNotifyTrainingPlan, useSavePlanTemplate, useSaveTrainingPlan,
 } from '../../hooks/backend/plans'
 import DrillDiagram from '../../components/drills/DrillDiagram'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
@@ -40,7 +42,13 @@ type DrillInfo = {
   levels: Record<string, { text?: string | null; diagram?: unknown | null } | undefined> | null
 }
 
-export type Item = { key: string; groupName: string | null; drillId: number | null; title: string; level: string | null; notes: string; drill: DrillInfo | null }
+export type Item = {
+  key: string; groupName: string | null; drillId: number | null; title: string; level: string | null; notes: string; drill: DrillInfo | null
+  /** Ledare som håller i övningen */
+  leaderIds: number[]
+  /** En annan vuxen håller i övningen: null = nej, '' = ja utan namn */
+  otherAdult: string | null
+}
 export type Block = { key: string; name: string; minutes: string; notes: string; items: Item[] }
 
 export const GROUP_OPTIONS = [...TRAINING_GROUPS, 'Station 1', 'Station 2', 'Station 3', 'Station 4']
@@ -55,6 +63,10 @@ export function toInfo(d: DrillListItem): DrillInfo {
     diagram: d.diagram, levels: d.levels as DrillInfo['levels'],
   }
 }
+
+const SAVED = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' })
+/** "6 nov. 09:42" */
+const savedWhen = (iso: string) => SAVED.format(new Date(iso))
 
 /** Tider sparas som väggklocka i UTC: "17:30". */
 function clock(iso: string, plusMinutes: number) {
@@ -80,7 +92,7 @@ export function blocksFromTemplate(tblocks: TemplateBlocks, drills: DrillListIte
       const d = i.drillId ? byId.get(i.drillId) : undefined
       return {
         key: k(), groupName: i.groupName ?? null, drillId: d ? d.id : null, title: i.title ?? '', level: i.level ?? null, notes: i.notes ?? '',
-        drill: d ? toInfo(d) : null,
+        drill: d ? toInfo(d) : null, leaderIds: [], otherAdult: null,
       }
     }),
   }))
@@ -92,7 +104,10 @@ export function blocksPayload(blocks: Block[]) {
     name: b.name.trim() || 'Block',
     minutes: b.minutes ? Number(b.minutes) : null,
     notes: b.notes,
-    items: b.items.map((i) => ({ groupName: i.groupName, drillId: i.drillId, title: i.title, level: i.level, notes: i.notes })),
+    items: b.items.map((i) => ({
+      groupName: i.groupName, drillId: i.drillId, title: i.title, level: i.level, notes: i.notes,
+      leaderIds: i.leaderIds, otherAdult: i.otherAdult,
+    })),
   }))
 }
 
@@ -105,6 +120,9 @@ export default function TrainingPlan() {
   const detail = useGetTrainingDetail()
   const plan = useGetTrainingPlan()
   const linkedTemplate = useGetTrainingPlanTemplate()
+  const planInfo = useGetTrainingPlanInfo()
+  const leadersList = useGetLeaders()
+  const [roaming, setRoaming] = useState<number[]>([])
   const [chooseEdit, setChooseEdit] = useState(false)
   const drills = useGetDrills()
   const savePlan = useSaveTrainingPlan()
@@ -122,11 +140,13 @@ export default function TrainingPlan() {
   const [savedAt, setSavedAt] = useState<number | null>(null)
 
   async function load() {
+    planInfo.trigger({ trainingId }, { skipCache: true }).then((info) => setRoaming(info?.roamingLeaderIds ?? [])).catch(() => {})
     const data = await plan.trigger({ trainingId })
     const next: Block[] = data.map((b) => ({
       key: k(), name: b.name, minutes: b.minutes != null ? String(b.minutes) : '', notes: b.notes ?? '',
       items: b.items.map((i) => ({
         key: k(), groupName: i.groupName, drillId: i.drillId, title: i.title ?? '', level: i.level, notes: i.notes ?? '',
+        leaderIds: i.leaderIds ?? [], otherAdult: i.otherAdult ?? null,
         drill: i.drillId && i.drillName ? {
           id: i.drillId, name: i.drillName, summary: i.summary, coaching: i.coaching, description: i.description,
           durationMinutes: i.durationMinutes, area: i.area, equipment: i.equipment, intensity: i.intensity,
@@ -142,6 +162,7 @@ export default function TrainingPlan() {
   useEffect(() => {
     detail.trigger({ trainingId }).catch(() => {})
     linkedTemplate.trigger({ trainingId }, { skipCache: true }).catch(() => {})
+    leadersList.trigger().catch(() => {})
     load().then((b) => { if (b.length === 0 && editor) startEditing() }).catch(() => setError('Kunde inte hämta planen.'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trainingId])
@@ -161,6 +182,17 @@ export default function TrainingPlan() {
   const total = blocks.reduce((a, b) => a + blockMinutes(b), 0)
   const training = detail.data?.training
 
+  // Lagets ledare; de som är anmälda eller närvarande på passet markeras
+  const leaderOptions: LeaderOption[] = useMemo(() => {
+    const here = new Set((detail.data?.leaders ?? [])
+      .filter((l) => ['Närvarande', 'Anmäld', 'Närvarande, ej hela', 'Kallad'].includes(l.status)).map((l) => l.leader_id))
+    return (leadersList.data ?? [])
+      .filter((l) => l.active !== false || here.has(l.id))
+      .map((l) => ({ id: l.id, name: l.shortname || [l.firstname, l.lastname].filter(Boolean).join(' ') || 'Ledare', here: here.has(l.id) }))
+  }, [leadersList.data, detail.data])
+  const leaderName = (id: number) => leaderOptions.find((l) => l.id === id)?.name
+  const roamingText = holdersText(roaming, null, leaderName)
+
   function change(fn: (b: Block[]) => Block[]) {
     setBlocks((prev) => fn(prev))
     setDirty(true)
@@ -173,7 +205,7 @@ export default function TrainingPlan() {
     change((bs) => [...bs, { key: k(), name, minutes: name === 'Vattenpaus' ? '3' : '', notes: '', items: name === 'Vattenpaus' ? [] : [newItem(null)] }])
   }
   function newItem(group: string | null): Item {
-    return { key: k(), groupName: group, drillId: null, title: '', level: null, notes: '', drill: null }
+    return { key: k(), groupName: group, drillId: null, title: '', level: null, notes: '', drill: null, leaderIds: [], otherAdult: null }
   }
   function addItem(b: Block) {
     // Nästa grupp som inte används i blocket
@@ -207,9 +239,10 @@ export default function TrainingPlan() {
   async function save() {
     setError(null)
     try {
-      await savePlan.trigger({ trainingId, blocks: payload(), templateId: appliedTemplate })
+      await savePlan.trigger({ trainingId, blocks: payload(), templateId: appliedTemplate, roamingLeaderIds: roaming })
       setAppliedTemplate(undefined)
       linkedTemplate.trigger({ trainingId }, { skipCache: true }).catch(() => {})
+      planInfo.trigger({ trainingId }, { skipCache: true }).catch(() => {})
       await load()
       setSavedAt(Date.now())
       setEditing(false)
@@ -281,10 +314,26 @@ export default function TrainingPlan() {
           <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {total} min</span>
           <span>{blocks.length} block</span>
         </p>
+        {!editing && roamingText && (
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-team-accent/90"><Footprints className="h-3.5 w-3.5" /> Ambulerar: {roamingText}</p>
+        )}
+        {!editing && planInfo.data?.savedAt && blocks.length > 0 && (
+          <p className="mt-1 text-xs text-team-accent/70">
+            Senast sparad {savedWhen(planInfo.data.savedAt)}{planInfo.data.savedByName ? ` av ${planInfo.data.savedByName}` : ''}
+          </p>
+        )}
       </div>
 
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-3 md:p-4">
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+        {editing && (
+          <div className="flex flex-col gap-1 rounded-xl border border-border bg-card px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-sm font-medium"><Footprints className="h-4 w-4" /> Ambulerande ledare</p>
+            <p className="text-xs text-muted-foreground">Går mellan stationerna och övningarna under hela passet.</p>
+            <LeaderPicker leaders={leaderOptions} value={roaming} allowOther={false} label="Ambulerar"
+              onChange={(ids) => { setRoaming(ids); setDirty(true); setSavedAt(null) }} />
+          </div>
+        )}
         {savedAt && !editing && <p className="flex items-center gap-1.5 text-sm text-green-600"><Check className="h-4 w-4" /> Planen är sparad</p>}
         {notice && !editing && <p className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-sm"><Send className="h-4 w-4 shrink-0" /> {notice}</p>}
         {!plan.data && plan.loading ? (
@@ -308,6 +357,7 @@ export default function TrainingPlan() {
                 onInfo={(id) => setPreview({ id, level: null })}
                 onMove={(dir) => move(bi, dir)}
                 onRemove={() => change((bs) => bs.filter((x) => x.key !== b.key))}
+                leaders={leaderOptions}
               />
             ))}
             <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-dashed border-border p-3">
@@ -330,7 +380,7 @@ export default function TrainingPlan() {
           </div>
         ) : (
           blocks.map((b, bi) => (
-            <BlockView key={b.key} b={b} start={training ? clock(training.date, blocks.slice(0, bi).reduce((a, x) => a + blockMinutes(x), 0)) : null} groupCount={groupCount} onInfo={(id, level) => setPreview({ id, level })} />
+            <BlockView key={b.key} b={b} start={training ? clock(training.date, blocks.slice(0, bi).reduce((a, x) => a + blockMinutes(x), 0)) : null} groupCount={groupCount} onInfo={(id, level) => setPreview({ id, level })} leaderName={leaderName} />
           ))
         )}
       </div>
@@ -385,7 +435,7 @@ export default function TrainingPlan() {
 
 /* ───────────── Redigering ───────────── */
 
-export function BlockEditor({ b, start, first, last, groups, groupCount, onChange, onItem, onRemoveItem, onAddItem, onPick, onInfo, onMove, onRemove }: {
+export function BlockEditor({ b, start, first, last, groups, groupCount, onChange, onItem, onRemoveItem, onAddItem, onPick, onInfo, onMove, onRemove, leaders }: {
   b: Block
   start: string | null
   first: boolean
@@ -400,6 +450,8 @@ export function BlockEditor({ b, start, first, last, groups, groupCount, onChang
   onInfo: (drillId: number) => void
   onMove: (dir: -1 | 1) => void
   onRemove: () => void
+  /** Ledare att välja bland för vem som håller i övningen; utelämnat = inget val (mallar) */
+  leaders?: LeaderOption[]
 }) {
   const iconBtn = 'flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted disabled:opacity-30'
   return (
@@ -468,6 +520,10 @@ export function BlockEditor({ b, start, first, last, groups, groupCount, onChang
                 <input value={i.notes} onChange={(e) => onItem(i.key, { notes: e.target.value })} placeholder="Anteckning (valfritt)"
                   maxLength={1000} className="h-8 min-w-[160px] flex-1 rounded-md border border-border bg-background px-2 text-xs" />
               </div>
+              {leaders && (
+                <LeaderPicker leaders={leaders} value={i.leaderIds} otherAdult={i.otherAdult} label="Håller i"
+                  onChange={(ids, other) => onItem(i.key, { leaderIds: ids, otherAdult: other })} />
+              )}
             </div>
             <button type="button" onClick={() => onRemoveItem(i.key)} className="self-end rounded-md p-1.5 text-muted-foreground hover:bg-muted sm:self-start" aria-label="Ta bort raden">
               <Trash2 className="h-4 w-4" />
@@ -488,7 +544,10 @@ export function BlockEditor({ b, start, first, last, groups, groupCount, onChang
 
 /* ───────────── Visning (ute på planen) ───────────── */
 
-export function BlockView({ b, start, groupCount, onInfo }: { b: Block; start: string | null; groupCount: (g: string) => number; onInfo: (id: number, level: string | null) => void }) {
+export function BlockView({ b, start, groupCount, onInfo, leaderName }: {
+  b: Block; start: string | null; groupCount: (g: string) => number; onInfo: (id: number, level: string | null) => void
+  leaderName?: (id: number) => string | undefined
+}) {
   const multi = b.items.length > 1
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
@@ -502,7 +561,7 @@ export function BlockView({ b, start, groupCount, onInfo }: { b: Block; start: s
         <div className={cn('grid', multi && 'md:grid-cols-2', 'divide-y divide-border md:divide-y-0')}>
           {b.items.map((i, idx) => (
             <div key={i.key} className={cn(multi && 'md:border-border', multi && idx % 2 === 0 && 'md:border-r', multi && idx >= 2 && 'md:border-t')}>
-              <ItemView i={i} groupCount={groupCount} wide={!multi} onInfo={onInfo} />
+              <ItemView i={i} groupCount={groupCount} wide={!multi} onInfo={onInfo} leaderName={leaderName} />
             </div>
           ))}
         </div>
@@ -511,7 +570,11 @@ export function BlockView({ b, start, groupCount, onInfo }: { b: Block; start: s
   )
 }
 
-function ItemView({ i, groupCount, wide, onInfo }: { i: Item; groupCount: (g: string) => number; wide?: boolean; onInfo: (id: number, level: string | null) => void }) {
+function ItemView({ i, groupCount, wide, onInfo, leaderName }: {
+  i: Item; groupCount: (g: string) => number; wide?: boolean; onInfo: (id: number, level: string | null) => void
+  leaderName?: (id: number) => string | undefined
+}) {
+  const holders = leaderName ? holdersText(i.leaderIds, i.otherAdult, leaderName) : ''
   const [open, setOpen] = useState(false)
   const d = i.drill
   const lv = d && i.level ? d.levels?.[i.level] : null
@@ -537,6 +600,9 @@ function ItemView({ i, groupCount, wide, onInfo }: { i: Item; groupCount: (g: st
           </button>
         )}
       </div>
+      {holders && (
+        <p className="flex items-center gap-1.5 text-sm"><Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /><span className="text-muted-foreground">Håller i:</span> {holders}</p>
+      )}
       {i.notes && <p className="text-sm italic text-muted-foreground">{i.notes}</p>}
       {d && (
         <div className={cn('flex flex-col gap-2', wide && 'md:grid md:grid-cols-[minmax(0,440px)_minmax(0,1fr)] md:items-start md:gap-4')}>

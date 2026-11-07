@@ -1,7 +1,7 @@
 import { db } from '@/server/db'
 import { AccessError } from '@/server/access'
 import { cleanText } from '@/server/drills/shared'
-import { cleanBlocks, type PlanBlockInput } from '@/server/plans/shared'
+import { cleanBlocks, withoutLeaders, type PlanBlockInput } from '@/server/plans/shared'
 import type { User } from '@/server/types'
 
 type Params = { name: string; blocks: PlanBlockInput[] }
@@ -10,7 +10,7 @@ type Params = { name: string; blocks: PlanBlockInput[] }
 export default async function savePlanTemplate(req: { params: Params; user: User }) {
   const name = cleanText(req.params.name, 80)
   if (!name) throw new AccessError('Mallen måste ha ett namn.', 400)
-  const blocks = JSON.stringify(cleanBlocks(req.params.blocks))
+  const blocks = JSON.stringify(withoutLeaders(cleanBlocks(req.params.blocks)))
   const { data } = await db.query<{ id: number }>(
     `UPDATE plan_templates SET blocks = $2::jsonb WHERE lower(name) = lower($1) RETURNING id`,
     [name, blocks],

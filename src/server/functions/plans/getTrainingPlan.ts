@@ -20,6 +20,8 @@ export default async function getTrainingPlan(req: { params: Params; user: User 
       title: string | null
       level: string | null
       notes: string | null
+      leaderIds: number[]
+      otherAdult: string | null
       drillName: string | null
       summary: string | null
       coaching: string | null
@@ -32,7 +34,7 @@ export default async function getTrainingPlan(req: { params: Params; user: User 
       levels: Record<string, { text?: string | null; diagram?: unknown | null }> | null
     }>(
       `SELECT i.id, i.block_id AS "blockId", i.position, i.group_name AS "groupName", i.drill_id AS "drillId",
-              i.title, i.level, i.notes, d.name AS "drillName", d.summary, d.coaching, d.description,
+              i.title, i.level, i.notes, i.leader_ids AS "leaderIds", i.other_adult AS "otherAdult", d.name AS "drillName", d.summary, d.coaching, d.description,
               d.duration_minutes AS "durationMinutes", d.area, d.equipment, d.intensity, d.diagram, d.levels
        FROM training_block_items i
        JOIN training_blocks b ON b.id = i.block_id

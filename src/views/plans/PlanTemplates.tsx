@@ -172,7 +172,7 @@ function PlanTemplateEditPage() {
   const updateBlock = (key: string, patch: Partial<Block>) => change((bs) => bs.map((b) => (b.key === key ? { ...b, ...patch } : b)))
   const updateItem = (bk: string, ik: string, patch: Partial<Item>) =>
     change((bs) => bs.map((b) => (b.key === bk ? { ...b, items: b.items.map((i) => (i.key === ik ? { ...i, ...patch } : i)) } : b)))
-  const newItem = (group: string | null): Item => ({ key: k(), groupName: group, drillId: null, title: '', level: null, notes: '', drill: null })
+  const newItem = (group: string | null): Item => ({ key: k(), groupName: group, drillId: null, title: '', level: null, notes: '', drill: null, leaderIds: [], otherAdult: null })
   function addBlock(n: string) {
     change((bs) => [...bs, { key: k(), name: n, minutes: n === 'Vattenpaus' ? '3' : '', notes: '', items: n === 'Vattenpaus' ? [] : [newItem(null)] }])
   }

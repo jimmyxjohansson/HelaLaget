@@ -92,6 +92,7 @@ import plans_deletePlanTemplate from './functions/plans/deletePlanTemplate'
 import plans_getPlanTemplateTrainings from './functions/plans/getPlanTemplateTrainings'
 import plans_getPlanTemplates from './functions/plans/getPlanTemplates'
 import plans_getTrainingPlan from './functions/plans/getTrainingPlan'
+import plans_getTrainingPlanInfo from './functions/plans/getTrainingPlanInfo'
 import plans_getTrainingPlanTemplate from './functions/plans/getTrainingPlanTemplate'
 import plans_linkPlanTemplate from './functions/plans/linkPlanTemplate'
 import plans_notifyTrainingPlan from './functions/plans/notifyTrainingPlan'
@@ -246,6 +247,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'plans/getPlanTemplateTrainings': { handler: plans_getPlanTemplateTrainings, access: 'leader' },
   'plans/getPlanTemplates': { handler: plans_getPlanTemplates, access: 'viewer' },
   'plans/getTrainingPlan': { handler: plans_getTrainingPlan, access: 'viewer' },
+  'plans/getTrainingPlanInfo': { handler: plans_getTrainingPlanInfo, access: 'viewer' },
   'plans/getTrainingPlanTemplate': { handler: plans_getTrainingPlanTemplate, access: 'viewer' },
   'plans/linkPlanTemplate': { handler: plans_linkPlanTemplate, access: 'leader' },
   'plans/notifyTrainingPlan': { handler: plans_notifyTrainingPlan, access: 'leader' },

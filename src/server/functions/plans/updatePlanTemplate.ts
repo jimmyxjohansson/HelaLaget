@@ -1,7 +1,7 @@
 import { db } from '@/server/db'
 import { AccessError } from '@/server/access'
 import { cleanText } from '@/server/drills/shared'
-import { cleanBlocks, UPCOMING_SQL, writePlan, type PlanBlockInput } from '@/server/plans/shared'
+import { cleanBlocks, withoutLeaders, UPCOMING_SQL, writePlan, type PlanBlockInput } from '@/server/plans/shared'
 import type { User } from '@/server/types'
 
 export const access = 'leader'
@@ -22,7 +22,7 @@ export default async function updatePlanTemplate(req: { params: Params; user: Us
   const name = cleanText(req.params.name, 80)
   if (!name) throw new AccessError('Mallen måste ha ett namn.', 400)
   const id = req.params.id ? Number(req.params.id) : null
-  const cleaned = cleanBlocks(req.params.blocks)
+  const cleaned = withoutLeaders(cleanBlocks(req.params.blocks))
   const blocks = JSON.stringify(cleaned)
 
   const clash = await db.query<{ id: number }>(
@@ -43,7 +43,7 @@ export default async function updatePlanTemplate(req: { params: Params; user: Us
         `SELECT t.id FROM trainings t WHERE t.plan_template_id = $1 AND ${UPCOMING_SQL}`,
         [id],
       )
-      for (const t of linked) await writePlan(t.id, cleaned)
+      for (const t of linked) await writePlan(t.id, cleaned, { keepLeaders: true })
       updated = linked.length
     }
     return { id: data[0].id, updated }

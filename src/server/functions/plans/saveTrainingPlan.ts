@@ -11,6 +11,8 @@ type Params = {
    * En tom plan tar alltid bort kopplingen.
    */
   templateId?: number | null
+  /** Ledare som ambulerar mellan stationerna */
+  roamingLeaderIds?: number[]
 }
 
 /** Spara hela planen (ersätter den tidigare). */
@@ -21,6 +23,15 @@ export default async function saveTrainingPlan(req: { params: Params; user: User
   if (!t[0]) throw new AccessError('Träningen finns inte.', 404)
 
   await writePlan(trainingId, blocks)
+  const roaming = Array.isArray(req.params.roamingLeaderIds)
+    ? Array.from(new Set(req.params.roamingLeaderIds.map(Number).filter((n) => Number.isInteger(n) && n > 0))).slice(0, 8)
+    : null
+  await db.query(
+    `UPDATE trainings SET plan_saved_by = $2, plan_saved_at = now(),
+       plan_roaming_leader_ids = COALESCE($3::int[], plan_roaming_leader_ids)
+     WHERE id = $1`,
+    [trainingId, req.user.id, roaming],
+  )
   if (blocks.length === 0 || req.params.templateId !== undefined) {
     const tid = blocks.length && req.params.templateId ? Number(req.params.templateId) : null
     await db.query(
