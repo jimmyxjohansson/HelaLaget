@@ -335,14 +335,6 @@ export default function TrainingPlan() {
           <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {total} min</span>
           <span>{blocks.length} block</span>
         </p>
-        {!editing && roamingText && (
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-team-accent/90"><Footprints className="h-3.5 w-3.5" /> Snurrande ledare: {roamingText}</p>
-        )}
-        {!editing && planInfo.data?.savedAt && blocks.length > 0 && (
-          <p className="mt-1 text-xs text-team-accent/70">
-            Senast sparad {savedWhen(planInfo.data.savedAt)}{planInfo.data.savedByName ? ` av ${planInfo.data.savedByName}` : ''}
-          </p>
-        )}
         </div>
         {detail.data && <StatusMinis attendees={detail.data.attendees} leaders={detail.data.leaders} href={`/trainings/${trainingId}`} />}
         </div>
@@ -350,6 +342,12 @@ export default function TrainingPlan() {
 
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-3 md:p-4">
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+        {!editing && roamingText && blocks.length > 0 && (
+          <p className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm">
+            <Footprints className="h-4 w-4 shrink-0 text-primary" />
+            <span><span className="text-muted-foreground">Snurrande ledare:</span> <b className="font-semibold">{roamingText}</b></span>
+          </p>
+        )}
         {editing && (
           <div className="flex flex-col gap-1 rounded-xl border border-border bg-card px-3 py-2.5">
             <p className="flex items-center gap-1.5 text-sm font-medium"><Footprints className="h-4 w-4" /> Snurrande ledare</p>
@@ -406,6 +404,11 @@ export default function TrainingPlan() {
           blocks.map((b, bi) => (
             <BlockView key={b.key} b={b} start={training ? clock(training.date, blocks.slice(0, bi).reduce((a, x) => a + blockMinutes(x), 0)) : null} groupCount={groupCount} onInfo={(id, level) => setPreview({ id, level })} leaderName={leaderName} />
           ))
+        )}
+        {!editing && planInfo.data?.savedAt && blocks.length > 0 && (
+          <p className="pt-1 text-center text-xs text-muted-foreground">
+            Senast sparad {savedWhen(planInfo.data.savedAt)}{planInfo.data.savedByName ? ` av ${planInfo.data.savedByName}` : ''}
+          </p>
         )}
       </div>
 
