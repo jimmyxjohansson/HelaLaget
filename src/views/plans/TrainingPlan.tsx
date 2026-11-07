@@ -5,12 +5,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   ArrowDown, ArrowLeft, ArrowUp, BookOpen, Check, ChevronDown, ClipboardList, Clock, ExternalLink,
-  Footprints, Info, LayoutTemplate, Loader2, Pencil, Plus, Send, Trash2, Users, X,
+  Footprints, ImageIcon, Info, LayoutTemplate, Loader2, Pencil, Plus, Send, Trash2, Users, X,
 } from 'lucide-react'
 import { useGetTrainingDetail } from '../../hooks/backend/trainings'
 import { useGetDrills } from '../../hooks/backend/drills'
 import { useGetLeaders } from '../../hooks/backend/leaders'
 import LeaderPicker, { holdersText, type LeaderOption } from './LeaderPicker'
+import PlanImageDialog from './PlanImageDialog'
 import {
   useDeletePlanTemplate, useGetPlanTemplates, useGetTrainingPlan, useGetTrainingPlanInfo, useGetTrainingPlanTemplate, useNotifyTrainingPlan, useSavePlanTemplate, useSaveTrainingPlan,
 } from '../../hooks/backend/plans'
@@ -123,6 +124,7 @@ export default function TrainingPlan() {
   const planInfo = useGetTrainingPlanInfo()
   const leadersList = useGetLeaders()
   const [roaming, setRoaming] = useState<number[]>([])
+  const [imageOpen, setImageOpen] = useState(false)
   const [chooseEdit, setChooseEdit] = useState(false)
   const drills = useGetDrills()
   const savePlan = useSaveTrainingPlan()
@@ -279,8 +281,21 @@ export default function TrainingPlan() {
           <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-team-accent/80">
             <ArrowLeft className="h-4 w-4" /> Tillbaka
           </button>
+          {!editor && !editing && blocks.length > 0 && (
+            <button onClick={() => setImageOpen(true)} aria-label="Bild att dela"
+              className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm hover:bg-primary-foreground/30">
+              <ImageIcon className="h-4 w-4" /> Bild
+            </button>
+          )}
           {editor && (
             <div className="flex items-center gap-2">
+              {!editing && blocks.length > 0 && (
+                <button onClick={() => setImageOpen(true)} title="Bild att skicka eller kopiera" aria-label="Bild att dela"
+                  className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-2 py-1.5 text-sm hover:bg-primary-foreground/30 sm:px-3">
+                  <ImageIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">Bild</span>
+                </button>
+              )}
               <button onClick={() => { setTemplatesOpen(true); if (!drills.data) drills.trigger().catch(() => {}) }}
                 className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm hover:bg-primary-foreground/30">
                 <LayoutTemplate className="h-4 w-4" /> Mallar
@@ -400,6 +415,41 @@ export default function TrainingPlan() {
 
       <DrillPreview drillId={preview?.id ?? null} initialLevel={preview?.level} onClose={() => setPreview(null)} />
       <DrillPicker open={!!picker} drills={drills.data} onClose={() => setPicker(null)} onPick={pick} />
+      {training && (
+        <PlanImageDialog
+          open={imageOpen}
+          onClose={() => setImageOpen(false)}
+          data={{
+            title: (() => { const t = dateTitle(training.date); return t.charAt(0).toUpperCase() + t.slice(1) })(),
+            subtitle: `${clock(training.date, 0)}–${clock(training.date, total)} · ${total} min · ${blocks.length} block`,
+            roaming: roamingText,
+            blocks: blocks.map((b, bi) => ({
+              start: clock(training.date, blocks.slice(0, bi).reduce((a, x) => a + blockMinutes(x), 0)),
+              name: b.name,
+              minutes: blockMinutes(b),
+              notes: b.notes || null,
+              items: b.items.map((i) => {
+                const d = i.drill
+                const lv = d && i.level ? d.levels?.[i.level] : null
+                const n = i.groupName ? groupCount(i.groupName) : 0
+                return {
+                  group: i.groupName ? `${i.groupName}${n ? ` · ${n}` : ''}` : null,
+                  name: d?.name ?? (i.title || 'Övning'),
+                  level: i.level,
+                  levelColor: i.level ? LEVEL_COLOR[i.level] ?? null : null,
+                  holders: holdersText(i.leaderIds, i.otherAdult, leaderName),
+                  levelText: lv?.text ?? null,
+                  coaching: (d?.coaching ?? '').split('\n').map((c) => c.trim()).filter(Boolean),
+                  notes: i.notes || null,
+                  svg: typeof document === 'undefined' ? null
+                    : document.querySelector<SVGSVGElement>(`[data-plan-item="${i.key}"] svg`),
+                }
+              }),
+            })),
+          }}
+          fileName={`traningsplan-${training.date.slice(0, 10)}.png`}
+        />
+      )}
       <Dialog open={chooseEdit} onOpenChange={(o) => !o && setChooseEdit(false)}>
         <DialogContent className="w-[calc(100vw-1rem)] max-w-[440px]">
           <DialogHeader><DialogTitle>Vad vill du redigera?</DialogTitle></DialogHeader>
@@ -607,7 +657,7 @@ function ItemView({ i, groupCount, wide, onInfo, leaderName }: {
       {d && (
         <div className={cn('flex flex-col gap-2', wide && 'md:grid md:grid-cols-[minmax(0,440px)_minmax(0,1fr)] md:items-start md:gap-4')}>
           {diagram && (
-            <button type="button" onClick={() => setOpen(!open)} className="overflow-hidden rounded-lg border border-border text-left" aria-expanded={open}>
+            <button type="button" onClick={() => setOpen(!open)} className="overflow-hidden rounded-lg border border-border text-left" aria-expanded={open} data-plan-item={i.key}>
               <DrillDiagram diagram={diagram} className="block h-auto w-full" title={d.name} />
             </button>
           )}
