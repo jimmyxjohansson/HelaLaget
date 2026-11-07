@@ -297,8 +297,10 @@ export default function TrainingPlan() {
                 </button>
               )}
               <button onClick={() => { setTemplatesOpen(true); if (!drills.data) drills.trigger().catch(() => {}) }}
-                className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm hover:bg-primary-foreground/30">
-                <LayoutTemplate className="h-4 w-4" /> Mallar
+                title="Mallar" aria-label="Mallar"
+                className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-2 py-1.5 text-sm hover:bg-primary-foreground/30 sm:px-3">
+                <LayoutTemplate className="h-4 w-4" />
+                <span className="hidden sm:inline">Mallar</span>
               </button>
               <button onClick={() => router.push(`/trainings/${trainingId}/groups`)} title="Träningsgrupper" aria-label="Grupper"
                 className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-2 py-1.5 text-sm hover:bg-primary-foreground/30 sm:px-3">
@@ -315,13 +317,17 @@ export default function TrainingPlan() {
               )}
               {!editing && (
                 <button onClick={() => (linkedTemplate.data ? setChooseEdit(true) : startEditing())}
-                  className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm hover:bg-primary-foreground/30">
-                  <Pencil className="h-4 w-4" /> Redigera
+                  title="Redigera" aria-label="Redigera"
+                  className="flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-2 py-1.5 text-sm hover:bg-primary-foreground/30 sm:px-3">
+                  <Pencil className="h-4 w-4" />
+                  <span className="hidden sm:inline">Redigera</span>
                 </button>
               )}
             </div>
           )}
         </div>
+        <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
         <p className="text-sm font-medium uppercase tracking-widest text-team-accent/70">Träningsplan</p>
         <h1 className="text-2xl font-bold first-letter:uppercase">{training ? dateTitle(training.date) : ' '}</h1>
         <p className="mt-0.5 flex items-center gap-3 text-sm text-team-accent/80">
@@ -337,6 +343,9 @@ export default function TrainingPlan() {
             Senast sparad {savedWhen(planInfo.data.savedAt)}{planInfo.data.savedByName ? ` av ${planInfo.data.savedByName}` : ''}
           </p>
         )}
+        </div>
+        {detail.data && <StatusMinis attendees={detail.data.attendees} leaders={detail.data.leaders} href={`/trainings/${trainingId}`} />}
+        </div>
       </div>
 
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-3 md:p-4">
@@ -589,6 +598,36 @@ export function BlockEditor({ b, start, first, last, groups, groupCount, onChang
           maxLength={1000} className="ml-auto h-8 min-w-[160px] flex-1 rounded-md border border-transparent bg-transparent px-2 text-xs hover:border-border focus:border-border focus:outline-none sm:max-w-xs" />
       </div>
     </section>
+  )
+}
+
+/** De fyra statusrutorna från träningen i miniformat: spelare+ledare per status. */
+function StatusMinis({ attendees, leaders, href }: {
+  attendees: { status: string }[]
+  leaders: { status: string }[]
+  href: string
+}) {
+  const count = (list: { status: string }[], statuses: string[]) => list.filter((x) => statuses.includes(x.status)).length
+  const boxes = [
+    { color: '#008000', statuses: ['Närvarande', 'Närvarande, ej hela'], label: 'Närvarande' },
+    { color: '#0000FF', statuses: ['Anmäld'], label: 'Anmälda' },
+    { color: '#FF0000', statuses: ['Ej närvarande', 'Anmäld, kom ej', 'Annan aktivitet'], label: 'Ej närvarande' },
+    { color: '#9333ea', statuses: ['Kallad'], label: 'Kallade' },
+  ]
+  return (
+    <Link href={href} className="flex shrink-0 gap-1" title="Till träningen">
+      {boxes.map((b) => {
+        const p = count(attendees, b.statuses)
+        const l = count(leaders, b.statuses)
+        return (
+          <span key={b.label} aria-label={`${b.label}: ${p} spelare och ${l} ledare`}
+            className="flex min-w-[34px] items-center justify-center rounded-md px-1.5 py-1 ring-1 ring-white/30"
+            style={{ backgroundColor: b.color, opacity: !p && !l ? 0.35 : undefined }}>
+            <span className="text-xs font-bold leading-none text-white">{p}<span className="text-[10px] font-semibold opacity-75">+{l}</span></span>
+          </span>
+        )
+      })}
+    </Link>
   )
 }
 
