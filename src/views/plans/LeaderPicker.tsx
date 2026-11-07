@@ -6,17 +6,17 @@ import { cn } from '../../lib/shadcn/utils'
 
 export type LeaderOption = { id: number; name: string; /** Anmäld eller närvarande på passet */ here: boolean }
 
-/** "Anna, Erik och en annan vuxen (Pelle)" */
+/** "Anna, Erik och Pelle (vuxen)" */
 export function holdersText(ids: number[], otherAdult: string | null, nameOf: (id: number) => string | undefined) {
   const names = ids.map(nameOf).filter((n): n is string => !!n)
-  if (otherAdult != null) names.push(otherAdult ? `${otherAdult} (annan vuxen)` : 'annan vuxen')
+  if (otherAdult != null) names.push(otherAdult ? `${otherAdult} (vuxen)` : 'vuxen')
   if (names.length === 0) return ''
   const s = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} och ${names[names.length - 1]}`
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 /**
- * Välj ledare som håller i en övning (eller ambulerar), och om en annan vuxen gör det.
+ * Välj ansvariga ledare för en övning (eller snurrande ledare), och om en vuxen som inte är ledare är ansvarig.
  * Ledarna på passet står först.
  */
 export default function LeaderPicker({ leaders, value, otherAdult, onChange, label, allowOther = true }: {
@@ -67,7 +67,7 @@ export default function LeaderPicker({ leaders, value, otherAdult, onChange, lab
               <button type="button" onClick={() => onChange(value, other == null ? '' : null)} aria-pressed={other != null}
                 className={cn('flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs',
                   other != null ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:bg-muted')}>
-                {other != null ? <Check className="h-3 w-3" /> : <UserRound className="h-3 w-3" />} Annan vuxen
+                {other != null ? <Check className="h-3 w-3" /> : <UserRound className="h-3 w-3" />} Vuxen
               </button>
               {other != null && (
                 <input value={other} onChange={(e) => onChange(value, e.target.value)} placeholder="Namn (valfritt)" maxLength={60}

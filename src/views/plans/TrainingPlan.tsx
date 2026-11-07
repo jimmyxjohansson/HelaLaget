@@ -315,7 +315,7 @@ export default function TrainingPlan() {
           <span>{blocks.length} block</span>
         </p>
         {!editing && roamingText && (
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-team-accent/90"><Footprints className="h-3.5 w-3.5" /> Ambulerar: {roamingText}</p>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-team-accent/90"><Footprints className="h-3.5 w-3.5" /> Snurrande ledare: {roamingText}</p>
         )}
         {!editing && planInfo.data?.savedAt && blocks.length > 0 && (
           <p className="mt-1 text-xs text-team-accent/70">
@@ -328,9 +328,9 @@ export default function TrainingPlan() {
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         {editing && (
           <div className="flex flex-col gap-1 rounded-xl border border-border bg-card px-3 py-2.5">
-            <p className="flex items-center gap-1.5 text-sm font-medium"><Footprints className="h-4 w-4" /> Ambulerande ledare</p>
+            <p className="flex items-center gap-1.5 text-sm font-medium"><Footprints className="h-4 w-4" /> Snurrande ledare</p>
             <p className="text-xs text-muted-foreground">Går mellan stationerna och övningarna under hela passet.</p>
-            <LeaderPicker leaders={leaderOptions} value={roaming} allowOther={false} label="Ambulerar"
+            <LeaderPicker leaders={leaderOptions} value={roaming} allowOther={false} label="Snurrande"
               onChange={(ids) => { setRoaming(ids); setDirty(true); setSavedAt(null) }} />
           </div>
         )}
@@ -521,7 +521,7 @@ export function BlockEditor({ b, start, first, last, groups, groupCount, onChang
                   maxLength={1000} className="h-8 min-w-[160px] flex-1 rounded-md border border-border bg-background px-2 text-xs" />
               </div>
               {leaders && (
-                <LeaderPicker leaders={leaders} value={i.leaderIds} otherAdult={i.otherAdult} label="Håller i"
+                <LeaderPicker leaders={leaders} value={i.leaderIds} otherAdult={i.otherAdult} label="Ansvarig"
                   onChange={(ids, other) => onItem(i.key, { leaderIds: ids, otherAdult: other })} />
               )}
             </div>
@@ -601,7 +601,7 @@ function ItemView({ i, groupCount, wide, onInfo, leaderName }: {
         )}
       </div>
       {holders && (
-        <p className="flex items-center gap-1.5 text-sm"><Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /><span className="text-muted-foreground">Håller i:</span> {holders}</p>
+        <p className="flex items-center gap-1.5 text-sm"><Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /><span className="text-muted-foreground">Ansvarig:</span> {holders}</p>
       )}
       {i.notes && <p className="text-sm italic text-muted-foreground">{i.notes}</p>}
       {d && (
