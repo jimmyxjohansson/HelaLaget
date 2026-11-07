@@ -84,6 +84,11 @@ export const blockMinutes = (b: Block) => {
   return Number.isFinite(n) && n > 0 ? n : 0
 }
 
+/** Planens innehåll utan ansvariga, för att jämföra före och efter en redigering. */
+export function structureOf(blocks: Block[]) {
+  return JSON.stringify(blocksPayload(blocks).map((b) => ({ ...b, items: b.items.map(({ leaderIds: _l, otherAdult: _o, ...i }) => i) })))
+}
+
 /** Mallens block (som de sparas) till redigerbara block, med övningarna från banken. */
 export function blocksFromTemplate(tblocks: TemplateBlocks, drills: DrillListItem[] | null | undefined): Block[] {
   const byId = new Map((drills ?? []).map((d) => [d.id, d]))
@@ -125,6 +130,8 @@ export default function TrainingPlan() {
   const leadersList = useGetLeaders()
   const [roaming, setRoaming] = useState<number[]>([])
   const [imageOpen, setImageOpen] = useState(false)
+  // Planens innehåll utan ansvariga när redigeringen började, för att se om bara ansvariga ändrats
+  const [structureAtStart, setStructureAtStart] = useState('')
   const [chooseEdit, setChooseEdit] = useState(false)
   const drills = useGetDrills()
   const savePlan = useSaveTrainingPlan()
@@ -170,6 +177,7 @@ export default function TrainingPlan() {
   }, [trainingId])
 
   function startEditing() {
+    setStructureAtStart(structureOf(blocks))
     setEditing(true)
     if (!drills.data) drills.trigger().catch(() => {})
   }
@@ -241,7 +249,9 @@ export default function TrainingPlan() {
   async function save() {
     setError(null)
     try {
-      await savePlan.trigger({ trainingId, blocks: payload(), templateId: appliedTemplate, roamingLeaderIds: roaming })
+      // Bara ansvariga och snurrande ledare ändrade: kopplingen till mallen ligger kvar
+      const onlyLeaders = appliedTemplate === null && structureOf(blocks) === structureAtStart
+      await savePlan.trigger({ trainingId, blocks: payload(), templateId: onlyLeaders ? undefined : appliedTemplate, roamingLeaderIds: roaming })
       setAppliedTemplate(undefined)
       linkedTemplate.trigger({ trainingId }, { skipCache: true }).catch(() => {})
       planInfo.trigger({ trainingId }, { skipCache: true }).catch(() => {})
@@ -484,7 +494,7 @@ export default function TrainingPlan() {
               <Pencil className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <span>
                 <span className="block font-medium">Bara den här träningen</span>
-                <span className="block text-xs text-muted-foreground">Ändringen gäller bara den här träningen. Den kopplas bort från mallen, så att ändringar i mallen inte skriver över den.</span>
+                <span className="block text-xs text-muted-foreground">Ändringen gäller bara den här träningen, som då kopplas bort från mallen. Ändrar du bara ansvariga och snurrande ledare ligger kopplingen kvar.</span>
               </span>
             </button>
           </div>
