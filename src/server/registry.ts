@@ -66,6 +66,7 @@ import members_regenerateJoinCode from './functions/members/regenerateJoinCode'
 import members_removeMember from './functions/members/removeMember'
 import members_updateMember from './functions/members/updateMember'
 import members_updateSquadSettings from './functions/members/updateSquadSettings'
+import notifications_getPushLog from './functions/notifications/getPushLog'
 import notifications_getPushStatus from './functions/notifications/getPushStatus'
 import notifications_sendTestPush from './functions/notifications/sendTestPush'
 import notifications_setPushSquad from './functions/notifications/setPushSquad'
@@ -222,6 +223,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'members/removeMember': { handler: members_removeMember, access: 'admin' },
   'members/updateMember': { handler: members_updateMember, access: 'admin' },
   'members/updateSquadSettings': { handler: members_updateSquadSettings, access: 'admin' },
+  'notifications/getPushLog': { handler: notifications_getPushLog, access: 'admin' },
   'notifications/getPushStatus': { handler: notifications_getPushStatus, access: 'user' },
   'notifications/sendTestPush': { handler: notifications_sendTestPush, access: 'user' },
   'notifications/setPushSquad': { handler: notifications_setPushSquad, access: 'user' },

@@ -1,7 +1,7 @@
 'use client'
 
 import {
-  BarChart3, Bell, BookOpen, Building2, CalendarDays, CalendarRange, ExternalLink, FileText, Home, ListOrdered,
+  BarChart3, Bell, BellRing, BookOpen, Building2, CalendarDays, CalendarRange, ExternalLink, FileText, Home, ListOrdered,
   LayoutTemplate, Medal, RefreshCw, Repeat, Shield, Trophy, UserCog, Users,
 } from 'lucide-react'
 import { getMe } from '../lib/squad-store'
@@ -61,7 +61,10 @@ export function navGroups(): NavGroup[] {
 
   const admin: NavItem[] = []
   if (leader) admin.push({ to: '/svenskalag', icon: RefreshCw, label: 'Svenskalag-synk' })
-  if (role === 'admin') admin.push({ to: '/lag/installningar', icon: UserCog, label: 'Laginställningar' })
+  if (role === 'admin') {
+    admin.push({ to: '/lag/installningar', icon: UserCog, label: 'Laginställningar' })
+    admin.push({ to: '/lag/notislogg', icon: BellRing, label: 'Notislogg' })
+  }
   if (me?.isSuperadmin || (me?.adminOrganizationIds.length ?? 0) > 0) {
     admin.push({ to: '/foreningar', icon: Building2, label: 'Föreningar' })
   }

@@ -43,6 +43,8 @@ export default async function notifyTrainingGroups(req: { params: Params; user: 
       url: `/-/trainings/${trainingId}/groups?lag=${squadId}`,
       tag: `groups-${trainingId}`,
     },
+    undefined,
+    req.user.id,
   )
   return { people: result.people, devices: result.sent }
 }

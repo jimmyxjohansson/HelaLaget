@@ -1,11 +1,17 @@
 // GENERERAD FIL – ändra inte för hand. Kör `npm run generate`.
 
 import { createBackendHook } from './_core'
+import type getPushLog from '../../server/functions/notifications/getPushLog'
 import type getPushStatus from '../../server/functions/notifications/getPushStatus'
 import type sendTestPush from '../../server/functions/notifications/sendTestPush'
 import type setPushSquad from '../../server/functions/notifications/setPushSquad'
 import type subscribePush from '../../server/functions/notifications/subscribePush'
 import type unsubscribePush from '../../server/functions/notifications/unsubscribePush'
+
+export const useGetPushLog = createBackendHook<
+  Parameters<typeof getPushLog>[0]['params'],
+  Awaited<ReturnType<typeof getPushLog>>
+>('notifications/getPushLog')
 
 export const useGetPushStatus = createBackendHook<
   Parameters<typeof getPushStatus>[0]['params'],

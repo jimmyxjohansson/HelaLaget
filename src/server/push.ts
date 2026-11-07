@@ -19,7 +19,9 @@ export type PushPayload = {
   tag?: string
 }
 
-type Subscription = { id: number; endpoint: string; p256dh: string; auth: string }
+type Subscription = { id: number; endpoint: string; p256dh: string; auth: string; user_id: string }
+
+type Audience = 'squad' | 'leaders' | 'admins'
 
 let configured = false
 
@@ -71,7 +73,23 @@ async function send(subs: Subscription[], payload: PushPayload) {
   )
   if (gone.length) await adminDb.query('DELETE FROM push_subscriptions WHERE id = ANY($1::bigint[])', [gone])
   if (ok.length) await adminDb.query('UPDATE push_subscriptions SET last_used_at = now() WHERE id = ANY($1::bigint[])', [ok])
-  return { sent: ok.length, removed: gone.length }
+  return { sent: ok.length, removed: gone.length, failed: subs.length - ok.length - gone.length }
+}
+
+/** Skickar och sparar notisen i lagets notislogg. Loggen får aldrig stoppa själva notisen. */
+async function sendAndLog(squadId: number, audience: Audience, subs: Subscription[], payload: PushPayload, sentBy?: string | null) {
+  const result = await send(subs, payload)
+  const people = new Set(subs.map((s) => s.user_id)).size
+  try {
+    await adminDb.query(
+      `INSERT INTO push_log (squad_id, audience, title, body, url, sent_by, people, devices, failed)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [squadId, audience, payload.title, payload.body, payload.url ?? null, sentBy ?? null, people, result.sent, result.failed],
+    )
+  } catch (e) {
+    console.error('[push] kunde inte spara i notisloggen', e)
+  }
+  return { ...result, people }
 }
 
 /**
@@ -81,7 +99,7 @@ async function send(subs: Subscription[], payload: PushPayload) {
 export async function sendToSquad(squadId: number, payload: PushPayload, exceptUserId?: string) {
   if (!pushConfigured()) return { sent: 0, removed: 0 }
   const { data } = await adminDb.query<Subscription>(
-    `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth
+    `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth, ps.user_id
      FROM push_subscriptions ps
      JOIN push_squads f ON f.user_id = ps.user_id AND f.squad_id = $1
      JOIN squads s ON s.id = f.squad_id
@@ -93,7 +111,7 @@ export async function sendToSquad(squadId: number, payload: PushPayload, exceptU
             OR EXISTS (SELECT 1 FROM app_admins a WHERE a.user_id = ps.user_id))`,
     [squadId, exceptUserId ?? null],
   )
-  return send(data, payload)
+  return sendAndLog(squadId, 'squad', data, payload, exceptUserId)
 }
 
 /**
@@ -101,9 +119,9 @@ export async function sendToSquad(squadId: number, payload: PushPayload, exceptU
  * utom den som skickar. Föreningsadmin och superadmin räknas som admin.
  * Returnerar också hur många personer som nåddes.
  */
-export async function sendToSquadLeaders(squadId: number, payload: PushPayload, exceptUserId?: string) {
+export async function sendToSquadLeaders(squadId: number, payload: PushPayload, exceptUserId?: string, sentBy?: string) {
   if (!pushConfigured()) return { sent: 0, removed: 0, people: 0 }
-  const { data } = await adminDb.query<Subscription & { user_id: string }>(
+  const { data } = await adminDb.query<Subscription>(
     `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth, ps.user_id
      FROM push_subscriptions ps
      JOIN push_squads f ON f.user_id = ps.user_id AND f.squad_id = $1
@@ -117,8 +135,7 @@ export async function sendToSquadLeaders(squadId: number, payload: PushPayload, 
             OR EXISTS (SELECT 1 FROM app_admins a WHERE a.user_id = ps.user_id))`,
     [squadId, exceptUserId ?? null],
   )
-  const result = await send(data, payload)
-  return { ...result, people: new Set(data.map((d) => d.user_id)).size }
+  return sendAndLog(squadId, 'leaders', data, payload, sentBy ?? exceptUserId)
 }
 
 /**
@@ -128,7 +145,7 @@ export async function sendToSquadLeaders(squadId: number, payload: PushPayload, 
 export async function sendToSquadAdmins(squadId: number, payload: PushPayload) {
   if (!pushConfigured()) return { sent: 0, removed: 0 }
   const { data } = await adminDb.query<Subscription>(
-    `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth
+    `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth, ps.user_id
      FROM push_subscriptions ps
      JOIN squads s ON s.id = $1
      WHERE EXISTS (SELECT 1 FROM squad_members m
@@ -137,14 +154,14 @@ export async function sendToSquadAdmins(squadId: number, payload: PushPayload) {
                    WHERE oa.organization_id = s.organization_id AND oa.user_id = ps.user_id)`,
     [squadId],
   )
-  return send(data, payload)
+  return sendAndLog(squadId, 'admins', data, payload)
 }
 
 /** Skicka till alla användarens enheter (testnotis). */
 export async function sendToUser(userId: string, payload: PushPayload) {
   if (!pushConfigured()) return { sent: 0, removed: 0 }
   const { data } = await adminDb.query<Subscription>(
-    'SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1',
+    'SELECT id, endpoint, p256dh, auth, user_id FROM push_subscriptions WHERE user_id = $1',
     [userId],
   )
   return send(data, payload)

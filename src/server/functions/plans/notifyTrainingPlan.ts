@@ -44,6 +44,8 @@ export default async function notifyTrainingPlan(req: { params: Params; user: Us
       url: `/-/trainings/${trainingId}/plan?lag=${squadId}`,
       tag: `plan-${trainingId}`,
     },
+    undefined,
+    req.user.id,
   )
   return { people: result.people, devices: result.sent }
 }
