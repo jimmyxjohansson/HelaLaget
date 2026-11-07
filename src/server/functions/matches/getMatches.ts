@@ -43,7 +43,7 @@ export default async function (req: { params: Params; user: User }) {
         OR (COALESCE(m.ourgoals, 0) + COALESCE(m.theirgoals, 0) > 0 AND m.date <= ${NOW_WALLCLOCK}
             AND (m.date AT TIME ZONE 'UTC')::date = (now() AT TIME ZONE 'Europe/Stockholm')::date))) AS live,
       (
-        SELECT COUNT(*)
+        SELECT COUNT(*)::int
         FROM participantsmatches pm
         WHERE pm.match = m.id
           AND pm.player IS NOT NULL

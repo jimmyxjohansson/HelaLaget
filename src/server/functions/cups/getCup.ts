@@ -45,11 +45,14 @@ export default async function getCup(req: { params: Params; user: User }) {
     notes: string | null
     opponent: string | null
     opponent_img: string | null
+    /** Spelare med svar Kommer */
+    players_coming: number
   }>(
     `SELECT
       m.id, m.date, m.matchtype, m.homeaway, m.ourgoals, m.theirgoals,
       m.outcome, m.status, m.location, m.teamname, m.cupphase,
       m.matchplayers, m.notes,
+      (SELECT COUNT(*)::int FROM participantsmatches pm WHERE pm.match = m.id AND pm.player IS NOT NULL AND pm.status = 'Kommer') AS players_coming,
       t.team AS opponent, t.imgurl AS opponent_img
     FROM matches m
     LEFT JOIN teams t ON t.id = m.vs

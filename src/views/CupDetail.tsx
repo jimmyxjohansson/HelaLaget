@@ -6,6 +6,7 @@ import { useRouter } from '../lib/nav'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useGetCup } from '../hooks/backend/cups'
+import { ComingBadge } from '../components/MatchCard'
 import {
   ArrowLeft, MapPin, Calendar, Clock, Pencil, Plus, ChevronRight,
   ExternalLink, Trophy, Home, Plane, Users, UserCog,
@@ -45,6 +46,8 @@ interface CupMatch {
   notes: string | null
   opponent: string | null
   opponent_img: string | null
+  /** Spelare med svar Kommer */
+  players_coming?: number
 }
 
 interface CupParticipant {
@@ -287,6 +290,7 @@ const { id } = useParams<{ id: string }>()
                           <span className="text-xs text-muted-foreground">{formatDate(m.date)}</span>
                           <span className="text-xs text-muted-foreground">{formatTime(m.date)}</span>
                           {m.cupphase && <span className="text-xs text-muted-foreground">{m.cupphase}</span>}
+                          {((m.players_coming ?? 0) > 0 || !isPlayed) && <ComingBadge count={m.players_coming ?? 0} />}
                         </div>
                       </div>
                     </div>

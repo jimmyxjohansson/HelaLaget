@@ -31,7 +31,7 @@ interface Match {
   opponent: string
   opponent_img: string | null
   league_name: string | null
-  players_coming: string
+  players_coming: number
   periods?: number | null
   clock_started_at?: string | null
   clock_period?: number | null

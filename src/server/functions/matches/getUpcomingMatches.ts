@@ -37,6 +37,8 @@ export default async function getUpcomingMatches(req: { params: Params; user: Us
     clock_period_start_minutes: number | null
     server_now: string
     live: boolean
+    /** Spelare med svar Kommer */
+    players_coming: number
   }>(
     `SELECT
       m.id, m.matchtype, m.date, m.homeaway, m.indooroutdoor, m.outcome,
@@ -48,6 +50,7 @@ export default async function getUpcomingMatches(req: { params: Params; user: Us
       COALESCE(m.ourgoals, 0)::int AS ourgoals, COALESCE(m.theirgoals, 0)::int AS theirgoals, m.periods,
       m.clock_started_at, m.clock_period, m.clock_offset_minutes, m.clock_period_start_minutes,
       now() AS server_now,
+      (SELECT COUNT(*)::int FROM participantsmatches pm WHERE pm.match = m.id AND pm.player IS NOT NULL AND pm.status = 'Kommer') AS players_coming,
       (m.status::text NOT IN ('Avslutad', 'Registrerad i Fogis') AND (
         (m.clock_started_at IS NOT NULL AND m.clock_started_at > now() - interval '6 hours')
         OR (m.date <= ${NOW_WALLCLOCK} AND m.date > ${NOW_WALLCLOCK} - interval '3 hours')

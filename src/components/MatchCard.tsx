@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronRight, Home, MapPin, Plane } from 'lucide-react'
+import { Check, ChevronRight, Home, MapPin, Plane } from 'lucide-react'
 import { rankStyle } from '../utils/rankColors'
 import LiveScore, { type LiveMatch } from './LiveScore'
 
@@ -20,6 +20,18 @@ export type MatchCardData = LiveMatch & {
   opponent: string | null
   opponent_img: string | null
   league_name: string | null
+  /** Spelare med svar Kommer */
+  players_coming?: number | string | null
+}
+
+/** Grön bricka med antal spelare som svarat Kommer. */
+export function ComingBadge({ count, className = '' }: { count: number; className?: string }) {
+  return (
+    <span title={`${count} ${count === 1 ? 'spelare' : 'spelare'} har svarat Kommer`}
+      className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${count ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'} ${className}`}>
+      <Check className="w-3 h-3" />{count} kommer
+    </span>
+  )
 }
 
 export function matchTypeColor(type: string): string {
@@ -65,6 +77,8 @@ function outcomeText(outcome: string | null): string {
 export default function MatchCard({ m, onClick }: { m: MatchCardData; onClick: () => void }) {
   const isPlayed = m.status === 'Avslutad' || m.status === 'Registrerad i Fogis'
   const teamSuffix = parseTeamSuffix(m.teamname)
+  const coming = m.players_coming == null ? null : Number(m.players_coming)
+  const showComing = coming != null && (coming > 0 || !isPlayed)
   return (
     <button
       onClick={onClick}
@@ -130,6 +144,7 @@ export default function MatchCard({ m, onClick }: { m: MatchCardData; onClick: (
           <span className="text-xs text-muted-foreground flex items-center gap-0.5"><MapPin className="w-3 h-3" />{m.location}</span>
         )}
         {m.notes && <span className="text-xs text-muted-foreground italic">{m.notes}</span>}
+        {showComing && <ComingBadge count={coming!} className="ml-auto" />}
       </div>
     </button>
   )
