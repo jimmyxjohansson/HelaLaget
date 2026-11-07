@@ -3,7 +3,7 @@
 import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
 import { useGetTrainings, useCreateTraining, useUpdateTraining, useMarkAsReported } from '../hooks/backend/trainings'
-import { Search, MapPin, Plus, CalendarPlus, Pencil, ClipboardCheck, ClipboardList, Loader2 } from 'lucide-react'
+import { Search, MapPin, Plus, CalendarPlus, Pencil, ClipboardCheck, ClipboardList, Loader2, Users } from 'lucide-react'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
 import { AttendanceStatsButton } from '../components/AttendanceStatsButton'
 import {
@@ -48,6 +48,7 @@ interface Training {
   l_ej: string
   plan_blocks: number
   plan_minutes: number
+  group_count?: number
 }
 
 const TYPE_FILTERS = ['Alla', 'Träning', 'Extra', 'Coerver', 'Målvaktsträning']
@@ -369,9 +370,18 @@ export default function Trainings() {
                             {s.p}<span className="opacity-75">+{s.l}</span>
                           </span>
                         ))}
-                        {t.plan_blocks > 0 && (
-                          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-medium text-foreground" title="Träningsplanen är upplagd">
-                            <ClipboardList className="w-3 h-3" /> Plan{t.plan_minutes ? ` · ${t.plan_minutes} min` : ''}
+                        {(t.plan_blocks > 0 || (canEdit() && (t.group_count ?? 0) > 0)) && (
+                          <span className="ml-auto flex items-center gap-1">
+                            {canEdit() && (t.group_count ?? 0) > 0 && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-medium text-foreground" title="Spelarna är indelade i träningsgrupper">
+                                <Users className="w-3 h-3" /> {t.group_count} {t.group_count === 1 ? 'grupp' : 'grupper'}
+                              </span>
+                            )}
+                            {t.plan_blocks > 0 && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-medium text-foreground" title="Träningsplanen är upplagd">
+                                <ClipboardList className="w-3 h-3" /> Plan{t.plan_minutes ? ` · ${t.plan_minutes} min` : ''}
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>

@@ -8,7 +8,7 @@ import { useGetTrainings } from '../hooks/backend/trainings'
 import { useGetUpcomingMatches } from '../hooks/backend/matches'
 import { useGetUpcomingBirthdays } from '../hooks/backend/players'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
-import { MapPin, ChevronRight, Cake, Check, ClipboardList, Repeat } from 'lucide-react'
+import { MapPin, ChevronRight, Cake, Check, ClipboardList, Repeat, Users } from 'lucide-react'
 import { ownTeamName } from '../utils/constants'
 import { wallDayIso } from '../utils/dateWindow'
 import SquadLogo from '../components/SquadLogo'
@@ -39,6 +39,7 @@ interface Training {
   l_ej: string
   plan_blocks: number
   plan_minutes: number
+  group_count?: number
 }
 
 interface Match {
@@ -188,9 +189,18 @@ export default function Home() {
                           {s.p}<span className="opacity-75">+{s.l}</span>
                         </span>
                       ))}
-                      {t.plan_blocks > 0 && (
-                        <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-medium text-foreground" title="Träningsplanen är upplagd">
-                          <ClipboardList className="w-3 h-3" /> Plan{t.plan_minutes ? ` · ${t.plan_minutes} min` : ''}
+                      {(t.plan_blocks > 0 || (canEdit() && (t.group_count ?? 0) > 0)) && (
+                        <span className="ml-auto flex items-center gap-1">
+                          {canEdit() && (t.group_count ?? 0) > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-medium text-foreground" title="Spelarna är indelade i träningsgrupper">
+                              <Users className="w-3 h-3" /> {t.group_count} {t.group_count === 1 ? 'grupp' : 'grupper'}
+                            </span>
+                          )}
+                          {t.plan_blocks > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-medium text-foreground" title="Träningsplanen är upplagd">
+                              <ClipboardList className="w-3 h-3" /> Plan{t.plan_minutes ? ` · ${t.plan_minutes} min` : ''}
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
