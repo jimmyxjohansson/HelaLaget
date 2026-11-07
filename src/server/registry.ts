@@ -95,6 +95,7 @@ import plans_getTrainingPlan from './functions/plans/getTrainingPlan'
 import plans_getTrainingPlanInfo from './functions/plans/getTrainingPlanInfo'
 import plans_getTrainingPlanTemplate from './functions/plans/getTrainingPlanTemplate'
 import plans_linkPlanTemplate from './functions/plans/linkPlanTemplate'
+import plans_notifyTrainingGroups from './functions/plans/notifyTrainingGroups'
 import plans_notifyTrainingPlan from './functions/plans/notifyTrainingPlan'
 import plans_savePlanTemplate from './functions/plans/savePlanTemplate'
 import plans_saveTrainingPlan from './functions/plans/saveTrainingPlan'
@@ -250,6 +251,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'plans/getTrainingPlanInfo': { handler: plans_getTrainingPlanInfo, access: 'viewer' },
   'plans/getTrainingPlanTemplate': { handler: plans_getTrainingPlanTemplate, access: 'viewer' },
   'plans/linkPlanTemplate': { handler: plans_linkPlanTemplate, access: 'leader' },
+  'plans/notifyTrainingGroups': { handler: plans_notifyTrainingGroups, access: 'leader' },
   'plans/notifyTrainingPlan': { handler: plans_notifyTrainingPlan, access: 'leader' },
   'plans/savePlanTemplate': { handler: plans_savePlanTemplate, access: 'leader' },
   'plans/saveTrainingPlan': { handler: plans_saveTrainingPlan, access: 'leader' },

@@ -8,6 +8,7 @@ import type getTrainingPlan from '../../server/functions/plans/getTrainingPlan'
 import type getTrainingPlanInfo from '../../server/functions/plans/getTrainingPlanInfo'
 import type getTrainingPlanTemplate from '../../server/functions/plans/getTrainingPlanTemplate'
 import type linkPlanTemplate from '../../server/functions/plans/linkPlanTemplate'
+import type notifyTrainingGroups from '../../server/functions/plans/notifyTrainingGroups'
 import type notifyTrainingPlan from '../../server/functions/plans/notifyTrainingPlan'
 import type savePlanTemplate from '../../server/functions/plans/savePlanTemplate'
 import type saveTrainingPlan from '../../server/functions/plans/saveTrainingPlan'
@@ -48,6 +49,11 @@ export const useLinkPlanTemplate = createBackendHook<
   Parameters<typeof linkPlanTemplate>[0]['params'],
   Awaited<ReturnType<typeof linkPlanTemplate>>
 >('plans/linkPlanTemplate')
+
+export const useNotifyTrainingGroups = createBackendHook<
+  Parameters<typeof notifyTrainingGroups>[0]['params'],
+  Awaited<ReturnType<typeof notifyTrainingGroups>>
+>('plans/notifyTrainingGroups')
 
 export const useNotifyTrainingPlan = createBackendHook<
   Parameters<typeof notifyTrainingPlan>[0]['params'],

@@ -5,11 +5,12 @@ import { canEdit } from '../lib/squad-store'
 import { useRouter } from '../lib/nav'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowDown, ArrowLeft, ArrowRightLeft, ArrowUp, Check, ChevronDown, ClipboardCopy, Copy, Download, List, Loader2, RotateCcw, Share2, Users, Wand2, X } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRightLeft, ArrowUp, Check, ChevronDown, ClipboardCopy, Copy, Download, List, Loader2, RotateCcw, Send, Share2, Users, Wand2, X } from 'lucide-react'
 import { currentSquad } from '../lib/squad-store'
 import { canCopyImage, canShareImage, copyImage, downloadImage, shareImage } from '../utils/shareImage'
 import { drawGroups, groupsText, type ImageGroup } from './ui/groupsImage'
 import { useGetTrainingGroups, useUpdateGroupRank, useUpdateParticipantGroups } from '../hooks/backend/trainings'
+import { useNotifyTrainingGroups } from '../hooks/backend/plans'
 import { Button } from '../lib/shadcn/button'
 import { Checkbox } from '../lib/shadcn/checkbox'
 import {
@@ -96,6 +97,8 @@ function TrainingGroupsPage() {
   const { data, loading, trigger } = useGetTrainingGroups()
   const { trigger: triggerUpdate, loading: saving } = useUpdateParticipantGroups()
   const { trigger: triggerGroupRank, loading: savingRank } = useUpdateGroupRank()
+  const notifyGroups = useNotifyTrainingGroups()
+  const [notifyMsg, setNotifyMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const [activeTab, setActiveTab] = useState<string>('all')
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -277,6 +280,19 @@ function TrainingGroupsPage() {
     }
   }
 
+  async function sendGroupsToLeaders() {
+    if (!window.confirm('Skicka en notis till lagets ledare om att grupperna är klara?')) return
+    setNotifyMsg(null)
+    try {
+      const r = await notifyGroups.trigger({ trainingId: Number(id) })
+      setNotifyMsg({ ok: true, text: r.people > 0
+        ? `Notisen är skickad till ${r.people} ledare.`
+        : 'Ingen ledare har notiser påslagna för laget, så ingen notis skickades. Slå på dem under Mer → Notiser.' })
+    } catch (e) {
+      setNotifyMsg({ ok: false, text: e instanceof Error ? e.message : 'Kunde inte skicka notisen.' })
+    }
+  }
+
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
@@ -288,14 +304,26 @@ function TrainingGroupsPage() {
           >
             <ArrowLeft className="w-4 h-4" /> Tillbaka
           </button>
-          <button
-            onClick={() => setOverviewOpen(true)}
-            className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
-            aria-label="Gruppöversikt"
-            title="Gruppöversikt"
-          >
-            <List className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={sendGroupsToLeaders}
+              disabled={notifyGroups.loading}
+              className="flex h-9 items-center gap-1.5 rounded-full bg-primary-foreground/20 px-2.5 text-sm hover:bg-primary-foreground/30 transition-colors disabled:opacity-60 sm:px-3"
+              aria-label="Skicka till ledare"
+              title="Skicka notis till lagets ledare om att grupperna är klara"
+            >
+              {notifyGroups.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              <span className="hidden sm:inline">Skicka till ledare</span>
+            </button>
+            <button
+              onClick={() => setOverviewOpen(true)}
+              className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors"
+              aria-label="Gruppöversikt"
+              title="Gruppöversikt"
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         {training ? (
           <>
@@ -318,6 +346,12 @@ function TrainingGroupsPage() {
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Users className="w-5 h-5" /> Grupper
           </h1>
+        )}
+        {notifyMsg && (
+          <p className={`mt-2 flex w-fit max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-xs text-white ${notifyMsg.ok ? 'bg-black/20' : 'bg-black/35'}`}>
+            {notifyMsg.ok && <Send className="h-3.5 w-3.5 shrink-0" />} {notifyMsg.text}
+            <button type="button" onClick={() => setNotifyMsg(null)} aria-label="Stäng" className="ml-1 opacity-70 hover:opacity-100">✕</button>
+          </p>
         )}
       </div>
 
