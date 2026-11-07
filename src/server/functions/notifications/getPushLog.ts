@@ -1,5 +1,5 @@
-import { adminDb, db } from '@/server/db'
-import type { User } from '@/server/types'
+import { adminDb } from '@/server/db'
+import type { SquadAccess, User } from '@/server/types'
 
 export const access = 'admin'
 
@@ -19,15 +19,17 @@ export type PushLogRow = {
 }
 
 /** Lagets skickade notiser, senaste först. Bläddra bakåt med before (createdAt för sista raden). */
-export default async function getPushLog(req: { params: Params; user: User }) {
+export default async function getPushLog(req: { params: Params; user: User; squad?: SquadAccess }) {
+  // Adminfunktioner körs utan RLS: filtrera alltid på valt lag
+  const squadId = req.squad!.squadId
   const limit = Math.min(Math.max(Number(req.params.limit) || 50, 1), 200)
-  const { data } = await db.query<Omit<PushLogRow, 'sentByName'> & { sentBy: string | null }>(
+  const { data } = await adminDb.query<Omit<PushLogRow, 'sentByName'> & { sentBy: string | null }>(
     `SELECT id::int, created_at AS "createdAt", audience, title, body, url, sent_by AS "sentBy", people, devices, failed
      FROM push_log
-     WHERE ($1::timestamptz IS NULL OR created_at < $1::timestamptz)
+     WHERE squad_id = $3 AND ($1::timestamptz IS NULL OR created_at < $1::timestamptz)
      ORDER BY created_at DESC
      LIMIT $2`,
-    [req.params.before ?? null, limit + 1],
+    [req.params.before ?? null, limit + 1, squadId],
   )
   const rows = data.slice(0, limit)
   // Namn på avsändarna från kontona; aldrig e-postadressen, bara delen före @ om namn saknas
