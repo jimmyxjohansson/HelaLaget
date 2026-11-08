@@ -49,13 +49,14 @@ const GROUPS = ['A', 'B', 'C', 'D', '–']
  * (aldrig spelat räknas som längst sedan) och hög träningsnärvaro.
  */
 function score(pool: SuggestCandidate[], w: SuggestOptions['weights']) {
-  const games = pool.map((p) => p.matches + p.cups)
+  // Matcherna räknas, även cupernas; cuperna i sig räknas inte en gång till
+  const games = pool.map((p) => p.matches)
   const days = pool.map((p) => p.lastmatch).filter((d): d is number => d != null)
   const gMin = Math.min(...games), gMax = Math.max(...games)
   const dMin = days.length ? Math.min(...days) : 0, dMax = days.length ? Math.max(...days) : 0
   const sum = w.games + w.recent + w.attendance || 1
   return new Map(pool.map((p) => {
-    const g = gMax > gMin ? 1 - (p.matches + p.cups - gMin) / (gMax - gMin) : 1
+    const g = gMax > gMin ? 1 - (p.matches - gMin) / (gMax - gMin) : 1
     const d = p.lastmatch == null ? 1 : dMax > dMin ? (p.lastmatch - dMin) / (dMax - dMin) : 1
     const pct = percent(p.coming, p.total)
     const a = pct == null ? 0 : pct / 100

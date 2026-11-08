@@ -28,7 +28,7 @@ export type Candidate = {
   total: number
   /** Dagar sedan senaste spelade matchen (svar Kommer), null om ingen */
   lastmatch: number | null
-  /** Serie- och träningsmatcher med svar Kommer under perioden */
+  /** Matcher (alla typer, även cupmatcher) med svar Kommer under perioden */
   matches: number
   /** Cuper med svar Kommer under perioden */
   cups: number
@@ -56,8 +56,7 @@ export default async function getPlanningCandidates(req: { params: Params; user:
        SELECT MAX(m.date AT TIME ZONE 'UTC') FILTER (
                 WHERE m.date < (((now() AT TIME ZONE 'Europe/Stockholm')::date + 1)::timestamp AT TIME ZONE 'UTC')) AS last,
               COUNT(*) FILTER (
-                WHERE m.matchtype::text IN ('Serie', 'Träning')
-                  AND ($2::date IS NULL OR m.date >= ($2::date)::timestamp AT TIME ZONE 'UTC')
+                WHERE ($2::date IS NULL OR m.date >= ($2::date)::timestamp AT TIME ZONE 'UTC')
                   AND m.date < (((now() AT TIME ZONE 'Europe/Stockholm')::date + 1)::timestamp AT TIME ZONE 'UTC')) AS matches
        FROM participantsmatches pm
        JOIN matches m ON m.id = pm.match

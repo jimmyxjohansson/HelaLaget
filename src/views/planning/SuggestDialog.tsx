@@ -179,7 +179,7 @@ export default function SuggestDialog({
 
           <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
             <p className="text-xs text-muted-foreground">Vad ska väga mest? Period: <b className="text-foreground">{periodLabel}</b> (filtret på planeringen)</p>
-            <Weight label="Spelat få matcher och cuper" value={saved.weights.games} onChange={(v) => update({ weights: { ...saved.weights, games: v } })} />
+            <Weight label="Spelat få matcher" value={saved.weights.games} onChange={(v) => update({ weights: { ...saved.weights, games: v } })} />
             <Weight label="Länge sedan senaste match" value={saved.weights.recent} onChange={(v) => update({ weights: { ...saved.weights, recent: v } })} />
             <Weight label="Hög träningsnärvaro" value={saved.weights.attendance} onChange={(v) => update({ weights: { ...saved.weights, attendance: v } })} />
             <label className="flex items-center justify-between gap-2">
