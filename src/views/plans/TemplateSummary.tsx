@@ -1,19 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Clock, Info } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Info, Loader2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
 import { useGetDrills } from '../../hooks/backend/drills'
+import { currentSquad } from '../../lib/squad-store'
+import DrillDiagram from '../../components/drills/DrillDiagram'
+import { isDiagram, type Diagram } from '../../utils/diagram'
 import { LEVEL_COLOR } from '../../utils/drills'
-
-type SummaryBlocks = {
-  name: string
-  minutes?: number | null
-  notes?: string | null
-  items: { groupName?: string | null; drillId?: number | null; title?: string | null; level?: string | null; notes?: string | null }[]
-}[]
+import { ShareImageBar } from '../planning/OverviewDialog'
+import { drawPlan } from './planImage'
+import { blocksFromTemplate, type TemplateBlocks } from './TrainingPlan'
 
 export type SummaryTemplate = { name: string; blocks: unknown }
+
+const STORE = 'hl-plan-image'
 
 /** "i"-knapp som öppnar en sammanfattning av mallen. */
 export function TemplateInfoButton({ onClick, name }: { onClick: () => void; name: string }) {
@@ -25,7 +26,10 @@ export function TemplateInfoButton({ onClick, name }: { onClick: () => void; nam
   )
 }
 
-/** Sammanfattning av en träningsplansmall: block, tid och övningar. */
+/**
+ * Sammanfattning av en träningsplansmall, ritad som samma bild som träningsplanen
+ * (block, tid, övningar med ritningar, nivåer och coachningspunkter). Går att dela och spara.
+ */
 export default function TemplateSummary({ template, onClose, action }: {
   template: SummaryTemplate | null
   onClose: () => void
@@ -33,63 +37,116 @@ export default function TemplateSummary({ template, onClose, action }: {
   action?: React.ReactNode
 }) {
   const drills = useGetDrills()
-  const [loaded, setLoaded] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const hidden = useRef<HTMLDivElement | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [opts, setOpts] = useState({ diagrams: true, coaching: true })
+
   useEffect(() => {
-    if (template && !drills.data && !loaded) {
-      setLoaded(true)
-      drills.trigger().catch(() => {})
-    }
+    try {
+      const v = JSON.parse(localStorage.getItem(STORE) ?? 'null')
+      if (v) setOpts({ diagrams: v.diagrams !== false, coaching: v.coaching !== false })
+    } catch { /* ingen lagring */ }
+  }, [])
+
+  useEffect(() => {
+    if (template && !drills.data && !drills.loading) drills.trigger().catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template])
 
-  const blocks = (template?.blocks ?? []) as SummaryBlocks
-  const total = blocks.reduce((a, b) => a + (b.minutes ?? 0), 0)
-  const drillCount = blocks.reduce((a, b) => a + b.items.length, 0)
-  const nameOf = (i: SummaryBlocks[number]['items'][number]) =>
-    i.title || (i.drillId ? drills.data?.find((d) => d.id === i.drillId)?.name : null) || (i.drillId ? 'Övning' : 'Egen aktivitet')
+  // Samma block som träningsplanen visar, med övningarna från banken
+  const blocks = useMemo(
+    () => (template && drills.data ? blocksFromTemplate(template.blocks as TemplateBlocks, drills.data) : null),
+    [template, drills.data],
+  )
+  const total = (blocks ?? []).reduce((a, b) => a + (Number(b.minutes) || 0), 0)
+  const drillCount = (blocks ?? []).reduce((a, b) => a + b.items.length, 0)
+
+  // Ritningen som visas: nivåns egen om den har en, annars övningens
+  const diagramOf = (i: NonNullable<typeof blocks>[number]['items'][number]): Diagram | null => {
+    const d = i.drill
+    if (!d) return null
+    const lv = i.level ? d.levels?.[i.level as keyof typeof d.levels] : null
+    return isDiagram(lv?.diagram) ? lv.diagram : isDiagram(d.diagram) ? d.diagram : null
+  }
+
+  useEffect(() => {
+    if (!template || !blocks) { setPreview(null); return }
+    let cancelled = false
+    setPreview(null)
+    const canvas = canvasRef.current ?? document.createElement('canvas')
+    canvasRef.current = canvas
+    const squad = currentSquad()
+    // Vänta en bildruta så att de dolda ritningarna finns på sidan
+    const raf = requestAnimationFrame(() => {
+      const svgOf = (key: string) => hidden.current?.querySelector<SVGSVGElement>(`[data-sum-item="${key}"] svg`) ?? null
+      drawPlan(canvas, {
+        title: template.name,
+        subtitle: `Träningsplansmall · ${total} min · ${blocks.length} block · ${drillCount} ${drillCount === 1 ? 'övning' : 'övningar'}`,
+        roaming: '',
+        primary: squad?.primaryColor || '#24282E',
+        accent: squad?.accentColor || '#FFFFFF',
+        blocks: blocks.map((b) => ({
+          start: null,
+          name: b.name,
+          minutes: Number(b.minutes) || 0,
+          notes: b.notes || null,
+          items: b.items.map((i) => {
+            const d = i.drill
+            const lv = d && i.level ? d.levels?.[i.level as keyof typeof d.levels] : null
+            return {
+              group: i.groupName,
+              name: d?.name ?? (i.title || 'Egen aktivitet'),
+              level: i.level,
+              levelColor: i.level ? LEVEL_COLOR[i.level] ?? null : null,
+              holders: '',
+              levelText: lv?.text ?? null,
+              coaching: (d?.coaching ?? '').split('\n').map((c) => c.trim()).filter(Boolean),
+              notes: i.notes || null,
+              svg: svgOf(i.key),
+            }
+          }),
+        })),
+      }, opts).then(() => { if (!cancelled) setPreview(canvas.toDataURL('image/png')) })
+    })
+    return () => { cancelled = true; cancelAnimationFrame(raf) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks, opts.diagrams, opts.coaching])
+
+  function set(patch: Partial<typeof opts>) {
+    const next = { ...opts, ...patch }
+    setOpts(next)
+    try { localStorage.setItem(STORE, JSON.stringify(next)) } catch { /* ingen lagring */ }
+  }
+
+  const fileName = `mall-${(template?.name ?? 'traningsplan').toLowerCase().replace(/[^a-z0-9åäö]+/g, '-').replace(/^-|-$/g, '')}.png`
 
   return (
     <Dialog open={!!template} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[85vh] w-[calc(100vw-1rem)] max-w-[460px] overflow-y-auto px-4">
+      <DialogContent className="max-h-[90vh] w-[calc(100vw-1rem)] max-w-[760px] overflow-y-auto px-4">
         <DialogHeader><DialogTitle className="pr-6">{template?.name}</DialogTitle></DialogHeader>
-        <p className="-mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {total} min</span>
-          <span>{blocks.length} block</span>
-          <span>{drillCount} {drillCount === 1 ? 'övning' : 'övningar'}</span>
-        </p>
-        {blocks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Mallen har inga block.</p>
+        <ShareImageBar canvas={canvasRef} ready={!!preview} fileName={fileName} title={`Träningsplansmall ${template?.name ?? ''}`}>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" checked={opts.diagrams} onChange={(e) => set({ diagrams: e.target.checked })} /> Ritningar
+          </label>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" checked={opts.coaching} onChange={(e) => set({ coaching: e.target.checked })} /> Coachningspunkter
+          </label>
+        </ShareImageBar>
+        {!preview ? (
+          <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
         ) : (
-          <ol className="flex flex-col gap-3">
-            {blocks.map((b, n) => (
-              <li key={n} className="rounded-lg border border-border">
-                <div className="flex items-baseline justify-between gap-2 rounded-t-lg bg-muted px-3 py-1.5">
-                  <span className="text-sm font-semibold">{b.name}</span>
-                  {b.minutes ? <span className="shrink-0 text-xs text-muted-foreground">{b.minutes} min</span> : null}
-                </div>
-                {b.notes && <p className="px-3 pt-1.5 text-xs text-muted-foreground">{b.notes}</p>}
-                {b.items.length > 0 ? (
-                  <ul className="flex flex-col gap-1 px-3 py-2">
-                    {b.items.map((i, m) => (
-                      <li key={m} className="flex flex-wrap items-center gap-1.5 text-sm">
-                        {i.groupName && (
-                          <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">{i.groupName}</span>
-                        )}
-                        <span>{nameOf(i)}</span>
-                        {i.level && (
-                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white" style={{ backgroundColor: LEVEL_COLOR[i.level] ?? '#6b7280' }}>{i.level}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="px-3 py-2 text-xs text-muted-foreground">Inga övningar</p>
-                )}
-              </li>
-            ))}
-          </ol>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt={`Sammanfattning av ${template?.name ?? 'mallen'}`} className="w-full rounded-lg border border-border" />
         )}
         {action && <div className="flex justify-end gap-2 pt-1">{action}</div>}
+        {/* Ritningarna ritas här utanför skärmen och kopieras in i bilden */}
+        <div ref={hidden} aria-hidden className="pointer-events-none fixed -left-[10000px] top-0 w-[300px]">
+          {(blocks ?? []).flatMap((b) => b.items).map((i) => {
+            const dia = diagramOf(i)
+            return dia ? <div key={i.key} data-sum-item={i.key}><DrillDiagram diagram={dia} className="w-full" /></div> : null
+          })}
+        </div>
       </DialogContent>
     </Dialog>
   )
