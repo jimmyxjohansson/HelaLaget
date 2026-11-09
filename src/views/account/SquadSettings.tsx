@@ -27,6 +27,7 @@ import { Input } from '../../lib/shadcn/input'
 import { Label } from '../../lib/shadcn/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../lib/shadcn/select'
 import { ErrorText, PageHeader, ROLE_HELP, ROLE_LABEL, Section } from './shared'
+import SquadInfos from './SquadInfos'
 
 /** Roller som admin väljer. Spelare och Anhörig är läsbehörighet kopplad till spelare. */
 type Role = 'player' | 'relative' | 'leader' | 'admin'
@@ -554,6 +555,8 @@ export default function SquadSettings() {
           </div>
         </form>
       </Section>
+
+      <SquadInfos />
 
       <Section title="Ledare">
         <p className="text-sm text-muted-foreground mb-3">

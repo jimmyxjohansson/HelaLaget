@@ -19,6 +19,10 @@ import drills_getDrill from './functions/drills/getDrill'
 import drills_getDrills from './functions/drills/getDrills'
 import drills_importStarterDrills from './functions/drills/importStarterDrills'
 import drills_saveDrill from './functions/drills/saveDrill'
+import infos_deleteSquadInfo from './functions/infos/deleteSquadInfo'
+import infos_getSquadInfos from './functions/infos/getSquadInfos'
+import infos_moveSquadInfo from './functions/infos/moveSquadInfo'
+import infos_saveSquadInfo from './functions/infos/saveSquadInfo'
 import leaders_addLeadersToSquad from './functions/leaders/addLeadersToSquad'
 import leaders_createLeader from './functions/leaders/createLeader'
 import leaders_getLeaders from './functions/leaders/getLeaders'
@@ -176,6 +180,10 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'drills/getDrills': { handler: drills_getDrills, access: 'viewer' },
   'drills/importStarterDrills': { handler: drills_importStarterDrills, access: 'leader' },
   'drills/saveDrill': { handler: drills_saveDrill, access: 'leader' },
+  'infos/deleteSquadInfo': { handler: infos_deleteSquadInfo, access: 'admin' },
+  'infos/getSquadInfos': { handler: infos_getSquadInfos, access: 'viewer' },
+  'infos/moveSquadInfo': { handler: infos_moveSquadInfo, access: 'admin' },
+  'infos/saveSquadInfo': { handler: infos_saveSquadInfo, access: 'admin' },
   'leaders/addLeadersToSquad': { handler: leaders_addLeadersToSquad, access: 'leader' },
   'leaders/createLeader': { handler: leaders_createLeader, access: 'leader' },
   'leaders/getLeaders': { handler: leaders_getLeaders, access: 'viewer' },
