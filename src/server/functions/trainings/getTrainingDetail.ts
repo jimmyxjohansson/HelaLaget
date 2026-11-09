@@ -41,12 +41,14 @@ export default async function getTrainingDetail(req: { params: Params; user: Use
     status: string
     reason: string | null
     reasontime: string | null
+    replied_at: string | null
     group_name: string | null
     comment: string | null
   }>(
     `SELECT
       p.id AS player_id, p.firstname, p.lastname, p.shortname, p.number, p.img, p.comment,
-      pt.status::text AS status, pt.reason, pt.reasontime, pt.group AS group_name
+      pt.status::text AS status, pt.reason, pt.reasontime, pt.group AS group_name,
+      to_char(pt.replied_at, 'YYYY-MM-DD"T"HH24:MI') AS replied_at
     FROM participantstrainings pt
     JOIN players p ON p.id = pt.player
     WHERE pt.training = $1
@@ -62,10 +64,12 @@ export default async function getTrainingDetail(req: { params: Params; user: Use
     status: string
     reason: string | null
     reasontime: string | null
+    replied_at: string | null
   }>(
     `SELECT
       l.id AS leader_id, l.shortname, l.firstname, l.lastname,
-      pt.status::text AS status, pt.reason, pt.reasontime
+      pt.status::text AS status, pt.reason, pt.reasontime,
+      to_char(pt.replied_at, 'YYYY-MM-DD"T"HH24:MI') AS replied_at
     FROM participantstrainings pt
     JOIN leaders l ON l.id = pt.leader
     WHERE pt.training = $1

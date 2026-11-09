@@ -252,6 +252,7 @@ function toItem(r: Row, choice: Choice) {
     list: r.list,
     comment: r.comment,
     time: r.time,
+    repliedAt: r.repliedAt,
     linkName: manual ? r.name : null,
   }
 }

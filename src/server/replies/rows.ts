@@ -11,6 +11,18 @@ export function stockholmToday() {
   return new Date(Date.UTC(y, m - 1, d))
 }
 
+/**
+ * Svarstiden med år: Svenskalag visar bara dag och månad, så året är i år,
+ * eller förra året om datumet annars skulle ligga i framtiden.
+ */
+export function replyStamp(day: string | null, time: string | null, today: Date): string | null {
+  if (!day || !time) return null
+  let y = today.getUTCFullYear()
+  const [m, d] = day.split('-').map(Number)
+  if (Date.UTC(y, m - 1, d) > today.getTime() + 86_400_000) y--
+  return `${y}-${day}T${time}`
+}
+
 export async function loadEvent(kind: Kind, id: number) {
   if (kind === 'training') {
     const { data } = await db.query<{ date: string; title: string | null; reported: boolean | null }>(
@@ -47,6 +59,8 @@ export type ReplyRow = {
   answered: string | null
   /** Klockslaget, bara om svaret kom samma dag som aktiviteten */
   time: string | null
+  /** När svaret lämnades i Svenskalag, 'ÅÅÅÅ-MM-DDTHH:MM' (svensk tid) */
+  repliedAt: string | null
   match: Person | null
   current: string | null
   next: string
@@ -56,7 +70,8 @@ export type ReplyRow = {
 
 export async function buildRows(kind: Kind, id: number, lists: Partial<Record<ListKey, string[][] | null>>) {
   const event = await loadEvent(kind, id)
-  const parsed = parseLists(lists, stockholmToday())
+  const today = stockholmToday()
+  const parsed = parseLists(lists, today)
   const { people, links } = await squadPeople()
   const current = await currentStatuses(kind, id)
   const day = eventDay(event.date)
@@ -72,6 +87,7 @@ export async function buildRows(kind: Kind, id: number, lists: Partial<Record<Li
       answered: r.answered,
       // Klockslaget behövs bara för Kan ej, och bara när svaret kom samma dag
       time: r.list === 'notattending' && r.answeredDay && r.answeredDay === day ? r.answeredTime : null,
+      repliedAt: replyStamp(r.answeredDay, r.answeredTime, today),
       match,
       current: cur,
       next: statusMap[r.list],

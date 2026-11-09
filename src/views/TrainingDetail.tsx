@@ -6,12 +6,13 @@ import { useRouter } from '../lib/nav'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useGetTrainingDetail, useUpdateAttendanceStatus, useDeleteTraining, useUpdateLeaderStatus, useGetAvailableLeaders, useAddLeaders, useRemoveLeader } from '../hooks/backend/trainings'
-import { ArrowLeft, MapPin, Pencil, X, Copy, UserPlus, Search, Trash2, ChevronDown, ChevronsUpDown, MoreVertical, CheckCircle, UserCheck, XCircle, Clock, ClipboardCheck, ClipboardX, MessageSquare, Ban, Users, ExternalLink, ClipboardList, ChevronRight } from 'lucide-react'
+import { ArrowLeft, MapPin, Pencil, X, Copy, UserPlus, Search, Trash2, ChevronDown, ChevronsUpDown, MoreVertical, CheckCircle, UserCheck, XCircle, Clock, ClipboardCheck, ClipboardX, MessageSquare, Ban, Users, ExternalLink, ClipboardList, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
 import { Button } from '../lib/shadcn/button'
 import { Checkbox } from '../lib/shadcn/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../lib/shadcn/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../lib/shadcn/dropdown-menu'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../lib/shadcn/dropdown-menu'
+import { usePersistentState } from '../hooks/usePersistentState'
 import { useCopyTraining, useGetAvailablePlayers, useAddParticipants, useRemoveParticipant, useMarkAsReported, useUpdateParticipantReason, useUpdateLeaderReason, useUpdateParticipantGroups } from '../hooks/backend/trainings'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../lib/shadcn/sheet'
 import { AttendanceStatsButton } from '../components/AttendanceStatsButton'
@@ -34,6 +35,8 @@ interface Attendee {
   status: string
   reason: string | null
   reasontime: string | null
+  /** När personen svarade i Svenskalag, 'ÅÅÅÅ-MM-DDTHH:MM' */
+  replied_at: string | null
   group_name: string | null
   comment: string | null
 }
@@ -59,12 +62,19 @@ interface Leader {
   status: string
   reason: string | null
   reasontime: string | null
+  replied_at: string | null
 }
 
 interface TrainingDetailData {
   training: TrainingInfo | null
   attendees: Attendee[]
   leaders: Leader[]
+}
+
+/** '2026-11-08T14:32' → '8 nov' */
+function replyDay(stamp: string) {
+  const [, m, d] = stamp.slice(0, 10).split('-').map(Number)
+  return `${d} ${['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'][m - 1]}`
 }
 
 function formatDate(dateStr: string) {
@@ -238,6 +248,9 @@ export default function TrainingDetail() {
     trigger({ trainingId: Number(id) }, { skipCache: true })
   }
 
+  // Svarstid från Svenskalag: visa och sortera på den
+  const [showReplied, setShowReplied] = usePersistentState<boolean>('hl-training-replied', false)
+  const [peopleSort, setPeopleSort] = usePersistentState<'name' | 'replied' | 'replied-desc'>('hl-training-sort', 'name')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set([
     'Kallad', 'Anmäld', 'Närvarande', 'Närvarande, ej hela', 'Ej närvarande', 'Anmäld, kom ej', 'Annan aktivitet',
     'leader-Kallad', 'leader-Anmäld', 'leader-Närvarande', 'leader-Ej närvarande', 'leader-Anmäld, kom ej', 'leader-Annan aktivitet',
@@ -422,6 +435,7 @@ export default function TrainingDetail() {
     status: string
     reason: string | null
     reasontime: string | null
+    repliedAt: string | null
     comment: string | null
     group: string | null
     attendee?: Attendee
@@ -430,16 +444,21 @@ export default function TrainingDetail() {
   const people: Person[] = [
     ...attendees.map((a): Person => ({
       kind: 'player', id: a.player_id, name: a.shortname, status: a.status ?? 'Okänd',
-      reason: a.reason, reasontime: a.reasontime, comment: a.comment, group: a.group_name, attendee: a,
+      reason: a.reason, reasontime: a.reasontime, repliedAt: a.replied_at ?? null, comment: a.comment, group: a.group_name, attendee: a,
     })),
     ...leaders.map((l): Person => ({
       kind: 'leader', id: l.leader_id, name: l.shortname, status: l.status ?? 'Okänd',
-      reason: l.reason, reasontime: l.reasontime, comment: null, group: null, leader: l,
+      reason: l.reason, reasontime: l.reasontime, repliedAt: l.replied_at ?? null, comment: null, group: null, leader: l,
     })),
   ]
   const peopleGrouped: Record<string, Person[]> = {}
   for (const p of people) (peopleGrouped[p.status] ??= []).push(p)
-  for (const list of Object.values(peopleGrouped)) list.sort((x, y) => (x.name ?? '').localeCompare(y.name ?? '', 'sv'))
+  const byName = (x: Person, y: Person) => (x.name ?? '').localeCompare(y.name ?? '', 'sv')
+  // Svarstid: de som saknar svarstid hamnar sist
+  const byReplied = (dir: 1 | -1) => (x: Person, y: Person) =>
+    (x.repliedAt && y.repliedAt ? dir * x.repliedAt.localeCompare(y.repliedAt) : x.repliedAt ? -1 : y.repliedAt ? 1 : 0) || byName(x, y)
+  const sorter = peopleSort === 'replied' ? byReplied(1) : peopleSort === 'replied-desc' ? byReplied(-1) : byName
+  for (const list of Object.values(peopleGrouped)) list.sort(sorter)
   const orderedPeopleGroups = STATUS_ORDER
     .filter(s => peopleGrouped[s]?.length)
     .concat(Object.keys(peopleGrouped).filter(k => !STATUS_ORDER.includes(k)))
@@ -697,6 +716,26 @@ export default function TrainingDetail() {
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Deltagare</span>
             <div className="flex items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={`flex items-center gap-1 text-xs transition-colors hover:text-foreground ${showReplied || peopleSort !== 'name' ? 'text-primary font-medium' : 'text-muted-foreground'}`}
+                    aria-label="Visa och sortera">
+                    <ArrowUpDown className="w-3.5 h-3.5" /> Visa
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuCheckboxItem checked={showReplied} onCheckedChange={(v) => setShowReplied(!!v)}>
+                    Svarstid från Svenskalag
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Sortera</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup value={peopleSort} onValueChange={(v) => setPeopleSort(v as typeof peopleSort)}>
+                    <DropdownMenuRadioItem value="name">Namn</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="replied">Svarstid, först svarade först</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="replied-desc">Svarstid, senast svarade först</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <button
                 onClick={() => {
                   const allCollapsed = orderedPeopleGroups.every(k => collapsedGroups.has(k))
@@ -789,6 +828,12 @@ export default function TrainingDetail() {
                           <span className="text-xs text-muted-foreground/70 truncate italic">{person.comment}</span>
                         )}
                       </button>
+                      {showReplied && (
+                        <span className="shrink-0 text-right text-[11px] leading-tight text-muted-foreground tabular-nums"
+                          title={person.repliedAt ? 'Svarade i Svenskalag' : 'Ingen svarstid från Svenskalag'}>
+                          {person.repliedAt ? <>{replyDay(person.repliedAt)}<br />{person.repliedAt.slice(11, 16)}</> : '–'}
+                        </span>
+                      )}
                       {person.group && (
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0">
                           {person.group}

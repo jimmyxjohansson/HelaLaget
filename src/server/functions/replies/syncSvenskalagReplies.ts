@@ -28,7 +28,7 @@ export default async function syncSvenskalagReplies(req: { params: Params; user:
       params: {
         kind,
         id,
-        items: auto.map((r) => ({ type: r.match!.type, id: r.match!.id, list: r.list, comment: r.comment, time: r.time })),
+        items: auto.map((r) => ({ type: r.match!.type, id: r.match!.id, list: r.list, comment: r.comment, time: r.time, repliedAt: r.repliedAt })),
       },
     })
   }

@@ -15,6 +15,8 @@ type Item = {
   list: ListKey
   comment?: string | null
   time?: string | null
+  /** När svaret lämnades i Svenskalag, 'ÅÅÅÅ-MM-DDTHH:MM' */
+  repliedAt?: string | null
   /** Namnet i Svenskalag. Skickas när ledaren kopplat namnet för hand, så att kopplingen sparas. */
   linkName?: string | null
 }
@@ -48,14 +50,17 @@ export default async function applySvenskalagReplies(req: { params: Params; user
 
     if (kind === 'training') {
       const status = TRAINING_STATUS[it.list]
+      // Svarstiden från Svenskalag (inte för Kallade, som inte har svarat)
+      const repliedAt = it.list !== 'invited' && it.repliedAt && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(it.repliedAt) ? it.repliedAt : null
       const params = [id, personId, status, comment, time]
       if (current.has(key)) {
         await db.query(
-          `UPDATE ${table} SET status = $3, reason = COALESCE($4, NULLIF(reason, ''), $6), reasontime = COALESCE($5, reasontime)
-           WHERE ${fk} = $1 AND ${col} = $2`, [...params, noReason ? NO_REASON : null])
+          `UPDATE ${table} SET status = $3, reason = COALESCE($4, NULLIF(reason, ''), $6), reasontime = COALESCE($5, reasontime),
+             replied_at = COALESCE($7::timestamp, replied_at)
+           WHERE ${fk} = $1 AND ${col} = $2`, [...params, noReason ? NO_REASON : null, repliedAt])
       } else {
-        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason, reasontime) VALUES ($1, $2, $3, $4, $5)`,
-          [id, personId, status, comment ?? (noReason ? NO_REASON : null), time])
+        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason, reasontime, replied_at) VALUES ($1, $2, $3, $4, $5, $6::timestamp)`,
+          [id, personId, status, comment ?? (noReason ? NO_REASON : null), time, repliedAt])
       }
     } else {
       const status = MATCH_STATUS[it.list]
