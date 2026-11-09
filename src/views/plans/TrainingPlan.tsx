@@ -337,17 +337,16 @@ export default function TrainingPlan() {
             </div>
           )}
         </div>
-        <div className="flex items-end justify-between gap-3">
-        <div className="min-w-0">
         <p className="text-sm font-medium uppercase tracking-widest text-team-accent/70">Träningsplan</p>
+        {/* Rubriken får hela bredden; brickorna står på raden med tiden */}
         <h1 className="text-2xl font-bold first-letter:uppercase">{training ? dateTitle(training.date) : ' '}</h1>
-        <p className="mt-0.5 flex items-center gap-3 text-sm text-team-accent/80">
-          {training && <span>{clock(training.date, 0)}–{clock(training.date, total)}</span>}
-          <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {total} min</span>
-          <span>{blocks.length} block</span>
-        </p>
-        </div>
-        {detail.data && <StatusMinis attendees={detail.data.attendees} leaders={detail.data.leaders} href={`/trainings/${trainingId}`} />}
+        <div className="mt-0.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+          <p className="flex items-center gap-3 text-sm text-team-accent/80">
+            {training && <span className="whitespace-nowrap">{clock(training.date, 0)}–{clock(training.date, total)}</span>}
+            <span className="flex items-center gap-1 whitespace-nowrap"><Clock className="h-3.5 w-3.5" /> {total} min</span>
+            <span className="whitespace-nowrap">{blocks.length} block</span>
+          </p>
+          {detail.data && <StatusMinis attendees={detail.data.attendees} leaders={detail.data.leaders} href={`/trainings/${trainingId}`} />}
         </div>
       </div>
 
