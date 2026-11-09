@@ -11,7 +11,7 @@ import { RANK_COLOR } from '../../utils/rankColors'
 
 type Slot = { event: SlotEvent; players: SlotPlayer[]; leaders: SlotLeader[] }
 
-const COL_W = 200
+const COL_W = 240
 const GAP = 10
 const PAD = 12
 const HEAD_H = 56
@@ -33,6 +33,29 @@ export function overviewPlayers(s: Slot, showDeclined: boolean) {
       rankIndex(a.rank) - rankIndex(b.rank) ||
       (a.fullname ?? a.shortname ?? '').localeCompare(b.fullname ?? b.shortname ?? '', 'sv'))
 }
+
+/** Radbryter text till en bredd (ord för ord; för långa ord kortas). */
+function wrapText(ctx: CanvasRenderingContext2D, text: string, max: number, maxLines = 99) {
+  const lines: string[] = []
+  let line = ''
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const next = line ? `${line} ${word}` : word
+    if (ctx.measureText(next).width > max && line) {
+      lines.push(line)
+      line = word
+    } else line = next
+  }
+  if (line) lines.push(line)
+  if (lines.length > maxLines) {
+    const kept = lines.slice(0, maxLines)
+    kept[maxLines - 1] = fit(ctx, `${kept[maxLines - 1]} ${lines.slice(maxLines).join(' ')}`, max)
+    return kept
+  }
+  return lines.map((l) => fit(ctx, l, max))
+}
+
+const TITLE_LH = 15
+const LEADER_LH = 15
 
 const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 const SIZE_COLS = 2
@@ -93,8 +116,17 @@ export function drawOverview(
   const width = PAD * 2 + n * COL_W + (n - 1) * GAP
   const lists = slots.map((s) => overviewPlayers(s, opts.showDeclined))
   const shirts = slots.map((s) => (opts.showShirts ? shirtSummary(s.players) : []))
+  // Hela namnet och alla ledare syns: rubriken och ledarraden radbryts
+  const probe = document.createElement('canvas').getContext('2d')!
+  const textX = (opts.kind === 'match' ? 9 + 32 + 8 : 9)
+  probe.font = `700 12px ${FONT}`
+  const titles = slots.map((s, i) => wrapText(probe, `${i + 1}. ${s.event.title}`, COL_W - 9 - textX, 3))
+  probe.font = `400 11px ${FONT}`
+  const leaderLines = slots.map((s) => wrapText(probe, s.leaders.map((l) => l.shortname).join(', '), COL_W - 18))
+  // Samma rubrikhöjd i alla kolumner, så att listorna börjar på samma rad
+  const headH = HEAD_H + (Math.max(1, ...titles.map((t) => t.length)) - 1) * TITLE_LH
   const colHeight = (i: number) =>
-    HEAD_H + 8 + Math.max(1, lists[i].length) * LINE_H + (slots[i].leaders.length ? 26 + LINE_H : 0) +
+    headH + 8 + Math.max(1, lists[i].length) * LINE_H + (slots[i].leaders.length ? 26 + leaderLines[i].length * LEADER_LH + 2 : 0) +
     (shirts[i].length ? 26 + Math.ceil(shirts[i].length / SIZE_COLS) * LINE_H : 0) + 8
   const height = PAD + Math.max(...slots.map((_, i) => colHeight(i)), 80) + PAD
 
@@ -121,13 +153,13 @@ export function drawOverview(
     // Rubrik i lagets färg, med motståndarens logga
     ctx.fillStyle = opts.primary
     ctx.beginPath()
-    ctx.roundRect(x, y, COL_W, HEAD_H, [8, 8, 0, 0])
+    ctx.roundRect(x, y, COL_W, headH, [8, 8, 0, 0])
     ctx.fill()
     let tx = x + 9
     const logo = logos[i]
     if (opts.kind === 'match') {
       const cx = x + 9 + 16
-      const cy = y + HEAD_H / 2
+      const cy = y + headH / 2
       ctx.fillStyle = '#ffffff'
       ctx.beginPath()
       ctx.arc(cx, cy, 16, 0, Math.PI * 2)
@@ -154,12 +186,13 @@ export function drawOverview(
     const tw = x + COL_W - 9 - tx
     ctx.fillStyle = opts.accent
     ctx.font = `700 12px ${FONT}`
-    ctx.fillText(fit(ctx, `${i + 1}. ${s.event.title}`, tw), tx, y + 14)
+    titles[i].forEach((t, n) => ctx.fillText(t, tx, y + 14 + n * TITLE_LH))
+    const extra = (titles[i].length - 1) * TITLE_LH
     ctx.font = `400 10px ${FONT}`
     const when = opts.kind === 'match' ? formatWhen(s.event.date) : formatCupDates(s.event.date, s.event.enddate)
-    ctx.fillText(fit(ctx, [s.event.difficulty, when].filter(Boolean).join(' · '), tw), tx, y + 29)
-    ctx.fillText(fit(ctx, [s.event.homeaway, s.event.matchplayers, `${lists[i].length} spelare`].filter(Boolean).join(' · '), tw), tx, y + 43)
-    y += HEAD_H
+    ctx.fillText(fit(ctx, [s.event.difficulty, when].filter(Boolean).join(' · '), tw), tx, y + 29 + extra)
+    ctx.fillText(fit(ctx, [s.event.homeaway, s.event.matchplayers, `${lists[i].length} spelare`].filter(Boolean).join(' · '), tw), tx, y + 43 + extra)
+    y += headH
 
     const rankX = x + COL_W - 70
     const pctRight = x + COL_W - 9
@@ -205,8 +238,8 @@ export function drawOverview(
       y += 16
       ctx.font = `400 11px ${FONT}`
       ctx.fillStyle = '#111827'
-      ctx.fillText(fit(ctx, s.leaders.map((l) => l.shortname).join(', '), COL_W - 18), x + 9, y + LINE_H / 2 - 2)
-      y += LINE_H
+      leaderLines[i].forEach((l, n) => ctx.fillText(l, x + 9, y + LEADER_LH / 2 - 1 + n * LEADER_LH))
+      y += leaderLines[i].length * LEADER_LH + 2
     }
 
     if (shirts[i].length) {
