@@ -68,7 +68,24 @@ export default function Planning() {
   const genderFilter = mixed ? genders : [...GENDERS]
 
   const slots = kind === 'match' ? matchSlots : cupSlots
-  const setSlots = kind === 'match' ? setMatchSlots : setCupSlots
+  const setRawSlots = kind === 'match' ? setMatchSlots : setCupSlots
+  // Valda matcher/cuper ligger alltid först, utan luckor (t.ex. när 1 tas bort flyttar 2 upp)
+  const compact = (list: Slots) => {
+    const ids = list.filter((x): x is number => !!x)
+    return EMPTY.map((_, i) => ids[i] ?? null)
+  }
+  const setSlots = (list: Slots) => setRawSlots(compact(list))
+  useEffect(() => {
+    const c = compact(slots)
+    if (c.some((v, i) => v !== slots[i])) setRawSlots(c)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind, slots.join(',')])
+  // Nästa val syns först när det föregående är gjort
+  const visibleCount = Math.min(EMPTY.length, slots.filter(Boolean).length + 1)
+  const visible = slots.slice(0, visibleCount)
+  useEffect(() => {
+    if (mobileSlot >= visibleCount) setMobileSlot(visibleCount - 1)
+  }, [mobileSlot, visibleCount])
   const from = useMemo(() => periodFrom(months), [months])
   const typesKey = matchTypes.join(',')
 
@@ -200,7 +217,7 @@ export default function Planning() {
 
       {/* Mobil: en kolumn i taget */}
       <div className="flex gap-1 px-4 pt-3 md:hidden">
-        {slots.map((id, i) => (
+        {visible.map((id, i) => (
           <button key={i} type="button" onClick={() => setMobileSlot(i)}
             className={cn('min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-xs font-medium',
               mobileSlot === i ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
@@ -209,8 +226,9 @@ export default function Planning() {
         ))}
       </div>
 
-      <div className="grid gap-3 p-3 md:p-4 md:[grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
-        {slots.map((id, i) => {
+      {/* De valda kolumnerna delar på bredden */}
+      <div className="grid gap-3 p-3 md:p-4 md:[grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
+        {visible.map((id, i) => {
           const taken = new Set(slots.filter((s, j) => s && j !== i) as number[])
           const neighbor = (j: number) => {
             const nid = slots[j]
