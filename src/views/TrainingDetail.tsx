@@ -617,7 +617,7 @@ export default function TrainingDetail() {
                 </button>
               )}
               </>}
-              <InfoButton context="training"
+              <InfoButton context="training" indooroutdoor={training.indooroutdoor}
                 className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors" />
             </div>
             <SyncStatusLine status={syncStatus} onDismiss={() => setSyncStatus(null)} className={`mt-2 w-fit max-w-full rounded-md px-2 py-1 text-xs text-white ${syncStatus?.ok ? 'bg-black/20' : 'bg-black/35'}`} />

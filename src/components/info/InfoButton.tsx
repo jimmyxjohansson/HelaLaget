@@ -10,14 +10,19 @@ import RichText from './RichText'
  * Knapp som visar lagets information för träningar eller matcher (t.ex. koder
  * till förråd och bolltunna). Syns bara när det finns något att visa.
  */
-export default function InfoButton({ context, className }: { context: 'training' | 'match'; className: string }) {
+export default function InfoButton({ context, className, indooroutdoor, homeaway }: {
+  context: 'training' | 'match'
+  className: string
+  indooroutdoor?: string | null
+  homeaway?: string | null
+}) {
   const infos = useGetSquadInfos()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    infos.trigger({ context }).catch(() => {})
+    infos.trigger({ context, indooroutdoor: indooroutdoor ?? null, homeaway: homeaway ?? null }).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [context])
+  }, [context, indooroutdoor, homeaway])
 
   const list = infos.data ?? []
   if (!list.length) return null

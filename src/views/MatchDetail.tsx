@@ -337,8 +337,8 @@ export default function MatchDetail() {
             <span className="text-sm">Tillbaka</span>
           </button>
           <div className="flex items-center gap-1">
-            <InfoButton context="match"
-              className="flex items-center justify-center w-8 h-8 rounded-full text-team-accent/80 hover:text-team-accent hover:bg-white/10 transition-colors" />
+            {match && <InfoButton context="match" indooroutdoor={match.indooroutdoor} homeaway={match.homeaway}
+              className="flex items-center justify-center w-8 h-8 rounded-full text-team-accent/80 hover:text-team-accent hover:bg-white/10 transition-colors" />}
             {editor && match?.svenskalag && (
               <SyncRepliesButton
                 url={match.svenskalag}

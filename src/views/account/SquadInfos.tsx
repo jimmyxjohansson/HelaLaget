@@ -10,8 +10,11 @@ import RichText from '../../components/info/RichText'
 import { Section } from './shared'
 import type { SquadInfo } from '@/server/functions/infos/getSquadInfos'
 
-type Draft = { id: number | null; title: string; body: string; onTrainings: boolean; onMatches: boolean; audience: 'leaders' | 'all' }
-const EMPTY: Draft = { id: null, title: '', body: '', onTrainings: true, onMatches: false, audience: 'leaders' }
+type Draft = {
+  id: number | null; title: string; body: string; onTrainings: boolean; onMatches: boolean; audience: 'leaders' | 'all'
+  onlyIndoorOutdoor: 'Inomhus' | 'Utomhus' | null; onlyHomeAway: 'Hemma' | 'Borta' | null
+}
+const EMPTY: Draft = { id: null, title: '', body: '', onTrainings: true, onMatches: false, audience: 'leaders', onlyIndoorOutdoor: null, onlyHomeAway: null }
 
 /** Laginställningar: information som visas på träningar och/eller matcher, t.ex. koder. */
 export default function SquadInfos() {
@@ -62,6 +65,8 @@ export default function SquadInfos() {
                     {i.onTrainings && <Chip>Träningar</Chip>}
                     {i.onMatches && <Chip>Matcher</Chip>}
                     {!i.onTrainings && !i.onMatches && <Chip muted>Visas inte</Chip>}
+                    {i.onlyIndoorOutdoor && <Chip>Bara {i.onlyIndoorOutdoor.toLowerCase()}</Chip>}
+                    {i.onlyHomeAway && i.onMatches && <Chip>Bara {i.onlyHomeAway === 'Hemma' ? 'hemmamatcher' : 'bortamatcher'}</Chip>}
                     <Chip muted>{i.audience === 'all' ? 'Alla i laget' : 'Bara ledare'}</Chip>
                   </div>
                   {i.body.trim() && <RichText text={i.body} className="mt-1.5 line-clamp-3 text-muted-foreground" />}
@@ -173,6 +178,27 @@ function InfoEditor({ draft, onClose, onSaved }: { draft: Draft | null; onClose:
             <span className="text-xs text-muted-foreground">Visas på</span>
             <label className="flex items-center gap-2"><input type="checkbox" checked={d.onTrainings} onChange={(e) => setD({ ...d, onTrainings: e.target.checked })} /> Träningar</label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={d.onMatches} onChange={(e) => setD({ ...d, onMatches: e.target.checked })} /> Matcher</label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Inomhus/utomhus</span>
+              <select value={d.onlyIndoorOutdoor ?? ''} onChange={(e) => setD({ ...d, onlyIndoorOutdoor: (e.target.value || null) as Draft['onlyIndoorOutdoor'] })}
+                className="h-9 rounded-md border border-border bg-background px-2">
+                <option value="">Båda</option>
+                <option value="Inomhus">Bara inomhus</option>
+                <option value="Utomhus">Bara utomhus</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">Hemma/borta (matcher)</span>
+              <select value={d.onlyHomeAway ?? ''} disabled={!d.onMatches}
+                onChange={(e) => setD({ ...d, onlyHomeAway: (e.target.value || null) as Draft['onlyHomeAway'] })}
+                className="h-9 rounded-md border border-border bg-background px-2 disabled:opacity-50">
+                <option value="">Båda</option>
+                <option value="Hemma">Bara hemmamatcher</option>
+                <option value="Borta">Bara bortamatcher</option>
+              </select>
+            </label>
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-xs text-muted-foreground">Vem ser den</span>
