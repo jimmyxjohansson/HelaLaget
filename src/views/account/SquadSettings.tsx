@@ -26,6 +26,8 @@ import { Button } from '../../lib/shadcn/button'
 import { Input } from '../../lib/shadcn/input'
 import { Label } from '../../lib/shadcn/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../lib/shadcn/select'
+import { GAME_FORMATS } from '../../utils/gameFormats'
+import GameFormats, { formatText } from './GameFormats'
 import { ErrorText, PageHeader, ROLE_HELP, ROLE_LABEL, Section } from './shared'
 import SquadInfos from './SquadInfos'
 
@@ -139,6 +141,7 @@ export default function SquadSettings() {
     siteName: '',
     docsUrl: '',
     docsName: '',
+    gameFormat: '',
   })
   const [savedSettings, setSavedSettings] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -192,6 +195,7 @@ export default function SquadSettings() {
             siteName: s.siteName ?? '',
             docsUrl: s.docsUrl ?? '',
             docsName: s.docsName ?? '',
+            gameFormat: s.gameFormat ?? '',
           })
       })
       .catch(() => {})
@@ -534,6 +538,22 @@ export default function SquadSettings() {
             )
           })}
           <div className="flex flex-col gap-1.5">
+            <Label>Spelform</Label>
+            <Select value={form.gameFormat || '__none__'} onValueChange={(v) => setForm({ ...form, gameFormat: v === '__none__' ? '' : v })}>
+              <SelectTrigger aria-label="Spelform" className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Ingen</SelectItem>
+                {GAME_FORMATS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {form.gameFormat && settings.data?.formats?.[form.gameFormat]
+                ? `Nya matcher och cuper får ${form.gameFormat}${formatText(settings.data.formats[form.gameFormat]) ? `, ${formatText(settings.data.formats[form.gameFormat])}` : ''}. `
+                : 'Används när matcher och cuper läggs till eller hämtas från Svenskalag. '}
+              Går att ändra på varje match och cup.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="sq-svl">Svenskalag-kalender (valfritt)</Label>
             <Input
               id="sq-svl"
@@ -555,6 +575,11 @@ export default function SquadSettings() {
           </div>
         </form>
       </Section>
+
+      {settings.data && (
+        <GameFormats initial={settings.data.formats} canEdit={settings.data.canEditFormats}
+          onSaved={() => settings.trigger().catch(() => {})} />
+      )}
 
       <SquadInfos />
 

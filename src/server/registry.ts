@@ -68,6 +68,7 @@ import members_getMembers from './functions/members/getMembers'
 import members_getSquadSettings from './functions/members/getSquadSettings'
 import members_regenerateJoinCode from './functions/members/regenerateJoinCode'
 import members_removeMember from './functions/members/removeMember'
+import members_saveGameFormats from './functions/members/saveGameFormats'
 import members_updateMember from './functions/members/updateMember'
 import members_updateSquadSettings from './functions/members/updateSquadSettings'
 import notifications_getPushLog from './functions/notifications/getPushLog'
@@ -229,6 +230,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'members/getSquadSettings': { handler: members_getSquadSettings, access: 'admin' },
   'members/regenerateJoinCode': { handler: members_regenerateJoinCode, access: 'admin' },
   'members/removeMember': { handler: members_removeMember, access: 'admin' },
+  'members/saveGameFormats': { handler: members_saveGameFormats, access: 'admin' },
   'members/updateMember': { handler: members_updateMember, access: 'admin' },
   'members/updateSquadSettings': { handler: members_updateSquadSettings, access: 'admin' },
   'notifications/getPushLog': { handler: notifications_getPushLog, access: 'admin' },

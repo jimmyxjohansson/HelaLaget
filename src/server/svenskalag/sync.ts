@@ -1,6 +1,7 @@
 import 'server-only'
 import { adminDb, withAdminTransaction, type Query } from '../db'
 import { parseIcal, type IcalEvent } from './ical'
+import { squadGameFormat } from '../gameFormats'
 import {
   classify,
   cleanDescription,
@@ -122,9 +123,12 @@ export async function createMatch(
   const vs = c ? await findOrCreateOpponent(q, squad.organization_id, c.opponent) : null
   const league = c ? await findLeague(q, squad.id, c.league) : null
   const teamname = c && c.ourTeam.toLowerCase() !== squad.club_name.toLowerCase() ? c.ourTeam : null
+  // Lagets spelform med föreningens speltid och perioder
+  const fmt = await squadGameFormat(squad.id, q)
   const { data } = await q<{ id: number }>(
-    `INSERT INTO matches (squad_id, matchtype, vs, date, homeaway, indooroutdoor, location, teamname, league, status, notes, svenskalag)
-     VALUES ($1, $2, $3, $4::timestamptz, $5, $6, $7, $8, $9, 'Ny', $10, $11) RETURNING id`,
+    `INSERT INTO matches (squad_id, matchtype, vs, date, homeaway, indooroutdoor, location, teamname, league, status, notes, svenskalag,
+       matchplayers, playtime, periods)
+     VALUES ($1, $2, $3, $4::timestamptz, $5, $6, $7, $8, $9, 'Ny', $10, $11, $12, $13, $14) RETURNING id`,
     [
       squad.id,
       c?.matchtype ?? 'Serie',
@@ -137,6 +141,9 @@ export async function createMatch(
       league,
       c ? null : ev.title,
       ev.url,
+      fmt?.format ?? null,
+      fmt?.playtime ?? null,
+      fmt?.periods ?? null,
     ],
   )
   return data[0].id
@@ -144,10 +151,12 @@ export async function createMatch(
 
 export async function createCup(q: Query, squadId: number, ev: EventData): Promise<number> {
   const indoor = /inomhus|futsal/i.test(ev.title) || /hall/i.test(ev.location)
+  const fmt = await squadGameFormat(squadId, q)
   const { data } = await q<{ id: number }>(
-    `INSERT INTO cups (squad_id, name, startdate, enddate, location, indooroutdoor, status, svenskalag)
-     VALUES ($1, $2, $3::date, $4::date, $5, $6, 'Ny', $7) RETURNING id`,
-    [squadId, ev.title, ev.start.slice(0, 10), (ev.end ?? ev.start).slice(0, 10), ev.location || null, indoor ? 'Inomhus' : 'Utomhus', ev.url],
+    `INSERT INTO cups (squad_id, name, startdate, enddate, location, indooroutdoor, status, svenskalag, matchplayers, playtime, periods)
+     VALUES ($1, $2, $3::date, $4::date, $5, $6, 'Ny', $7, $8, $9, $10) RETURNING id`,
+    [squadId, ev.title, ev.start.slice(0, 10), (ev.end ?? ev.start).slice(0, 10), ev.location || null, indoor ? 'Inomhus' : 'Utomhus', ev.url,
+      fmt?.format ?? null, fmt?.playtime ?? null, fmt?.periods ?? null],
   )
   return data[0].id
 }

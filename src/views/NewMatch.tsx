@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from '../lib/nav'
+import { DEFAULT_FORMATS, GAME_FORMATS, type FormatDefaults } from '../utils/gameFormats'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, Save } from 'lucide-react'
@@ -21,13 +22,8 @@ import DateTimePicker from '../components/DateTimePicker'
 const TYPES = ['Serie', 'Cup', 'Träning']
 const HOMEAWAY = ['Hemma', 'Borta']
 const LOCATIONS = ['Inomhus', 'Utomhus']
-const MATCHPLAYERS = ['3 v 3', '5 v 5', '7 v 7', '8 v 8', '9 v 9', '11 v 11']
+const MATCHPLAYERS = GAME_FORMATS
 const DIFFICULTIES = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D', 'X']
-
-const PLAYTIME_BY_MATCHPLAYERS: Record<string, string> = {
-  '9 v 9': '25',
-  '7 v 7': '20',
-}
 
 function toIso(datetime: string) {
   return `${datetime}:00Z`
@@ -62,10 +58,11 @@ export default function NewMatch() {
   const [fogisno, setFogisno] = useState('')
   const [fogislink, setFogislink] = useState('')
   // Generic
-  const [matchplayers, setMatchplayers] = useState('9 v 9')
+  // Fylls med lagets spelform när uppgifterna laddats
+  const [matchplayers, setMatchplayers] = useState('')
   const [indoor, setIndoor] = useState('Utomhus')
-  const [playtime, setPlaytime] = useState('25')
-  const [periods, setPeriods] = useState('3')
+  const [playtime, setPlaytime] = useState('')
+  const [periods, setPeriods] = useState('')
   const [difficulty, setDifficulty] = useState('')
   const [location, setLocation] = useState('')
   const [svenskalag, setSvenskalag] = useState('')
@@ -85,12 +82,31 @@ export default function NewMatch() {
       indooroutdoor: string | null; periods: number | null; playtime: number | null
       matchplayers: string | null; difficulty: string | null
     }[]
+    gameFormat: string | null
+    formats: FormatDefaults
   } | undefined
   const teams = [...(refs?.teams ?? []), ...extraTeams]
   const leagues = refs?.leagues ?? []
   const cups = refs?.cups ?? []
 
   useEffect(() => { fetchRefs({}) }, [])
+
+  const formats = refs?.formats ?? DEFAULT_FORMATS
+  /** Spelform med föreningens speltid och perioder */
+  function applyFormat(f: string) {
+    setMatchplayers(f)
+    const d = formats[f]
+    setPlaytime(d?.playtime != null ? String(d.playtime) : '')
+    setPeriods(d?.periods != null ? String(d.periods) : '')
+  }
+
+  // Lagets spelform som start, när uppgifterna laddats (en vald cup tar över nedan)
+  const [formatApplied, setFormatApplied] = useState(false)
+  useEffect(() => {
+    if (!refs || formatApplied) return
+    setFormatApplied(true)
+    if (refs.gameFormat && !matchplayers) applyFormat(refs.gameFormat)
+  }, [refs, formatApplied])
 
   // When a cup is selected (e.g. preselected via URL, or picked from the list),
   // default the date to the cup's start date at 09:00 and inherit the cup's
@@ -268,9 +284,8 @@ export default function NewMatch() {
               value={matchplayers || '__none__'}
               onValueChange={v => {
                 const next = v === '__none__' ? '' : v
-                setMatchplayers(next)
-                const def = PLAYTIME_BY_MATCHPLAYERS[next]
-                if (def) setPlaytime(def)
+                if (next) applyFormat(next)
+                else setMatchplayers('')
               }}
             >
               <SelectTrigger><SelectValue placeholder="Välj spelform…" /></SelectTrigger>

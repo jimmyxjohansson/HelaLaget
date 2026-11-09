@@ -7,6 +7,7 @@ import type getMembers from '../../server/functions/members/getMembers'
 import type getSquadSettings from '../../server/functions/members/getSquadSettings'
 import type regenerateJoinCode from '../../server/functions/members/regenerateJoinCode'
 import type removeMember from '../../server/functions/members/removeMember'
+import type saveGameFormats from '../../server/functions/members/saveGameFormats'
 import type updateMember from '../../server/functions/members/updateMember'
 import type updateSquadSettings from '../../server/functions/members/updateSquadSettings'
 
@@ -39,6 +40,11 @@ export const useRemoveMember = createBackendHook<
   Parameters<typeof removeMember>[0]['params'],
   Awaited<ReturnType<typeof removeMember>>
 >('members/removeMember')
+
+export const useSaveGameFormats = createBackendHook<
+  Parameters<typeof saveGameFormats>[0]['params'],
+  Awaited<ReturnType<typeof saveGameFormats>>
+>('members/saveGameFormats')
 
 export const useUpdateMember = createBackendHook<
   Parameters<typeof updateMember>[0]['params'],

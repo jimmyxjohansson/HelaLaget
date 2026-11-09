@@ -1,6 +1,7 @@
 import { adminDb } from '@/server/db'
 import { AccessError } from '@/server/access'
 import { normalizeFeedUrl } from '@/server/svenskalag/sync'
+import { GAME_FORMATS } from '@/utils/gameFormats'
 import type { SquadAccess, User } from '@/server/types'
 
 export const access = 'admin'
@@ -19,6 +20,8 @@ type Params = {
   /** Lagets dokument (t.ex. en delad mapp) och namnet på länken i menyn */
   docsUrl?: string | null
   docsName?: string | null
+  /** Lagets spelform, används när matcher och cuper läggs till */
+  gameFormat?: string | null
 }
 
 /** "svenskalag.se/..." utan https:// fungerar också; http blir https. */
@@ -54,10 +57,12 @@ export default async function updateSquadSettings(req: { params: Params; user: U
       throw new AccessError((e as Error).message, 400)
     }
   }
+  const gameFormat = p.gameFormat || null
+  if (gameFormat && !(GAME_FORMATS as readonly string[]).includes(gameFormat)) throw new AccessError('Okänd spelform.', 400)
   await adminDb.query(
     `UPDATE squads SET name = $2, primary_color = $3, accent_color = $4,
        logo_url = $5, planning_url = $6, svenskalag_ical_url = $7,
-       svenskalag_url = $8, site_name = $9, docs_url = $10, docs_name = $11
+       svenskalag_url = $8, site_name = $9, docs_url = $10, docs_name = $11, game_format = $12
      WHERE id = $1`,
     [
       req.squad!.squadId,
@@ -71,6 +76,7 @@ export default async function updateSquadSettings(req: { params: Params; user: U
       siteUrl ? linkName(p.siteName) : null,
       docsUrl,
       docsUrl ? linkName(p.docsName) : null,
+      gameFormat,
     ],
   )
   return { ok: true }
