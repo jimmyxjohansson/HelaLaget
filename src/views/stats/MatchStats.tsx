@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter } from '../../lib/nav'
-import { useEffect, useMemo } from 'react'
+import PersonStatsDialog, { type StatsPerson } from '../player/PersonStatsDialog'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useGetStatsMatches } from '../../hooks/backend/stats'
 import { usePersistentState } from '../../hooks/usePersistentState'
@@ -106,7 +106,7 @@ export function aggregate(data: MatchData | null | undefined, filters: Filters, 
 }
 
 export default function MatchStats({ filters, slot }: { filters: Filters; slot: HTMLElement | null }) {
-  const router = useRouter()
+  const [person, setPerson] = useState<StatsPerson | null>(null)
   const f = useMatchFilters()
   const [groupBy, setGroupBy] = usePersistentState<'level' | 'type'>('hl-stats-groupby', 'level')
   const q = useGetStatsMatches()
@@ -172,12 +172,13 @@ export default function MatchStats({ filters, slot }: { filters: Filters; slot: 
             columns={columns}
             initialSort={{ key: 'matches', dir: 'desc' }}
             rowKey={(r) => r.id}
-            onRowClick={(r) => router.push(`/players/${r.id}`)}
+            onRowClick={(r) => setPerson({ kind: 'player', id: r.id, name: r.name || (r.shortname ?? '') })}
             footerLabel="Lagets matcher"
             empty="Inga spelade matcher under perioden."
           />
         )}
       </section>
+      <PersonStatsDialog person={person} onClose={() => setPerson(null)} />
     </>
   )
 }

@@ -25,6 +25,7 @@ import infos_moveSquadInfo from './functions/infos/moveSquadInfo'
 import infos_saveSquadInfo from './functions/infos/saveSquadInfo'
 import leaders_addLeadersToSquad from './functions/leaders/addLeadersToSquad'
 import leaders_createLeader from './functions/leaders/createLeader'
+import leaders_getLeaderStats from './functions/leaders/getLeaderStats'
 import leaders_getLeaders from './functions/leaders/getLeaders'
 import leaders_getOrganizationLeaders from './functions/leaders/getOrganizationLeaders'
 import leaders_removeLeaderFromSquad from './functions/leaders/removeLeaderFromSquad'
@@ -188,6 +189,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'infos/saveSquadInfo': { handler: infos_saveSquadInfo, access: 'admin' },
   'leaders/addLeadersToSquad': { handler: leaders_addLeadersToSquad, access: 'leader' },
   'leaders/createLeader': { handler: leaders_createLeader, access: 'leader' },
+  'leaders/getLeaderStats': { handler: leaders_getLeaderStats, access: 'viewer' },
   'leaders/getLeaders': { handler: leaders_getLeaders, access: 'viewer' },
   'leaders/getOrganizationLeaders': { handler: leaders_getOrganizationLeaders, access: 'leader' },
   'leaders/removeLeaderFromSquad': { handler: leaders_removeLeaderFromSquad, access: 'leader' },

@@ -85,22 +85,30 @@ function Card({ title, right, children, className }: { title?: string; right?: R
 }
 
 /** Summeringen överst: närvaro, matcher, mål, assist, räddningar, cuper. */
-export function StatsSummary({ data, loading }: { data: PlayerStatsData | null | undefined; loading: boolean }) {
+export function StatsSummary({ data, loading, trainingOnly = false }: {
+  data: Pick<PlayerStatsData, 'trainings'> & Partial<PlayerStatsData> | null | undefined
+  loading: boolean
+  /** Bara närvaron (för ledare) */
+  trainingOnly?: boolean
+}) {
   const counted = data?.trainings.filter((t) => t.counted) ?? []
   const attended = counted.filter((t) => t.attended).length
   const matches = data?.matches ?? []
   const saves = sum(matches, (m) => m.saves)
   const tiles = [
     { label: 'Närvaro', value: counted.length ? `${pct(attended, counted.length)}%` : '–', sub: `${attended} av ${counted.length}`, tone: tone(pct(attended, counted.length), counted.length) },
-    { label: 'Matcher', value: String(matches.length), sub: record(matches) },
-    { label: 'Mål', value: String(sum(matches, (m) => m.goals)), sub: perMatch(sum(matches, (m) => m.goals), matches.length) },
-    { label: 'Assist', value: String(sum(matches, (m) => m.assists)), sub: perMatch(sum(matches, (m) => m.assists), matches.length) },
-    ...(saves > 0 ? [{ label: 'Räddningar', value: String(saves), sub: perMatch(saves, matches.length) }] : []),
-    { label: 'Cuper', value: String(data?.cups.length ?? 0), sub: `${sum(data?.cups ?? [], (c) => c.matches)} cupmatcher` },
+    ...(trainingOnly ? [] : [
+      { label: 'Matcher', value: String(matches.length), sub: record(matches) },
+      { label: 'Mål', value: String(sum(matches, (m) => m.goals)), sub: perMatch(sum(matches, (m) => m.goals), matches.length) },
+      { label: 'Assist', value: String(sum(matches, (m) => m.assists)), sub: perMatch(sum(matches, (m) => m.assists), matches.length) },
+      ...(saves > 0 ? [{ label: 'Räddningar', value: String(saves), sub: perMatch(saves, matches.length) }] : []),
+      { label: 'Cuper', value: String(data?.cups?.length ?? 0), sub: `${sum(data?.cups ?? [], (c) => c.matches)} cupmatcher` },
+    ]),
   ]
   return (
     <div
-      className={cn('grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-border bg-border sm:[grid-template-columns:repeat(var(--tiles),minmax(0,1fr))]', loading && 'opacity-60')}
+      className={cn('grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:[grid-template-columns:repeat(var(--tiles),minmax(0,1fr))]',
+        tiles.length === 1 ? 'grid-cols-1' : 'grid-cols-3', loading && 'opacity-60')}
       style={{ '--tiles': tiles.length } as React.CSSProperties}
     >
       {tiles.map((t) => (
@@ -111,7 +119,7 @@ export function StatsSummary({ data, loading }: { data: PlayerStatsData | null |
         </div>
       ))}
       {/* Fyll ut sista raden på mobilen */}
-      {Array.from({ length: (3 - (tiles.length % 3)) % 3 }, (_, i) => (
+      {tiles.length > 1 && Array.from({ length: (3 - (tiles.length % 3)) % 3 }, (_, i) => (
         <div key={`fill-${i}`} className="bg-card sm:hidden" />
       ))}
     </div>
@@ -162,7 +170,7 @@ export default function PlayerStats({ data, loading }: { data: PlayerStatsData |
 
 /* ───────────── Träning ───────────── */
 
-function TrainingTab({ trainings }: { trainings: Training[] }) {
+export function TrainingTab({ trainings }: { trainings: Training[] }) {
   const [onlyComments, setOnlyComments] = useState(false)
   const counted = trainings.filter((t) => t.counted)
   const byStatus = useMemo(() => {

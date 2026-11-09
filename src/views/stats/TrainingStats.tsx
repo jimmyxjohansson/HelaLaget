@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter } from '../../lib/nav'
-import { useEffect, useMemo } from 'react'
+import PersonStatsDialog, { type StatsPerson } from '../player/PersonStatsDialog'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useGetStatsTrainings } from '../../hooks/backend/stats'
 import { usePersistentState } from '../../hooks/usePersistentState'
@@ -40,7 +40,7 @@ type Row = {
 }
 
 export default function TrainingStats({ filters, slot }: { filters: Filters; slot: HTMLElement | null }) {
-  const router = useRouter()
+  const [person, setPerson] = useState<StatsPerson | null>(null)
   const [who, setWho] = usePersistentState<'player' | 'leader'>('hl-stats-who', 'player')
   const [types, setTypes] = usePersistentState<string[]>('hl-stats-ttypes', ['Träning'])
   const [inactiveLeaders, setInactiveLeaders] = usePersistentState('hl-stats-inactive-leaders', false)
@@ -163,11 +163,12 @@ export default function TrainingStats({ filters, slot }: { filters: Filters; slo
             columns={columns}
             initialSort={{ key: 'pct', dir: 'desc' }}
             rowKey={(r) => r.key}
-            onRowClick={who === 'player' ? (r) => router.push(`/players/${r.id}`) : undefined}
+            onRowClick={(r) => setPerson({ kind: r.kind, id: r.id, name: r.name || r.shortname || '' })}
             empty="Inga träningar under perioden."
           />
         )}
       </section>
+      <PersonStatsDialog person={person} onClose={() => setPerson(null)} />
     </>
   )
 }

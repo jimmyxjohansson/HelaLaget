@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from '../../lib/nav'
-import { useEffect, useMemo } from 'react'
+import PersonStatsDialog, { type StatsPerson } from '../player/PersonStatsDialog'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useGetStatsEvents, useGetStatsMatches } from '../../hooks/backend/stats'
 import { usePersistentState } from '../../hooks/usePersistentState'
@@ -47,6 +48,7 @@ function day(value: string) {
 
 export default function ScoringStats({ filters, slot }: { filters: Filters; slot: HTMLElement | null }) {
   const router = useRouter()
+  const [person, setPerson] = useState<StatsPerson | null>(null)
   const f = useMatchFilters()
   const [mode, setMode] = usePersistentState<Mode>('hl-stats-scoring-mode', 'players')
   const [kindsOff, setKindsOff] = usePersistentState<string[]>('hl-stats-kinds-off', [])
@@ -180,7 +182,7 @@ export default function ScoringStats({ filters, slot }: { filters: Filters; slot
             columns={playerColumns}
             initialSort={{ key: 'points', dir: 'desc' }}
             rowKey={(r) => r.id}
-            onRowClick={(r) => router.push(`/players/${r.id}`)}
+            onRowClick={(r) => setPerson({ kind: 'player', id: r.id, name: r.name || (r.shortname ?? '') })}
             empty="Inga spelade matcher under perioden."
           />
         ) : (
@@ -195,6 +197,7 @@ export default function ScoringStats({ filters, slot }: { filters: Filters; slot
           />
         )}
       </section>
+      <PersonStatsDialog person={person} onClose={() => setPerson(null)} />
     </>
   )
 }

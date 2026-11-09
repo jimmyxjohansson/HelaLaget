@@ -3,6 +3,7 @@
 import { createBackendHook } from './_core'
 import type addLeadersToSquad from '../../server/functions/leaders/addLeadersToSquad'
 import type createLeader from '../../server/functions/leaders/createLeader'
+import type getLeaderStats from '../../server/functions/leaders/getLeaderStats'
 import type getLeaders from '../../server/functions/leaders/getLeaders'
 import type getOrganizationLeaders from '../../server/functions/leaders/getOrganizationLeaders'
 import type removeLeaderFromSquad from '../../server/functions/leaders/removeLeaderFromSquad'
@@ -17,6 +18,11 @@ export const useCreateLeader = createBackendHook<
   Parameters<typeof createLeader>[0]['params'],
   Awaited<ReturnType<typeof createLeader>>
 >('leaders/createLeader')
+
+export const useGetLeaderStats = createBackendHook<
+  Parameters<typeof getLeaderStats>[0]['params'],
+  Awaited<ReturnType<typeof getLeaderStats>>
+>('leaders/getLeaderStats')
 
 export const useGetLeaders = createBackendHook<
   Parameters<typeof getLeaders>[0]['params'],
