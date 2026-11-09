@@ -1,5 +1,5 @@
 import { db } from '@/server/db'
-import { ATTENDED_STATUSES, NOW_WALLCLOCK, PAST_TRAINING, withinMonthsOf } from '@/server/attendance'
+import { ATTENDED_STATUSES, COUNTED_STATUS, NOW_WALLCLOCK, PAST_TRAINING, withinMonthsOf } from '@/server/attendance'
 import { AccessError } from '@/server/access'
 import { statsPlayerScope } from '@/server/members-kind'
 import type { SquadAccess, User } from '@/server/types'
@@ -45,7 +45,7 @@ export default async function getPlayerStats(req: { params: Params; user: User; 
       `SELECT t.id, t.date, t.type::text AS type, t.indooroutdoor::text AS indooroutdoor,
               pt.status::text AS status, NULLIF(trim(pt.reason), '') AS reason, pt.reasontime,
               NULLIF(pt."group", '') AS "group",
-              (${PAST_TRAINING}) AS counted,
+              (${PAST_TRAINING} AND ${COUNTED_STATUS}) AS counted,
               COALESCE(pt.status::text IN ${ATTENDED_STATUSES}, false) AS attended
        FROM participantstrainings pt
        JOIN trainings t ON t.id = pt.training

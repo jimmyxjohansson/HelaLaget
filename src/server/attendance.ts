@@ -7,13 +7,17 @@ import 'server-only'
  * - Bara träningar av typen Träning som har ägt rum (till och med i dag).
  *   Kommande träningar (t.ex. importerade från Svenskalag med spelarna
  *   anmälda) räknas inte.
- * - Närvarande: Närvarande, Närvarande ej hela, Anmäld och Annan aktivitet
- *   (samma som i Retool). Totalt: alla spelarens rader för träningarna.
+ * - Närvarande: Närvarande, Närvarande ej hela och Anmäld.
+ *   Totalt: alla spelarens rader för träningarna utom Annan aktivitet, som inte
+ *   räknas alls (varken som närvaro eller frånvaro).
  *
  * Tider sparas som väggklocka i UTC (17:30Z = 17:30 svensk tid).
  */
 
-export const ATTENDED_STATUSES = `('Närvarande', 'Närvarande, ej hela', 'Anmäld', 'Annan aktivitet')`
+export const ATTENDED_STATUSES = `('Närvarande', 'Närvarande, ej hela', 'Anmäld')`
+
+/** Villkor på deltagarraden `pt`: räknas i närvarostatistiken (Annan aktivitet räknas inte). */
+export const COUNTED_STATUS = `COALESCE(pt.status::text, '') <> 'Annan aktivitet'`
 
 /** Svensk "i morgon 00:00" i lagrad väggklocka: allt före det har ägt rum. */
 const TOMORROW = `(((now() AT TIME ZONE 'Europe/Stockholm')::date + 1)::timestamp AT TIME ZONE 'UTC')`

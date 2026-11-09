@@ -1,5 +1,5 @@
 import { db } from '@/server/db'
-import { ATTENDED_STATUSES, PAST_TRAINING, withinMonths } from '@/server/attendance'
+import { ATTENDED_STATUSES, COUNTED_STATUS, PAST_TRAINING, withinMonths } from '@/server/attendance'
 import type { User } from '@/server/types'
 
 type Params = {
@@ -47,6 +47,7 @@ export default async function getPlayer(req: { params: Params; user: User }) {
     LEFT JOIN participantstrainings pt ON pt.player = p.id
     LEFT JOIN trainings t ON t.id = pt.training
       AND ${PAST_TRAINING}
+      AND ${COUNTED_STATUS}
       AND ${withinMonths('$1')}
     WHERE p.id = $2
     GROUP BY p.id`,

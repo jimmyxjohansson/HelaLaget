@@ -1,6 +1,6 @@
 import 'server-only'
 import { AccessError } from '../access'
-import { ATTENDED_STATUSES, betweenDates } from '../attendance'
+import { ATTENDED_STATUSES, COUNTED_STATUS, betweenDates } from '../attendance'
 
 /** Planeringen hanterar kallelser till både matcher och cuper på samma sätt. */
 export type Kind = 'match' | 'cup'
@@ -53,6 +53,7 @@ export function attendanceLateral(fromParam: string) {
       JOIN trainings t ON t.id = pt.training
       WHERE pt.player = p.id
         AND t.type::text = 'Träning'
+        AND ${COUNTED_STATUS}
         AND ${betweenDates(fromParam, 'NULL')}
     ) a ON true`
 }

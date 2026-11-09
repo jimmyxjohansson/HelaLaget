@@ -11,8 +11,9 @@ import { rankIndex } from '../planning/shared'
 import type { Filters } from './Statistics'
 
 const TYPES = ['Träning', 'Coerver', 'Extra', 'Målvaktsträning']
-/** Samma definition som övriga appen. */
-const ATTENDED = ['Närvarande', 'Närvarande, ej hela', 'Anmäld', 'Annan aktivitet']
+/** Samma definition som övriga appen. Annan aktivitet räknas inte i närvaron. */
+const ATTENDED = ['Närvarande', 'Närvarande, ej hela', 'Anmäld']
+const NOT_COUNTED = 'Annan aktivitet'
 const STATUS_COLUMNS: { status: string; label: string }[] = [
   { status: 'Närvarande', label: 'Närv.' },
   { status: 'Närvarande, ej hela', label: 'Ej hela' },
@@ -68,7 +69,7 @@ export default function TrainingStats({ filters, slot }: { filters: Filters; slo
       const row = map.get(`${r.kind}-${r.id}`)
       if (!row) continue
       row.counts[r.status] = (row.counts[r.status] ?? 0) + r.n
-      row.total += r.n
+      if (r.status !== NOT_COUNTED) row.total += r.n
       if (ATTENDED.includes(r.status)) row.attended += r.n
     }
     return [...map.values()].filter((r) => {
@@ -122,7 +123,7 @@ export default function TrainingStats({ filters, slot }: { filters: Filters; slo
       render: (r) => r.counts[c.status] ? r.counts[c.status] : <span className="text-muted-foreground/50">0</span>,
       total: sum((r) => r.counts[c.status] ?? 0),
     })),
-    { key: 'total', label: 'Totalt', align: 'right', title: 'Träningar personen var inbjuden till eller registrerad på', value: (r) => r.total, total: totalRows },
+    { key: 'total', label: 'Totalt', align: 'right', title: 'Träningar personen var inbjuden till eller registrerad på (Annan aktivitet räknas inte)', value: (r) => r.total, total: totalRows },
     {
       key: 'ofheld', label: 'Av alla', align: 'right', title: `Närvaro av alla ${held} genomförda träningar i perioden`,
       value: (r) => pct(r.attended, r.held),

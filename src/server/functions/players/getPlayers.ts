@@ -1,5 +1,5 @@
 import { db } from '@/server/db'
-import { ATTENDED_STATUSES, PAST_TRAINING, PLAYED_MATCH, withinMonths, withinMonthsOf } from '@/server/attendance'
+import { ATTENDED_STATUSES, COUNTED_STATUS, PAST_TRAINING, PLAYED_MATCH, withinMonths, withinMonthsOf } from '@/server/attendance'
 import { statsPlayerScope } from '@/server/members-kind'
 import type { SquadAccess, User } from '@/server/types'
 
@@ -61,6 +61,7 @@ export default async function getPlayers(req: { params: Params; user: User; squa
     LEFT JOIN participantstrainings pt ON pt.player = p.id
     LEFT JOIN trainings t ON t.id = pt.training
       AND ${PAST_TRAINING}
+      AND ${COUNTED_STATUS}
       AND ${withinMonths('$1')}
     WHERE EXISTS (SELECT 1 FROM squad_players sp WHERE sp.player_id = p.id AND sp.squad_id = app.squad_id())
     GROUP BY p.id, ms.matches, ms.goals, ms.assists, ms.saves

@@ -181,7 +181,9 @@ function TrainingTab({ trainings }: { trainings: Training[] }) {
     }
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-12)
   }, [counted])
-  const extra = trainings.filter((t) => !t.counted)
+  // Ej räknade: extrapass (andra typer) och Annan aktivitet
+  const other = trainings.filter((t) => !t.counted && t.status === 'Annan aktivitet' && t.type === 'Träning')
+  const extra = trainings.filter((t) => !t.counted && !other.includes(t))
   const comments = trainings.filter((t) => t.reason).length
   const list = onlyComments ? trainings.filter((t) => t.reason) : trainings
 
@@ -211,6 +213,11 @@ function TrainingTab({ trainings }: { trainings: Training[] }) {
             {extra.length > 0 && (
               <p className="text-xs text-muted-foreground">
                 Dessutom {extra.length} extrapass ({[...new Set(extra.map((t) => t.type))].join(', ')}), som inte räknas in i närvaron.
+              </p>
+            )}
+            {other.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {other.length} {other.length === 1 ? 'träning' : 'träningar'} med Annan aktivitet räknas inte in i närvaron.
               </p>
             )}
           </div>

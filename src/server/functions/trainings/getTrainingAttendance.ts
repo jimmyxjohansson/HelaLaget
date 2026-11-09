@@ -1,5 +1,5 @@
 import { db } from '@/server/db'
-import { ATTENDED_STATUSES, betweenDates } from '@/server/attendance'
+import { ATTENDED_STATUSES, COUNTED_STATUS, betweenDates } from '@/server/attendance'
 import { statsPlayerScope } from '@/server/members-kind'
 import type { SquadAccess, User } from '@/server/types'
 
@@ -40,6 +40,7 @@ export default async function getTrainingAttendance(req: { params: Params; user:
     LEFT JOIN trainings t ON pt.training = t.id
     WHERE
       ${betweenDates('$1', '$2')}
+      AND ${COUNTED_STATUS}
       AND p.status::text = ANY($3::text[])
     GROUP BY p.id
     ORDER BY p.rank ASC, percent DESC NULLS LAST`,
