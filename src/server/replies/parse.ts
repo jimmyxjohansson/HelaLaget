@@ -27,7 +27,8 @@ const IGNORE = new Set([
   'ej svarat', 'avböjt', 'deltar', 'deltar ej', 'ta bort', 'kommer ej',
 ])
 
-const ROLE = /^(\|\s*)?(huvud)?(tränare|ledare|lagledare|assisterande tränare|assisterande|materialare|materialansvarig|målvaktstränare|ansvarig|förälder|lagförälder|coach)$/i
+// Roller, ibland med lagets namn före: "| Tränare", "| P-14 Tränare", "FP-20 Ledare"
+const ROLE = /^(\|\s*)?([\p{L}\d][\p{L}\d\-/]{0,15}\s+){0,2}(huvud)?(tränare|ledare|lagledare|assisterande tränare|assisterande|materialare|materialansvarig|målvaktstränare|ansvarig|förälder|lagförälder|coach)$/iu
 const WHEN = /^(idag|i dag|igår|i går|(\d{1,2})\s+([a-zåäö]{3})[a-zåäö]*\.?)(,?\s*(kl\.?\s*)?(\d{1,2})[:.](\d{2}))?$/i
 
 function pad(n: number) {
@@ -49,6 +50,17 @@ export function parseWhen(text: string, today: Date): { day: string | null; time
   }
   const time = m[6] ? `${pad(Number(m[6]))}:${m[7]}` : null
   return { day, time }
+}
+
+/**
+ * Samma person en gång till, t.ex. i en dold utskriftsversion av raden eller förkortat
+ * ("Adrian Svensson" och "Adrian S."). Ska inte bli en kommentar.
+ */
+function sameName(s: string, name: string) {
+  const a = nameKey(s).replace(/\./g, '').split(' ')
+  const b = nameKey(name).replace(/\./g, '').split(' ')
+  if (a.length > 3 || a[0] !== b[0]) return false
+  return a.every((w, i) => i === 0 || (b[i] !== undefined && (b[i].startsWith(w) || w.startsWith(b[i]))))
 }
 
 function looksLikeName(s: string) {
@@ -84,6 +96,16 @@ export function parseRow(list: ListKey, segments: string[], today: Date): Parsed
     // Tröjnummer (matcher och cuper visar t.ex. "58." vid namnet) är ingen kommentar
     if (/^#?\d{1,3}\.?$/.test(s)) continue
     if (ROLE.test(s)) { leaderRole = true; continue }
+    // "Namn | P-14 Tränare" igen efter namnet: rollen gör personen till ledare, namnet hoppas över
+    if (name && s.includes('|')) {
+      const [a, ...b] = s.split('|')
+      const role = b.join('|').trim()
+      if ((!a.trim() || sameName(a.trim(), name)) && (!role || ROLE.test(role))) {
+        if (role) leaderRole = true
+        continue
+      }
+    }
+    if (name && looksLikeName(s) && sameName(s, name)) continue
     if (IGNORE.has(s.toLowerCase())) continue
     const when = parseWhen(s, today)
     if (when && !answered) {
