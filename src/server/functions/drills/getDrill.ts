@@ -1,5 +1,6 @@
 import { db } from '@/server/db'
-import { DRILL_COLUMNS, type DrillRow } from '@/server/drills/shared'
+import { DRILL_COLUMNS, withNames, type DrillRow } from '@/server/drills/shared'
+import { userNames } from '@/server/users'
 import type { SquadAccess, User } from '@/server/types'
 
 type Params = { id: number }
@@ -17,5 +18,9 @@ export default async function getDrill(req: { params: Params; user: User; squad?
          WHERE i.drill_id = d.id AND t.squad_id = app.squad_id()))`,
     [req.params.id, viewerOnly],
   )
-  return data[0] ?? null
+  const d = data[0]
+  if (!d) return null
+  // Spelare och Anhörig ser inte vem som skapat övningen
+  const names = viewerOnly ? new Map<string, string>() : await userNames([d.createdBy, d.updatedBy])
+  return withNames([d], names)[0]
 }

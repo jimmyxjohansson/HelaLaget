@@ -1,5 +1,6 @@
 import { db } from '@/server/db'
-import { DRILL_COLUMNS, type DrillRow } from '@/server/drills/shared'
+import { DRILL_COLUMNS, withNames, type DrillRow } from '@/server/drills/shared'
+import { userNames } from '@/server/users'
 import { AccessError } from '@/server/access'
 import type { SquadAccess, User } from '@/server/types'
 
@@ -15,5 +16,6 @@ export default async function getDrills(req: { params: Params; user: User; squad
      FROM drills d
      ORDER BY d.name`,
   )
-  return data
+  const names = await userNames(data.flatMap((d) => [d.createdBy, d.updatedBy]))
+  return withNames(data, names)
 }

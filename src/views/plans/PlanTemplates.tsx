@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, CalendarPlus, Check, Clock, LayoutTemplate, Link2, Loader2, Pencil, Plus, Trash2, Unlink } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Check, Clock, Copy, LayoutTemplate, Link2, Loader2, Pencil, Plus, Trash2, Unlink } from 'lucide-react'
 import Link, { useRouter } from '../../lib/nav'
 import { cn } from '../../lib/shadcn/utils'
 import LeadersOnly from '../../components/LeadersOnly'
@@ -12,10 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shad
 import { canEdit } from '../../lib/squad-store'
 import { useGetDrills } from '../../hooks/backend/drills'
 import {
-  useDeletePlanTemplate, useGetPlanTemplates, useGetPlanTemplateTrainings, useLinkPlanTemplate, useUnlinkPlanTemplate, useUpdatePlanTemplate,
+  useCopyPlanTemplate, useDeletePlanTemplate, useGetPlanTemplates, useGetPlanTemplateTrainings, useLinkPlanTemplate, useUnlinkPlanTemplate, useUpdatePlanTemplate,
 } from '../../hooks/backend/plans'
 import { BLOCK_NAMES } from '../../utils/drills'
 import DrillPicker from './DrillPicker'
+import TemplateSummary, { TemplateInfoButton, type SummaryTemplate } from './TemplateSummary'
 import DrillPreview from '../drills/DrillPreview'
 import type { DrillListItem } from '../drills/DrillBank'
 import {
@@ -37,7 +38,9 @@ function PlanTemplatesPage() {
   const router = useRouter()
   const list = useGetPlanTemplates()
   const del = useDeletePlanTemplate()
+  const copy = useCopyPlanTemplate()
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<SummaryTemplate | null>(null)
 
   useEffect(() => {
     list.trigger(undefined, { skipCache: true }).catch((e: Error) => setError(e.message))
@@ -52,6 +55,16 @@ function PlanTemplatesPage() {
       await list.trigger(undefined, { skipCache: true })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Kunde inte ta bort mallen.')
+    }
+  }
+
+  async function duplicate(id: number) {
+    setError(null)
+    try {
+      const r = await copy.trigger({ id })
+      router.push(`/ovningar/mallar/${r.id}/redigera`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Kunde inte kopiera mallen.')
     }
   }
 
@@ -103,6 +116,11 @@ function PlanTemplatesPage() {
                       <p className="truncate text-xs text-muted-foreground">{blocks.map((b) => b.name).join(' · ')}</p>
                     )}
                   </Link>
+                  <TemplateInfoButton name={t.name} onClick={() => setInfo(t)} />
+                  <button type="button" onClick={() => duplicate(t.id)} disabled={copy.loading} aria-label={`Kopiera ${t.name}`} title="Kopiera"
+                    className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50">
+                    <Copy className="h-4 w-4" />
+                  </button>
                   <Link href={`/ovningar/mallar/${t.id}/redigera`} aria-label={`Redigera ${t.name}`} title="Redigera"
                     className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
                     <Pencil className="h-4 w-4" />
@@ -117,6 +135,10 @@ function PlanTemplatesPage() {
           </ul>
         )}
       </div>
+      <TemplateSummary template={info} onClose={() => setInfo(null)}
+        action={info && 'id' in info ? (
+          <Button size="sm" variant="outline" onClick={() => router.push(`/ovningar/mallar/${(info as { id: number }).id}`)}>Öppna mallen</Button>
+        ) : null} />
     </div>
   )
 }
@@ -361,6 +383,17 @@ function PlanTemplateViewPage() {
   const [linkedOpen, setLinkedOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
+  const copy = useCopyPlanTemplate()
+  async function duplicate() {
+    setError(null)
+    try {
+      const r = await copy.trigger({ id })
+      router.push(`/ovningar/mallar/${r.id}/redigera`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Kunde inte kopiera mallen.')
+    }
+  }
+
   const loadTrainings = () => trainings.trigger({ id }, { skipCache: true }).catch((e: Error) => setError(e.message))
 
   useEffect(() => {
@@ -401,7 +434,7 @@ function PlanTemplateViewPage() {
           <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {total} min</span>
           <span>{blocks?.length ?? 0} block</span>
         </p>
-        <div className="mt-4 grid max-w-md grid-cols-3 gap-2">
+        <div className="mt-4 grid max-w-lg grid-cols-4 gap-2">
           <button type="button" onClick={() => setLinkOpen(true)} className={btn}>
             <CalendarPlus className="h-5 w-5" /> Koppla till träning
           </button>
@@ -410,6 +443,9 @@ function PlanTemplateViewPage() {
           </button>
           <button type="button" onClick={() => router.push(`/ovningar/mallar/${id}/redigera`)} className={btn}>
             <Pencil className="h-5 w-5" /> Redigera
+          </button>
+          <button type="button" onClick={duplicate} disabled={copy.loading} className={cn(btn, 'disabled:opacity-60')}>
+            {copy.loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Copy className="h-5 w-5" />} Kopiera
           </button>
         </div>
       </div>

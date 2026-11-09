@@ -22,7 +22,39 @@ export function useDrillFilters(prefix: string) {
   const [formats, setFormats] = usePersistentState<string[]>(`${prefix}-formats`, [])
   const [categories, setCategories] = usePersistentState<string[]>(`${prefix}-cats`, [])
   const [intensity, setIntensity] = usePersistentState<string[]>(`${prefix}-int`, [])
-  return { search, setSearch, formats, setFormats, categories, setCategories, intensity, setIntensity }
+  // Övningsbanken: källa, vem och när
+  const [source, setSource] = usePersistentState<'' | 'starter' | 'own'>(`${prefix}-src`, '')
+  const [createdBy, setCreatedBy] = usePersistentState<string>(`${prefix}-cby`, '')
+  const [createdWithin, setCreatedWithin] = usePersistentState<number>(`${prefix}-cwin`, 0)
+  const [updatedBy, setUpdatedBy] = usePersistentState<string>(`${prefix}-uby`, '')
+  const [updatedWithin, setUpdatedWithin] = usePersistentState<number>(`${prefix}-uwin`, 0)
+  const [sort, setSort] = usePersistentState<SortKey>(`${prefix}-sort`, 'name')
+  return {
+    search, setSearch, formats, setFormats, categories, setCategories, intensity, setIntensity,
+    source, setSource, createdBy, setCreatedBy, createdWithin, setCreatedWithin,
+    updatedBy, setUpdatedBy, updatedWithin, setUpdatedWithin, sort, setSort,
+  }
+}
+
+type SortKey = 'name' | 'updated' | 'created'
+const SORTS: { value: SortKey; label: string }[] = [
+  { value: 'name', label: 'Namn' },
+  { value: 'updated', label: 'Senast ändrad' },
+  { value: 'created', label: 'Senast skapad' },
+]
+const PERIODS = [
+  { value: 0, label: 'När som helst' },
+  { value: 7, label: 'Senaste veckan' },
+  { value: 30, label: 'Senaste månaden' },
+  { value: 90, label: 'Senaste 3 månaderna' },
+  { value: 365, label: 'Senaste året' },
+]
+const NOBODY = '__none__'
+const within = (iso: string | null | undefined, days: number) => !days || (!!iso && Date.now() - new Date(iso).getTime() <= days * 86_400_000)
+
+/** Antal aktiva filter för vem, när och källa */
+function originCount(f: ReturnType<typeof useDrillFilters>) {
+  return [f.source, f.createdBy, f.createdWithin, f.updatedBy, f.updatedWithin].filter(Boolean).length
 }
 
 export function filterDrills(list: DrillListItem[], f: ReturnType<typeof useDrillFilters>) {
@@ -32,8 +64,17 @@ export function filterDrills(list: DrillListItem[], f: ReturnType<typeof useDril
     if (f.formats.length && !d.gameFormats.some((g) => f.formats.includes(g))) return false
     if (f.categories.length && !d.categories.some((c) => f.categories.includes(c))) return false
     if (f.intensity.length && !f.intensity.includes(d.intensity ?? '')) return false
+    if (f.source === 'starter' && !d.starterKey) return false
+    if (f.source === 'own' && d.starterKey) return false
+    if (f.createdBy && (d.createdByName ?? NOBODY) !== f.createdBy) return false
+    if (!within(d.createdAt, f.createdWithin)) return false
+    if (f.updatedBy && (d.edited ? d.updatedByName ?? NOBODY : '') !== f.updatedBy) return false
+    if (f.updatedWithin && !(d.edited && within(d.updatedAt, f.updatedWithin))) return false
     return true
-  })
+  }).sort((a, b) =>
+    f.sort === 'updated' ? b.updatedAt.localeCompare(a.updatedAt)
+      : f.sort === 'created' ? b.createdAt.localeCompare(a.createdAt)
+        : 0)
 }
 
 const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v])
@@ -50,7 +91,7 @@ function Chip({ on, onClick, children, color }: { on: boolean; onClick: () => vo
 }
 
 /** Filterraderna: spelform, kategori och intensitet. */
-export function DrillFilters({ f, list, open = true }: { f: ReturnType<typeof useDrillFilters>; list: DrillListItem[]; open?: boolean }) {
+export function DrillFilters({ f, list, open = true, origin = false }: { f: ReturnType<typeof useDrillFilters>; list: DrillListItem[]; open?: boolean; origin?: boolean }) {
   // Egna kategorier som används i banken visas efter de föreslagna
   const custom = [...new Set(list.flatMap((d) => d.categories))].filter((c) => !CATEGORIES.some((x) => x.name === c)).sort()
   const cats = [...CATEGORIES.filter((c) => list.length === 0 || list.some((d) => d.categories.includes(c.name))), ...custom.map((name) => ({ name, color: '#6b7280' }))]
@@ -73,14 +114,65 @@ export function DrillFilters({ f, list, open = true }: { f: ReturnType<typeof us
         {INTENSITIES.map((i) => (
           <Chip key={i} on={f.intensity.includes(i)} color={INTENSITY_COLOR[i]} onClick={() => f.setIntensity(toggle(f.intensity, i))}>{i}</Chip>
         ))}
-        {(f.formats.length > 0 || f.categories.length > 0 || f.intensity.length > 0) && (
-          <button type="button" onClick={() => { f.setFormats([]); f.setCategories([]); f.setIntensity([]) }}
+        {(f.formats.length > 0 || f.categories.length > 0 || f.intensity.length > 0 || (origin && originCount(f) > 0)) && (
+          <button type="button" onClick={() => {
+            f.setFormats([]); f.setCategories([]); f.setIntensity([])
+            if (origin) { f.setSource(''); f.setCreatedBy(''); f.setCreatedWithin(0); f.setUpdatedBy(''); f.setUpdatedWithin(0) }
+          }}
             className="ml-1 text-xs text-primary underline-offset-4 hover:underline">
             Rensa filter
           </button>
         )}
       </div>
+      {origin && <OriginFilters f={f} list={list} />}
     </div>
+  )
+}
+
+const selectCls = 'h-8 max-w-[11rem] rounded-md border border-border bg-background px-1.5 text-xs'
+
+/** Källa, skapad av/när, ändrad av/när och sortering. Bara i övningsbanken. */
+function OriginFilters({ f, list }: { f: ReturnType<typeof useDrillFilters>; list: DrillListItem[] }) {
+  const sortNames = (names: (string | null)[]) => {
+    const set = new Set(names.map((n) => n ?? NOBODY))
+    const out = [...set].filter((n) => n !== NOBODY).sort((a, b) => a.localeCompare(b, 'sv'))
+    return set.has(NOBODY) ? [...out, NOBODY] : out
+  }
+  const creators = sortNames(list.map((d) => d.createdByName))
+  const editors = sortNames(list.filter((d) => d.edited).map((d) => d.updatedByName))
+  const who = (n: string) => (n === NOBODY ? 'Okänd' : n)
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-0.5 text-xs text-muted-foreground">Källa</span>
+        <Chip on={f.source === 'starter'} onClick={() => f.setSource(f.source === 'starter' ? '' : 'starter')}>Startpaketet</Chip>
+        <Chip on={f.source === 'own'} onClick={() => f.setSource(f.source === 'own' ? '' : 'own')}>Egna</Chip>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-0.5 w-14 text-xs text-muted-foreground">Skapad</span>
+        <select aria-label="Skapad av" value={f.createdBy} onChange={(e) => f.setCreatedBy(e.target.value)} className={selectCls}>
+          <option value="">Av alla</option>
+          {creators.map((n) => <option key={n} value={n}>{who(n)}</option>)}
+        </select>
+        <select aria-label="Skapad när" value={f.createdWithin} onChange={(e) => f.setCreatedWithin(Number(e.target.value))} className={selectCls}>
+          {PERIODS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+        </select>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-0.5 w-14 text-xs text-muted-foreground">Ändrad</span>
+        <select aria-label="Senast ändrad av" value={f.updatedBy} onChange={(e) => f.setUpdatedBy(e.target.value)} className={selectCls}>
+          <option value="">Av alla</option>
+          {editors.map((n) => <option key={n} value={n}>{who(n)}</option>)}
+        </select>
+        <select aria-label="Senast ändrad när" value={f.updatedWithin} onChange={(e) => f.setUpdatedWithin(Number(e.target.value))} className={selectCls}>
+          {PERIODS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+        </select>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-0.5 w-14 text-xs text-muted-foreground">Sortera</span>
+        {SORTS.map((o) => <Chip key={o.value} on={f.sort === o.value} onClick={() => f.setSort(o.value)}>{o.label}</Chip>)}
+      </div>
+    </>
   )
 }
 
@@ -177,7 +269,7 @@ function DrillBankPage() {
           </button>
           <span className="ml-auto hidden text-xs text-muted-foreground md:inline">{shown.length} av {list.length}</span>
         </div>
-        <DrillFilters f={f} list={list} open={filtersOpen} />
+        <DrillFilters f={f} list={list} open={filtersOpen} origin />
       </div>
 
       <div className="p-3 md:p-4">

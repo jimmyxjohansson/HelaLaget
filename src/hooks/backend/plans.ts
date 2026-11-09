@@ -1,6 +1,7 @@
 // GENERERAD FIL – ändra inte för hand. Kör `npm run generate`.
 
 import { createBackendHook } from './_core'
+import type copyPlanTemplate from '../../server/functions/plans/copyPlanTemplate'
 import type deletePlanTemplate from '../../server/functions/plans/deletePlanTemplate'
 import type getPlanTemplateTrainings from '../../server/functions/plans/getPlanTemplateTrainings'
 import type getPlanTemplates from '../../server/functions/plans/getPlanTemplates'
@@ -14,6 +15,11 @@ import type savePlanTemplate from '../../server/functions/plans/savePlanTemplate
 import type saveTrainingPlan from '../../server/functions/plans/saveTrainingPlan'
 import type unlinkPlanTemplate from '../../server/functions/plans/unlinkPlanTemplate'
 import type updatePlanTemplate from '../../server/functions/plans/updatePlanTemplate'
+
+export const useCopyPlanTemplate = createBackendHook<
+  Parameters<typeof copyPlanTemplate>[0]['params'],
+  Awaited<ReturnType<typeof copyPlanTemplate>>
+>('plans/copyPlanTemplate')
 
 export const useDeletePlanTemplate = createBackendHook<
   Parameters<typeof deletePlanTemplate>[0]['params'],

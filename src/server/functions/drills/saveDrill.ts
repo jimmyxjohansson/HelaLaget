@@ -69,9 +69,9 @@ export default async function saveDrill(req: { params: Params; user: User }) {
       `UPDATE drills SET name = $2, summary = $3, description = $4, coaching = $5, game_formats = $6,
          categories = $7, duration_minutes = $8, players_min = $9, players_max = $10, area = $11,
          equipment = $12, intensity = $13, video_url = $14, diagram = $15::jsonb, levels = $16::jsonb,
-         updated_at = now()
+         updated_at = now(), updated_by = $17
        WHERE id = $1 RETURNING id`,
-      [p.id, ...values],
+      [p.id, ...values, req.user.id],
     )
     if (!data[0]) throw new AccessError('Övningen finns inte.', 404)
     return { id: data[0].id }

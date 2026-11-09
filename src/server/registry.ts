@@ -94,6 +94,7 @@ import planning_setPlanningEventStatus from './functions/planning/setPlanningEve
 import planning_setPlanningGoalkeeper from './functions/planning/setPlanningGoalkeeper'
 import planning_setPlanningStatus from './functions/planning/setPlanningStatus'
 import planning_updatePlanningAnswer from './functions/planning/updatePlanningAnswer'
+import plans_copyPlanTemplate from './functions/plans/copyPlanTemplate'
 import plans_deletePlanTemplate from './functions/plans/deletePlanTemplate'
 import plans_getPlanTemplateTrainings from './functions/plans/getPlanTemplateTrainings'
 import plans_getPlanTemplates from './functions/plans/getPlanTemplates'
@@ -256,6 +257,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'planning/setPlanningGoalkeeper': { handler: planning_setPlanningGoalkeeper, access: 'leader' },
   'planning/setPlanningStatus': { handler: planning_setPlanningStatus, access: 'leader' },
   'planning/updatePlanningAnswer': { handler: planning_updatePlanningAnswer, access: 'leader' },
+  'plans/copyPlanTemplate': { handler: plans_copyPlanTemplate, access: 'leader' },
   'plans/deletePlanTemplate': { handler: plans_deletePlanTemplate, access: 'leader' },
   'plans/getPlanTemplateTrainings': { handler: plans_getPlanTemplateTrainings, access: 'leader' },
   'plans/getPlanTemplates': { handler: plans_getPlanTemplates, access: 'viewer' },

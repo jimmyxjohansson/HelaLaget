@@ -221,7 +221,22 @@ function DrillDetailPage() {
       <div className="p-4">
         {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
         {d ? <DrillContent drill={d} level={level} onLevel={setLevel} /> : q.error ? <p className="text-sm text-muted-foreground">Övningen finns inte.</p> : <div className="h-72 animate-pulse rounded-xl bg-muted" />}
+        {d && editor && <DrillOrigin d={d} />}
       </div>
+    </div>
+  )
+}
+
+const DATE = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Stockholm' })
+const ago = (iso: string) => DATE.format(new Date(iso))
+
+/** Vem som skapade och senast ändrade övningen, och när. */
+export function DrillOrigin({ d }: { d: Pick<DrillData, 'starterKey' | 'createdAt' | 'createdByName' | 'updatedAt' | 'updatedByName' | 'edited'> }) {
+  const by = (n: string | null) => (n ? ` av ${n}` : '')
+  return (
+    <div className="mt-6 flex flex-col gap-0.5 border-t border-border pt-3 text-xs text-muted-foreground">
+      <p>{d.starterKey ? 'Från startpaketet, hämtad' : 'Skapad'} {ago(d.createdAt)}{by(d.createdByName)}</p>
+      {d.edited && <p>Senast ändrad {ago(d.updatedAt)}{by(d.updatedByName)}</p>}
     </div>
   )
 }

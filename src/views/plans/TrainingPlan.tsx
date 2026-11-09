@@ -25,6 +25,7 @@ import { BLOCK_NAMES, LEVEL_COLOR } from '../../utils/drills'
 import { TRAINING_GROUPS } from '../../utils/trainingGroups'
 import { DrillFacts } from '../drills/shared'
 import DrillPicker from './DrillPicker'
+import TemplateSummary, { TemplateInfoButton } from './TemplateSummary'
 import DrillPreview from '../drills/DrillPreview'
 import type { DrillListItem } from '../drills/DrillBank'
 
@@ -759,6 +760,7 @@ function TemplatesDialog({ open, onClose, current, onApply }: {
   const del = useDeletePlanTemplate()
   const [name, setName] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
+  const [info, setInfo] = useState<{ id: number; name: string; blocks: unknown } | null>(null)
 
   useEffect(() => {
     if (open) {
@@ -802,6 +804,7 @@ function TemplatesDialog({ open, onClose, current, onApply }: {
                         <p className="truncate text-sm font-medium">{t.name}</p>
                         <p className="text-xs text-muted-foreground">{t.blocks.length} block · {mins} min</p>
                       </div>
+                      <TemplateInfoButton name={t.name} onClick={() => setInfo(t)} />
                       <Button size="sm" variant="outline" onClick={() => onApply(t.blocks as TemplateBlocks, t.id)}>Använd</Button>
                       <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted" aria-label="Ta bort mallen"
                         onClick={async () => { if (window.confirm(`Ta bort mallen ”${t.name}”?`)) { await del.trigger({ id: t.id }).catch(() => {}); list.trigger().catch(() => {}) } }}>
@@ -824,6 +827,8 @@ function TemplatesDialog({ open, onClose, current, onApply }: {
           </div>
         </div>
       </DialogContent>
+      <TemplateSummary template={info} onClose={() => setInfo(null)}
+        action={info ? <Button size="sm" onClick={() => { const t = info; setInfo(null); onApply(t.blocks as TemplateBlocks, t.id) }}>Använd mallen</Button> : null} />
     </Dialog>
   )
 }

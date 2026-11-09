@@ -8,7 +8,8 @@ export const LEVELS = ['Lätt', 'Medel', 'Svår'] as const
 export const DRILL_COLUMNS = `d.id, d.name, d.summary, d.description, d.coaching,
   d.game_formats AS "gameFormats", d.categories, d.duration_minutes AS "durationMinutes",
   d.players_min AS "playersMin", d.players_max AS "playersMax", d.area, d.equipment, d.intensity,
-  d.video_url AS "videoUrl", d.diagram, d.levels, d.starter_key AS "starterKey", d.updated_at AS "updatedAt"`
+  d.video_url AS "videoUrl", d.diagram, d.levels, d.starter_key AS "starterKey", d.updated_at AS "updatedAt",
+  d.created_at AS "createdAt", d.created_by AS "createdBy", d.updated_by AS "updatedBy"`
 
 export type DrillLevel = { text?: string | null; diagram?: unknown | null }
 
@@ -31,6 +32,26 @@ export type DrillRow = {
   levels: Partial<Record<(typeof LEVELS)[number], DrillLevel>>
   starterKey: string | null
   updatedAt: string
+  createdAt: string
+  createdBy: string | null
+  updatedBy: string | null
+}
+
+/** Övning med namn på den som skapade och senast ändrade den. Användar-id skickas inte till appen. */
+export type DrillWithNames<T extends DrillRow> = Omit<T, 'createdBy' | 'updatedBy'> & {
+  createdByName: string | null
+  updatedByName: string | null
+  /** Ändrad efter att den skapades (eller hämtades från startpaketet) */
+  edited: boolean
+}
+
+export function withNames<T extends DrillRow>(rows: T[], names: Map<string, string>): DrillWithNames<T>[] {
+  return rows.map(({ createdBy, updatedBy, ...d }) => ({
+    ...d,
+    createdByName: createdBy ? names.get(createdBy) ?? null : null,
+    updatedByName: updatedBy ? names.get(updatedBy) ?? null : null,
+    edited: new Date(d.updatedAt).getTime() - new Date(d.createdAt).getTime() > 60_000,
+  }))
 }
 
 export function cleanText(v: unknown, max = 4000): string | null {
