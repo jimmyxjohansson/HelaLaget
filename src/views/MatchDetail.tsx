@@ -7,7 +7,8 @@ import { useRouter } from '../lib/nav'
 import { useEffect, useState, Fragment, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useGetMatch, useUpdateMatchFogisRegistered, useSetMatchMuted, useDeleteMatch, useGetMatchesVsOpponent, useSyncParticipantsFromCup } from '../hooks/backend/matches'
-import { ArrowLeft, MapPin, Users, Clock, User, Pencil, ExternalLink, UserCog, MoreVertical, Trash2, Calendar, Trophy, Download, RefreshCw, BellOff } from 'lucide-react'
+import { ArrowLeft, MapPin, Users, Clock, User, Pencil, ExternalLink, UserCog, MoreVertical, Trash2, Calendar, Trophy, Download, RefreshCw, BellOff, Flag } from 'lucide-react'
+import FinishMatchDialog from '../components/FinishMatchDialog'
 import { rankStyle } from '../utils/rankColors'
 import {
   DropdownMenu,
@@ -186,6 +187,7 @@ export default function MatchDetail() {
   const [muted, setMuted] = useState(false)
   const { trigger: triggerSetMuted } = useSetMatchMuted()
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [finishOpen, setFinishOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [confirmSyncOpen, setConfirmSyncOpen] = useState(false)
   const { data: opponentMatches, loading: loadingHistory, trigger: triggerHistory } = useGetMatchesVsOpponent()
@@ -372,6 +374,10 @@ export default function MatchDetail() {
                 <Pencil className="w-4 h-4 mr-2" />
                 Redigera
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setTimeout(() => setFinishOpen(true), 0)}>
+                <Flag className="w-4 h-4 mr-2" />
+                {match?.status === 'Avslutad' || match?.status === 'Registrerad i Fogis' ? 'Ändra resultat' : 'Avsluta match'}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={fogisRegistered}
@@ -398,6 +404,11 @@ export default function MatchDetail() {
             </DropdownMenuContent>
           </DropdownMenu>}
           </div>
+
+          {match && (
+            <FinishMatchDialog open={finishOpen} onClose={() => setFinishOpen(false)} match={{ ...match, vs: match.opponent ?? null }}
+              onFinished={() => trigger({ id: Number(id) }, { skipCache: true })} />
+          )}
 
           <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
             <AlertDialogContent>

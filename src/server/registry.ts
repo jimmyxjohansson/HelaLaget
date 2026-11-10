@@ -6,6 +6,7 @@ import account_getMe from './functions/account/getMe'
 import account_requestJoin from './functions/account/requestJoin'
 import cups_addCupParticipants from './functions/cups/addCupParticipants'
 import cups_createCup from './functions/cups/createCup'
+import cups_finishCup from './functions/cups/finishCup'
 import cups_getCup from './functions/cups/getCup'
 import cups_getCupAttendees from './functions/cups/getCupAttendees'
 import cups_getCupParticipants from './functions/cups/getCupParticipants'
@@ -172,6 +173,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'account/requestJoin': { handler: account_requestJoin, access: 'user' },
   'cups/addCupParticipants': { handler: cups_addCupParticipants, access: 'leader' },
   'cups/createCup': { handler: cups_createCup, access: 'leader' },
+  'cups/finishCup': { handler: cups_finishCup, access: 'leader' },
   'cups/getCup': { handler: cups_getCup, access: 'viewer' },
   'cups/getCupAttendees': { handler: cups_getCupAttendees, access: 'viewer' },
   'cups/getCupParticipants': { handler: cups_getCupParticipants, access: 'viewer' },

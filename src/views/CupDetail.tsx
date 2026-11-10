@@ -9,8 +9,16 @@ import { useGetCup } from '../hooks/backend/cups'
 import { ComingBadge } from '../components/MatchCard'
 import {
   ArrowLeft, MapPin, Calendar, Clock, Pencil, Plus, ChevronRight,
-  ExternalLink, Trophy, Home, Plane, Users, UserCog,
+  ExternalLink, Trophy, Home, Plane, Users, UserCog, MoreVertical, Flag, Loader2,
 } from 'lucide-react'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '../lib/shadcn/dropdown-menu'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '../lib/shadcn/alert-dialog'
+import { useFinishCup } from '../hooks/backend/cups'
 import { rankStyle } from '../utils/rankColors'
 import { CupAttendeesTable } from '../components/CupAttendeesTable'
 
@@ -114,6 +122,8 @@ const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data, loading, trigger } = useGetCup()
   const [activeTab, setActiveTab] = useState<Tab>('matcher')
+  const [finishOpen, setFinishOpen] = useState(false)
+  const finishCup = useFinishCup()
 
   useEffect(() => { if (id) trigger({ id: Number(id) }) }, [id])
 
@@ -123,6 +133,7 @@ const { id } = useParams<{ id: string }>()
   const participants = result?.participants ?? []
 
   const played = matches.filter(m => m.status === 'Avslutad')
+  const unfinished = matches.filter(m => m.status !== 'Avslutad' && m.status !== 'Registrerad i Fogis')
   const wins = played.filter(m => m.outcome === 'Vinst').length
   const draws = played.filter(m => m.outcome === 'Oavgjort').length
   const losses = played.filter(m => m.outcome === 'Förlust').length
@@ -180,15 +191,60 @@ const { id } = useParams<{ id: string }>()
               className="flex items-center justify-center w-8 h-8 rounded-full text-team-accent/80 hover:text-team-accent hover:bg-white/10 transition-colors disabled:opacity-50"
             />
           )}
-          {editor && <button
-            onClick={() => router.push(`/cups/${cup.id}/edit`)}
-            className="flex items-center gap-1 text-team-accent/80 hover:text-team-accent transition-colors"
-          >
-            <Pencil className="w-4 h-4" />
-            <span className="text-sm">Redigera</span>
-          </button>}
+          {editor && <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button aria-label="Meny"
+                className="flex items-center justify-center w-8 h-8 rounded-full text-team-accent/80 hover:text-team-accent hover:bg-white/10 transition-colors">
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onSelect={() => router.push(`/cups/${cup.id}/edit`)}>
+                <Pencil className="w-4 h-4 mr-2" /> Redigera
+              </DropdownMenuItem>
+              {cup.status !== 'Avslutad' && (
+                <DropdownMenuItem onSelect={() => setTimeout(() => setFinishOpen(true), 0)}>
+                  <Flag className="w-4 h-4 mr-2" /> Avsluta cup
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>}
           </div>
         </div>
+        <AlertDialog open={finishOpen} onOpenChange={setFinishOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Avsluta cupen?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="flex flex-col gap-2">
+                  {unfinished.length > 0 ? (
+                    <p className="rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                      Alla matcher är inte avslutade: {unfinished.length} av {matches.length} saknar resultat
+                      ({unfinished.map((m) => m.opponent || 'okänd').join(', ')}). Cupen kan avslutas ändå, men matcherna ändras inte.
+                    </p>
+                  ) : (
+                    <p>Alla {matches.length} matcher är avslutade.</p>
+                  )}
+                  <p>Cupen får status Avslutad.</p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={finishCup.loading}>Avbryt</AlertDialogCancel>
+              <AlertDialogAction disabled={finishCup.loading} onClick={async (e) => {
+                e.preventDefault()
+                try {
+                  await finishCup.trigger({ id: cup.id })
+                  setFinishOpen(false)
+                  trigger({ id: Number(id) }, { skipCache: true })
+                } catch { /* felet visas inte; dialogen står kvar */ }
+              }}>
+                {finishCup.loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {unfinished.length > 0 ? 'Avsluta ändå' : 'Avsluta cup'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <SyncStatusLine status={syncStatus} onDismiss={() => setSyncStatus(null)} className={`mb-3 w-fit max-w-full rounded-md px-2 py-1 text-xs text-white ${syncStatus?.ok ? 'bg-black/20' : 'bg-black/35'}`} />
 
         <div className="flex items-start gap-3">

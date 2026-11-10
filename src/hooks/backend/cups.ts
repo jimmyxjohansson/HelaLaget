@@ -3,6 +3,7 @@
 import { createBackendHook } from './_core'
 import type addCupParticipants from '../../server/functions/cups/addCupParticipants'
 import type createCup from '../../server/functions/cups/createCup'
+import type finishCup from '../../server/functions/cups/finishCup'
 import type getCup from '../../server/functions/cups/getCup'
 import type getCupAttendees from '../../server/functions/cups/getCupAttendees'
 import type getCupParticipants from '../../server/functions/cups/getCupParticipants'
@@ -21,6 +22,11 @@ export const useCreateCup = createBackendHook<
   Parameters<typeof createCup>[0]['params'],
   Awaited<ReturnType<typeof createCup>>
 >('cups/createCup')
+
+export const useFinishCup = createBackendHook<
+  Parameters<typeof finishCup>[0]['params'],
+  Awaited<ReturnType<typeof finishCup>>
+>('cups/finishCup')
 
 export const useGetCup = createBackendHook<
   Parameters<typeof getCup>[0]['params'],

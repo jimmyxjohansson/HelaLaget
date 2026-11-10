@@ -29,9 +29,9 @@ export default async function createMatch(req: { params: Params; user: User }) {
     `INSERT INTO matches
       (matchtype, vs, date, homeaway, indooroutdoor, location, teamname,
        league, cup, cupphase, fogisno, fogislink, matchplayers, playtime,
-       periods, difficulty, svenskalag, notes, status)
+       periods, difficulty, svenskalag, notes, status, fogisregistered)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-             $15, $16, $17, $18, 'Ny')
+             $15, $16, $17, $18, 'Ny', $9::int IS NOT NULL)
      RETURNING id`,
     [
       p.matchtype,
