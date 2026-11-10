@@ -29,6 +29,8 @@ interface Player {
   striker: boolean
   goalkeeper: boolean
   rank: string | null
+  calc_level?: string | null
+  calc_date?: string | null
   sessions_attended: string
   total_sessions: string
   birthdate: string | null
@@ -111,6 +113,22 @@ const DEFAULT_SORT_DIR: Record<string, SortDir> = {
 }
 
 const RANK_ORDER = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D', 'X']
+const CALC_DATE = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Stockholm' })
+
+/** Beräknad nivå som kantad bricka; streckad om den skiljer sig från satt rank. */
+function CalcLevel({ level, date, rank }: { level?: string | null; date?: string | null; rank: string | null }) {
+  if (!level) return <span className="text-muted-foreground">–</span>
+  const color = (rankStyle(level).backgroundColor as string) ?? '#B7B7B7'
+  const differs = level !== rank
+  return (
+    <span className={`inline-block flex-shrink-0 rounded border px-1.5 py-px text-[10px] font-bold ${differs ? 'border-dashed' : ''}`}
+      style={{ borderColor: color, color }}
+      title={`Beräknad nivå${date ? ` ${CALC_DATE.format(new Date(date))}` : ''}${differs ? ' (skiljer sig från rank)' : ''}`}>
+      {level}
+    </span>
+  )
+}
+
 function rankIndex(rank: string | null) {
   const i = rank ? RANK_ORDER.indexOf(rank) : -1
   return i === -1 ? RANK_ORDER.length : i
@@ -188,6 +206,8 @@ export default function Players() {
   const players = data as unknown as Player[] | undefined
   const editor = canEdit()
   const mixed = isMixed(players ?? [])
+  // Kolumnen Beräknad syns för ledare när någon spelare har en beräknad nivå
+  const showCalc = editor && (players ?? []).some((p) => p.calc_level)
   const open = (id: number) => router.push(`/players/${id}?months=${timeFilter}`)
   const edit = (id: number) => router.push(`/players/${id}?months=${timeFilter}&edit=1`)
 
@@ -352,6 +372,7 @@ export default function Players() {
                     <Th label="Nr" field="number" sort={sort} dir={sortDir} onSort={handleSort} className="w-12 pl-4" />
                     <Th label="Spelare" field="name" sort={sort} dir={sortDir} onSort={handleSort} />
                     {editor && <Th label="Rank" field="rank" sort={sort} dir={sortDir} onSort={handleSort} />}
+                    {showCalc && <th className="px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground" title="Senaste nivån från Beräkna nivå">Beräknad</th>}
                     <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
                     {editor && <Th label="Ålder" field="age" sort={sort} dir={sortDir} onSort={handleSort} />}
                     <th className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Positioner</th>
@@ -386,6 +407,9 @@ export default function Players() {
                         </td>
                         {editor && <td className="px-2 py-2">
                           {p.rank ? <span className="rounded px-1.5 py-0.5 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span> : <span className="text-muted-foreground">–</span>}
+                        </td>}
+                        {showCalc && <td className="px-2 py-2">
+                          <CalcLevel level={p.calc_level} date={p.calc_date} rank={p.rank} />
                         </td>}
                         <td className="px-2 py-2">
                           <span className={`whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_BADGE[p.status] ?? 'bg-muted text-muted-foreground'}`}>{p.status}</span>
@@ -440,6 +464,7 @@ export default function Players() {
                       <div className="flex items-center gap-1.5">
                         <span className="truncate text-sm font-medium text-foreground">{p.shortname}</span>
                         {p.rank && <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold" style={rankStyle(p.rank)}>{p.rank}</span>}
+                        {showCalc && p.calc_level && p.calc_level !== p.rank && <CalcLevel level={p.calc_level} date={p.calc_date} rank={p.rank} />}
                         {mixed && <GenderBadge gender={p.gender} />}
                         {p.status && p.status !== 'Aktiv' && (
                           <span className={`truncate rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_BADGE[p.status] ?? 'bg-muted text-muted-foreground'}`}>{p.status}</span>

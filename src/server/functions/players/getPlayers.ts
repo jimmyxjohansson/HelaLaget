@@ -38,6 +38,9 @@ export default async function getPlayers(req: { params: Params; user: User; squa
     goals: number
     assists: number
     saves: number
+    /** Senaste beräknade nivån (Beräkna nivå), bara för ledare */
+    calc_level: string | null
+    calc_date: string | null
   }>(
     `SELECT
       p.id, p.firstname, p.lastname, p.shortname, p.number, p.img, p.status, p.rank,
@@ -47,7 +50,8 @@ export default async function getPlayers(req: { params: Params; user: User; squa
       p.birthdate::text AS birthdate, p.foot::text AS foot, p.gender,
       p.shirt_size, p.shorts_size, p.sock_size,
       COALESCE(ms.matches, 0)::int AS matches, COALESCE(ms.goals, 0)::int AS goals,
-      COALESCE(ms.assists, 0)::int AS assists, COALESCE(ms.saves, 0)::int AS saves
+      COALESCE(ms.assists, 0)::int AS assists, COALESCE(ms.saves, 0)::int AS saves,
+      la.suggested AS calc_level, la.created_at AS calc_date
     FROM players p
     -- Spelade matcher med mål, assist och räddningar under perioden
     LEFT JOIN LATERAL (
@@ -58,13 +62,19 @@ export default async function getPlayers(req: { params: Params; user: User; squa
       FROM participantsmatches pm JOIN matches m ON m.id = pm.match
       WHERE pm.player = p.id AND ${PLAYED_MATCH} AND ${withinMonthsOf('m.date', '$1')}
     ) ms ON true
+    -- Senaste bedömningen i laget (RLS: bara ledare ser dem)
+    LEFT JOIN LATERAL (
+      SELECT a.suggested, a.created_at FROM player_level_assessments a
+      WHERE a.player_id = p.id AND a.squad_id = app.squad_id()
+      ORDER BY a.created_at DESC LIMIT 1
+    ) la ON true
     LEFT JOIN participantstrainings pt ON pt.player = p.id
     LEFT JOIN trainings t ON t.id = pt.training
       AND ${PAST_TRAINING}
       AND ${COUNTED_STATUS}
       AND ${withinMonths('$1')}
     WHERE EXISTS (SELECT 1 FROM squad_players sp WHERE sp.player_id = p.id AND sp.squad_id = app.squad_id())
-    GROUP BY p.id, ms.matches, ms.goals, ms.assists, ms.saves
+    GROUP BY p.id, ms.matches, ms.goals, ms.assists, ms.saves, la.suggested, la.created_at
     ORDER BY p.shortname`,
     [months]
   )
