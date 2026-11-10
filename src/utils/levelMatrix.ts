@@ -15,7 +15,7 @@ const AREAS_5_7: Area[] = [
   {
     key: 'fotboll',
     name: 'Fotbollsaktioner',
-    weight: 0.6,
+    weight: 0.75,
     note: 'Väger tyngst.',
     criteria: [
       {
@@ -39,7 +39,7 @@ const AREAS_5_7: Area[] = [
   {
     key: 'fysik',
     name: 'Fysik',
-    weight: 0.4,
+    weight: 0.25,
     note: 'Väger mindre, eftersom födelsemånad och storlek gör stor skillnad i den här åldern.',
     criteria: [
       {
@@ -123,7 +123,7 @@ export const LEVEL_MATRICES: Record<string, Matrix> = {
     key: '5-7',
     name: 'Nivåmatris 5–7 år',
     ages: '5–7 år',
-    intro: 'Fotbollsaktioner väger 60 % och fysik 40 %. Mentalt och socialt räknas inte in i nivån.',
+    intro: 'Fotbollsaktioner väger 75 % och fysik 25 %. Mentalt och socialt räknas inte in i nivån.',
     areas: AREAS_5_7,
   },
 }
