@@ -70,7 +70,11 @@ export default function SvenskalagSvar() {
   const preview = usePreviewSvenskalagReplies()
   const apply = useApplySvenskalagReplies()
 
+  // Körs bara en gång även om sidan monteras två gånger
+  const started = useRef(false)
   useEffect(() => {
+    if (started.current) return
+    started.current = true
     const data = readPayload()
     setPayload(data)
     setReady(true)

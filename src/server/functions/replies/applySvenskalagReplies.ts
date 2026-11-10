@@ -41,6 +41,9 @@ export default async function applySvenskalagReplies(req: { params: Params; user
   }
   const items = [...byPerson.values()]
   await loadEvent(kind, id)
+  // Ett sparande i taget per aktivitet: två samtidiga anrop (t.ex. sidan som laddas två gånger)
+  // skulle annars båda se att raden saknas och skapa den var för sig
+  await db.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`svar:${kind}:${id}`])
   const current = await currentStatuses(kind, id)
   const { table, fk } = participantTable(kind)
   let changed = 0
