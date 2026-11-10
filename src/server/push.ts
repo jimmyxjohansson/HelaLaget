@@ -77,19 +77,37 @@ async function send(subs: Subscription[], payload: PushPayload) {
 }
 
 /** Skickar och sparar notisen i lagets notislogg. Loggen får aldrig stoppa själva notisen. */
-async function sendAndLog(squadId: number, audience: Audience, subs: Subscription[], payload: PushPayload, sentBy?: string | null) {
+async function sendAndLog(squadId: number, audience: Audience, subs: Subscription[], payload: PushPayload, sentBy?: string | null, testMode = false) {
   const result = await send(subs, payload)
   const people = new Set(subs.map((s) => s.user_id)).size
   try {
     await adminDb.query(
-      `INSERT INTO push_log (squad_id, audience, title, body, url, sent_by, people, devices, failed)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [squadId, audience, payload.title, payload.body, payload.url ?? null, sentBy ?? null, people, result.sent, result.failed],
+      `INSERT INTO push_log (squad_id, audience, title, body, url, sent_by, people, devices, failed, test_mode)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [squadId, audience, payload.title, payload.body, payload.url ?? null, sentBy ?? null, people, result.sent, result.failed, testMode],
     )
   } catch (e) {
     console.error('[push] kunde inte spara i notisloggen', e)
   }
   return { ...result, people }
+}
+
+/** Lagets testläge: notiser går bara till lagets admin. */
+async function adminOnly(squadId: number) {
+  const { data } = await adminDb.query<{ push_admin_only: boolean }>('SELECT push_admin_only FROM squads WHERE id = $1', [squadId])
+  return !!data[0]?.push_admin_only
+}
+
+/** Alla enheter för lagets admin (godkänd medlem med rollen admin), även den som orsakade notisen. */
+async function squadAdminSubs(squadId: number) {
+  const { data } = await adminDb.query<Subscription>(
+    `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth, ps.user_id
+     FROM push_subscriptions ps
+     WHERE EXISTS (SELECT 1 FROM squad_members m
+                   WHERE m.squad_id = $1 AND m.user_id = ps.user_id AND m.status = 'approved' AND m.role = 'admin')`,
+    [squadId],
+  )
+  return data
 }
 
 /**
@@ -98,6 +116,7 @@ async function sendAndLog(squadId: number, audience: Audience, subs: Subscriptio
  */
 export async function sendToSquad(squadId: number, payload: PushPayload, exceptUserId?: string) {
   if (!pushConfigured()) return { sent: 0, removed: 0 }
+  if (await adminOnly(squadId)) return sendAndLog(squadId, 'squad', await squadAdminSubs(squadId), payload, exceptUserId, true)
   const { data } = await adminDb.query<Subscription>(
     `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth, ps.user_id
      FROM push_subscriptions ps
@@ -121,6 +140,7 @@ export async function sendToSquad(squadId: number, payload: PushPayload, exceptU
  */
 export async function sendToSquadLeaders(squadId: number, payload: PushPayload, exceptUserId?: string, sentBy?: string) {
   if (!pushConfigured()) return { sent: 0, removed: 0, people: 0 }
+  if (await adminOnly(squadId)) return sendAndLog(squadId, 'leaders', await squadAdminSubs(squadId), payload, sentBy ?? exceptUserId, true)
   const { data } = await adminDb.query<Subscription>(
     `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth, ps.user_id
      FROM push_subscriptions ps
@@ -144,6 +164,7 @@ export async function sendToSquadLeaders(squadId: number, payload: PushPayload, 
  */
 export async function sendToSquadAdmins(squadId: number, payload: PushPayload) {
   if (!pushConfigured()) return { sent: 0, removed: 0 }
+  if (await adminOnly(squadId)) return sendAndLog(squadId, 'admins', await squadAdminSubs(squadId), payload, null, true)
   const { data } = await adminDb.query<Subscription>(
     `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth, ps.user_id
      FROM push_subscriptions ps

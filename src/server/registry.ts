@@ -78,6 +78,7 @@ import members_updateSquadSettings from './functions/members/updateSquadSettings
 import notifications_getPushLog from './functions/notifications/getPushLog'
 import notifications_getPushStatus from './functions/notifications/getPushStatus'
 import notifications_sendTestPush from './functions/notifications/sendTestPush'
+import notifications_setPushAdminOnly from './functions/notifications/setPushAdminOnly'
 import notifications_setPushSquad from './functions/notifications/setPushSquad'
 import notifications_subscribePush from './functions/notifications/subscribePush'
 import notifications_unsubscribePush from './functions/notifications/unsubscribePush'
@@ -245,6 +246,7 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'notifications/getPushLog': { handler: notifications_getPushLog, access: 'admin' },
   'notifications/getPushStatus': { handler: notifications_getPushStatus, access: 'user' },
   'notifications/sendTestPush': { handler: notifications_sendTestPush, access: 'user' },
+  'notifications/setPushAdminOnly': { handler: notifications_setPushAdminOnly, access: 'admin' },
   'notifications/setPushSquad': { handler: notifications_setPushSquad, access: 'user' },
   'notifications/subscribePush': { handler: notifications_subscribePush, access: 'user' },
   'notifications/unsubscribePush': { handler: notifications_unsubscribePush, access: 'user' },

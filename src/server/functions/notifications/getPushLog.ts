@@ -16,6 +16,7 @@ export type PushLogRow = {
   people: number
   devices: number
   failed: number
+  testMode: boolean
 }
 
 /** Lagets skickade notiser, senaste först. Bläddra bakåt med before (createdAt för sista raden). */
@@ -24,7 +25,7 @@ export default async function getPushLog(req: { params: Params; user: User; squa
   const squadId = req.squad!.squadId
   const limit = Math.min(Math.max(Number(req.params.limit) || 50, 1), 200)
   const { data } = await adminDb.query<Omit<PushLogRow, 'sentByName'> & { sentBy: string | null }>(
-    `SELECT id::int, created_at AS "createdAt", audience, title, body, url, sent_by AS "sentBy", people, devices, failed
+    `SELECT id::int, created_at AS "createdAt", audience, title, body, url, sent_by AS "sentBy", people, devices, failed, test_mode AS "testMode"
      FROM push_log
      WHERE squad_id = $3 AND ($1::timestamptz IS NULL OR created_at < $1::timestamptz)
      ORDER BY created_at DESC
@@ -43,7 +44,10 @@ export default async function getPushLog(req: { params: Params; user: User; squa
     )
     for (const x of u) names.set(x.id, x.name)
   }
+  const { data: sq } = await adminDb.query<{ push_admin_only: boolean }>('SELECT push_admin_only FROM squads WHERE id = $1', [squadId])
   return {
+    /** Testläge: notiser går bara till lagets admin */
+    adminOnly: !!sq[0]?.push_admin_only,
     rows: rows.map(({ sentBy, ...r }) => ({ ...r, sentByName: sentBy ? names.get(sentBy) ?? null : null })) as PushLogRow[],
     more: data.length > limit,
   }

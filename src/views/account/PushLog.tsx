@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Bell, ChevronDown, Lock, Loader2, Search } from 'lucide-react'
+import { Bell, ChevronDown, FlaskConical, Lock, Loader2, Search } from 'lucide-react'
 import Link, { useRouter } from '../../lib/nav'
 import SquadLogo from '../../components/SquadLogo'
 import { getMe } from '../../lib/squad-store'
 import { cn } from '../../lib/shadcn/utils'
-import { useGetPushLog } from '../../hooks/backend/notifications'
+import { useGetPushLog, useSetPushAdminOnly } from '../../hooks/backend/notifications'
 import type { PushLogRow } from '@/server/functions/notifications/getPushLog'
 
 const AUDIENCE: Record<PushLogRow['audience'], string> = {
@@ -50,6 +50,8 @@ function PushLogPage() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [audience, setAudience] = useState<'all' | PushLogRow['audience']>('all')
+  const [adminOnly, setAdminOnly] = useState<boolean | null>(null)
+  const toggle = useSetPushAdminOnly()
 
   async function load(before?: string) {
     setError(null)
@@ -57,6 +59,7 @@ function PushLogPage() {
       const r = await log.trigger({ before: before ?? null, limit: 50 }, { skipCache: true })
       setRows((prev) => (before && prev ? [...prev, ...r.rows] : r.rows))
       setMore(r.more)
+      setAdminOnly(r.adminOnly)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Kunde inte hämta notisloggen.')
     }
@@ -97,6 +100,29 @@ function PushLogPage() {
       </div>
 
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 p-3 md:p-4">
+        {adminOnly !== null && (
+          <div className={cn('flex items-start gap-3 rounded-xl border p-3',
+            adminOnly ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40' : 'border-border bg-card')}>
+            <FlaskConical className={cn('mt-0.5 h-5 w-5 shrink-0', adminOnly ? 'text-amber-600' : 'text-muted-foreground')} />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">Testläge för notiser{adminOnly ? ' är på' : ''}</p>
+              <p className="text-sm text-muted-foreground">
+                {adminOnly
+                  ? 'Alla lagets notiser går bara till lagets admin, även för dina egna ändringar. Ledare, spelare och anhöriga får inga notiser. Kom ihåg att stänga av när du testat klart.'
+                  : 'Skicka lagets notiser bara till lagets admin, även för dina egna ändringar, så att du kan testa utan att ledare, spelare och anhöriga får dem.'}
+              </p>
+            </div>
+            <button type="button" role="switch" aria-checked={adminOnly} aria-label="Testläge för notiser" disabled={toggle.loading}
+              onClick={async () => {
+                setError(null)
+                try { setAdminOnly((await toggle.trigger({ on: !adminOnly })).adminOnly) }
+                catch (e) { setError(e instanceof Error ? e.message : 'Kunde inte ändra testläget.') }
+              }}
+              className={cn('relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50', adminOnly ? 'bg-amber-500' : 'bg-muted-foreground/30')}>
+              <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all', adminOnly ? 'left-[22px]' : 'left-0.5')} />
+            </button>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <label className="relative min-w-[180px] flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -156,7 +182,8 @@ function LogItem({ r }: { r: PushLogRow }) {
         <p className="font-medium">{r.title}</p>
         {r.body && <p className="whitespace-pre-line text-sm text-muted-foreground">{r.body}</p>}
         <p className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-          <span className="rounded bg-muted px-1.5 py-px font-medium text-foreground/80">{AUDIENCE[r.audience]}</span>
+          {r.testMode && <span className="rounded bg-amber-100 px-1.5 py-px font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">Testläge: bara admin</span>}
+          <span className={cn('rounded bg-muted px-1.5 py-px font-medium text-foreground/80', r.testMode && 'line-through opacity-60')}>{AUDIENCE[r.audience]}</span>
           <span className={cn(r.people === 0 && 'text-amber-700 dark:text-amber-400')}>{reached}</span>
           {r.failed > 0 && <span className="text-destructive">{r.failed} misslyckades</span>}
           {r.sentByName && <span>· av {r.sentByName}</span>}
