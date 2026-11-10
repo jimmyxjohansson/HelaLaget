@@ -2,12 +2,13 @@
 
 import Link, { usePathname } from '../lib/nav'
 import { useState } from 'react'
-import { LogOut, Menu, Moon, Repeat, Sun } from 'lucide-react'
+import { LogOut, Menu, Moon, Sun } from 'lucide-react'
 import { cn } from '../lib/shadcn/utils'
 import { isActivePath, signOut } from '../lib/navigation'
 import { getMe, roleLabel } from '../lib/squad-store'
 import { Sheet, SheetContent, SheetTitle } from '../lib/shadcn/sheet'
 import SquadLogo from './SquadLogo'
+import SquadSwitchMenu from './SquadSwitchMenu'
 import { isItemActive, mainItems, navGroups } from './navItems'
 
 type Theme = 'light' | 'dark'
@@ -23,10 +24,7 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
   const me = getMe()
   const squad = me?.current
   const tabs = mainItems()
-  // Byt lag-knappen överst leder redan till Mina lag
   const groups = navGroups()
-    .map((g) => ({ ...g, items: g.items.filter((i) => i.to !== '/lag') }))
-    .filter((g) => g.items.length > 0)
   const all = groups.flatMap((g) => g.items)
   const moreActive = all.some((i) => isItemActive(pathname, i, all))
 
@@ -69,7 +67,7 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
         >
           <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/30" aria-hidden />
 
-          {/* Lag och byt lag */}
+          {/* Valt lag (byt lag under Mitt konto) */}
           <div className="flex items-center gap-3 border-b border-border px-4 pb-3 pt-2 pr-12">
             <SquadLogo className="h-10 w-10" />
             <div className="min-w-0 flex-1">
@@ -79,13 +77,6 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
                 {squad?.role === 'viewer' && ` · ${roleLabel(squad)}`}
               </p>
             </div>
-            <Link
-              href="/lag"
-              onClick={() => setOpen(false)}
-              className="flex shrink-0 items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/70"
-            >
-              <Repeat className="h-3.5 w-3.5" /> {(me?.memberships.length ?? 0) > 1 ? 'Byt lag' : 'Mina lag'}
-            </Link>
           </div>
 
           <div className="flex-1 overflow-y-auto px-3 py-2">
@@ -96,6 +87,17 @@ export default function BottomNav({ theme, onToggleTheme }: Props) {
                   {g.items.map((item) => {
                     const Icon = item.icon
                     const active = isItemActive(pathname, item, all)
+                    if (item.switchSquad) {
+                      return (
+                        <SquadSwitchMenu key={item.to} side="top" align="start" onSwitch={() => setOpen(false)}>
+                          <button type="button"
+                            className="flex items-center gap-2.5 rounded-xl bg-muted/50 px-3 py-2.5 text-left text-sm font-medium text-foreground outline-none transition-colors hover:bg-muted data-[state=open]:bg-muted">
+                            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="min-w-0 leading-tight">{item.label}</span>
+                          </button>
+                        </SquadSwitchMenu>
+                      )
+                    }
                     return (
                       <Link
                         key={item.to}

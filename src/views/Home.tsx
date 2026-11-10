@@ -8,15 +8,11 @@ import { useGetTrainings } from '../hooks/backend/trainings'
 import { useGetUpcomingMatches } from '../hooks/backend/matches'
 import { useGetUpcomingBirthdays } from '../hooks/backend/players'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
-import { MapPin, ChevronRight, Cake, Check, ClipboardList, Repeat, Users } from 'lucide-react'
+import { MapPin, ChevronRight, Cake, ClipboardList, Users } from 'lucide-react'
 import { ownTeamName } from '../utils/constants'
 import { wallDayIso } from '../utils/dateWindow'
 import SquadLogo from '../components/SquadLogo'
-import { canEdit, currentSquad, getMe } from '../lib/squad-store'
-import { setSquadCookie } from '../lib/squad-cookie'
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '../lib/shadcn/dropdown-menu'
+import { canEdit, currentSquad } from '../lib/squad-store'
 
 interface Training {
   id: number
@@ -143,7 +139,6 @@ export default function Home() {
               <h1 className="text-2xl font-bold mt-0.5">{currentSquad()?.squadName ?? ''}</h1>
             </div>
           </div>
-          <SwitchSquadButton />
         </div>
       </div>
 
@@ -281,45 +276,3 @@ export default function Home() {
   )
 }
 
-/** Byt lag direkt från startsidan. Visas bara för den som är med i flera lag. */
-function SwitchSquadButton() {
-  const me = getMe()
-  const squads = me?.memberships.filter((m) => m.status === 'approved') ?? []
-  if (squads.length < 2) return null
-  const current = me?.current?.squadId
-
-  function open(squadId: number) {
-    if (squadId === current) return
-    setSquadCookie(squadId)
-    window.location.href = '/'
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1.5 text-sm font-medium hover:bg-primary-foreground/30 transition-colors"
-          aria-label="Byt lag"
-        >
-          <Repeat className="h-4 w-4" />
-          Byt lag
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel>Byt lag</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {squads.map((m) => (
-          <DropdownMenuItem key={m.squadId} onSelect={() => open(m.squadId)} className="flex items-center gap-2.5 cursor-pointer">
-            <span className="h-6 w-2 shrink-0 rounded-sm" style={{ backgroundColor: m.primaryColor }} />
-            <span className="min-w-0 flex-1">
-              <span className="block text-[11px] text-muted-foreground">{m.organizationName}</span>
-              <span className="block truncate font-medium">{m.squadName}</span>
-            </span>
-            {m.squadId === current && <Check className="h-4 w-4 shrink-0" aria-label="Valt lag" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}

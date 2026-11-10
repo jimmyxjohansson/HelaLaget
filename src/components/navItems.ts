@@ -2,12 +2,19 @@
 
 import {
   BarChart3, Bell, BellRing, BookOpen, Building2, CalendarDays, CalendarRange, ExternalLink, FileText, Home, ListOrdered,
-  LayoutTemplate, Medal, RefreshCw, Repeat, Shield, Trophy, UserCog, Users,
+  LayoutTemplate, Medal, RefreshCw, Repeat, Shield, Trophy, UserCog, Users, UsersRound as Users2,
 } from 'lucide-react'
 import { getMe } from '../lib/squad-store'
 import { isActivePath } from '../lib/navigation'
 
-export type NavItem = { to: string; icon: typeof Bell; label: string; external?: boolean }
+export type NavItem = {
+  to: string
+  icon: typeof Bell
+  label: string
+  external?: boolean
+  /** Ingen länk: öppnar lagväxlaren (flyout) */
+  switchSquad?: boolean
+}
 export type NavGroup = { title: string; items: NavItem[] }
 
 /** Huvudflikarna. Första fliken heter som laget (t.ex. P-13). */
@@ -54,10 +61,15 @@ export function navGroups(): NavGroup[] {
     lankar.push({ to: me.current.docsUrl, icon: FileText, label: me.current.docsName || 'Dokument', external: true })
   }
 
-  const konto: NavItem[] = [
-    { to: '/lag', icon: Repeat, label: 'Mina lag' },
+  const konto: NavItem[] = []
+  // Byt lag bara för den som är med i flera lag
+  if ((me?.memberships.filter((m) => m.status === 'approved').length ?? 0) > 1) {
+    konto.push({ to: '#byt-lag', icon: Repeat, label: 'Byt lag', switchSquad: true })
+  }
+  konto.push(
+    { to: '/lag', icon: Users2, label: 'Mina lag' },
     { to: '/notiser', icon: Bell, label: 'Notiser' },
-  ]
+  )
 
   const admin: NavItem[] = []
   if (leader) admin.push({ to: '/svenskalag', icon: RefreshCw, label: 'Svenskalag-synk' })
@@ -73,14 +85,14 @@ export function navGroups(): NavGroup[] {
     { title: 'Laget', items: laget },
     { title: 'Tävling', items: tavling },
     { title: 'Länkar', items: lankar },
-    { title: 'Konto', items: konto },
+    { title: 'Mitt konto', items: konto },
     { title: 'Administration', items: admin },
   ].filter((g) => g.items.length > 0)
 }
 
 /** Är sidan aktiv? '/lag' ska inte lysa på '/lag/installningar'. */
 export function isItemActive(pathname: string, item: NavItem, all: NavItem[]) {
-  if (item.external || !isActivePath(pathname, item.to)) return false
+  if (item.external || item.switchSquad || !isActivePath(pathname, item.to)) return false
   // En längre, mer specifik länk som också matchar vinner
-  return !all.some((o) => o !== item && !o.external && o.to.length > item.to.length && isActivePath(pathname, o.to))
+  return !all.some((o) => o !== item && !o.external && !o.switchSquad && o.to.length > item.to.length && isActivePath(pathname, o.to))
 }
