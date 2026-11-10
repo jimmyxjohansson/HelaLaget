@@ -145,7 +145,7 @@ export default function TrainingDetail() {
   const [addSearch, setAddSearch] = useState('')
   const [addSelected, setAddSelected] = useState<Set<number>>(new Set())
   const [addingBulk, setAddingBulk] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar', 'Provspelare']))
+  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar']))
   const [newPlayerOpen, setNewPlayerOpen] = useState(false)
   // Bara statusar som finns i laget visas; räknas om när en ny spelare skapats
   const [statusRefresh, setStatusRefresh] = useState(0)
@@ -371,7 +371,7 @@ export default function TrainingDetail() {
 
   function openAddSheet() {
     setAddSearch('')
-    setStatusFilter(new Set(['Aktiv', 'Aktiv, ej matchklar', 'Provspelare']))
+    setStatusFilter(new Set(['Aktiv', 'Aktiv, ej matchklar']))
     setAddSelected(new Set())
     setAddOpen(true)
     if (id) triggerAvailable({ trainingId: Number(id) })
