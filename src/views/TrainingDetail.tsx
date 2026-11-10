@@ -147,7 +147,9 @@ export default function TrainingDetail() {
   const [addingBulk, setAddingBulk] = useState(false)
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar', 'Provspelare']))
   const [newPlayerOpen, setNewPlayerOpen] = useState(false)
-  const statusVisible = useSquadStatuses()
+  // Bara statusar som finns i laget visas; räknas om när en ny spelare skapats
+  const [statusRefresh, setStatusRefresh] = useState(0)
+  const statusVisible = useSquadStatuses(statusRefresh)
   const { data: availableData, trigger: triggerAvailable } = useGetAvailablePlayers()
   const { trigger: triggerAddBulk } = useAddParticipants()
   const { trigger: triggerRemove, loading: removing } = useRemoveParticipant()
@@ -915,6 +917,7 @@ export default function TrainingDetail() {
         onCreated={({ id: playerId, status }) => {
           // Den nya spelaren visas och är förvald i listan
           setStatusFilter(prev => new Set(prev).add(status))
+          setStatusRefresh(n => n + 1)
           setAddSelected(prev => new Set(prev).add(playerId))
           if (id) triggerAvailable({ trainingId: Number(id) }, { skipCache: true })
         }} />
@@ -932,7 +935,7 @@ export default function TrainingDetail() {
           </SheetHeader>
           <div className="px-4 py-2 border-b border-border">
             <div className="flex gap-2 flex-wrap">
-              {(['Aktiv', 'Aktiv, ej matchklar', 'Provspelare', 'Gästspelare', 'Vilande', 'Slutat'] as const).filter(s => s === 'Provspelare' || statusVisible(s)).map(s => {
+              {(['Aktiv', 'Aktiv, ej matchklar', 'Provspelare', 'Gästspelare', 'Vilande', 'Slutat'] as const).filter(statusVisible).map(s => {
                 const on = statusFilter.has(s)
                 return (
                   <button
