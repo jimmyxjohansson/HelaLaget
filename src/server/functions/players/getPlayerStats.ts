@@ -29,7 +29,13 @@ export default async function getPlayerStats(req: { params: Params; user: User; 
     AND (m.status::text IN ('Avslutad', 'Registrerad i Fogis') OR m.date <= ${NOW_WALLCLOCK})
     AND ${withinMonthsOf('m.date', '$2')}`
 
-  const [trainings, matches, cups, teammates] = await Promise.all([
+  // Träning med träningsgrupp där spelaren var med (närvarande eller anmäld)
+  const IN_GROUP = `pt.player = $1 AND pt.leader IS NULL AND NULLIF(pt."group", '') IS NOT NULL
+    AND pt.status::text IN ${ATTENDED_STATUSES}
+    AND t.date < (((now() AT TIME ZONE 'Europe/Stockholm')::date + 1)::timestamp AT TIME ZONE 'UTC')
+    AND ${withinMonthsOf('t.date', '$2')}`
+
+  const [trainings, matches, cups, teammates, groupmates] = await Promise.all([
     db.query<{
       id: number
       date: string
@@ -142,12 +148,42 @@ export default async function getPlayerStats(req: { params: Params; user: User; 
        ORDER BY matches DESC, p.shortname`,
       [playerId, months],
     ),
+    // Spelare i samma träningsgrupp på samma träning
+    db.query<{
+      id: number
+      shortname: string | null
+      firstname: string | null
+      lastname: string | null
+      img: string | null
+      rank: string | null
+      status: string | null
+      trainings: number
+    }>(
+      `SELECT p.id, p.shortname, p.firstname, p.lastname, p.img, p.rank::text AS rank, p.status::text AS status,
+              COUNT(DISTINCT t.id)::int AS trainings
+       FROM participantstrainings pt
+       JOIN trainings t ON t.id = pt.training
+       JOIN participantstrainings o ON o.training = t.id AND o.player IS NOT NULL AND o.player <> $1
+         AND o.leader IS NULL AND o."group" = pt."group" AND o.status::text IN ${ATTENDED_STATUSES}
+       JOIN players p ON p.id = o.player
+       WHERE ${IN_GROUP}
+       GROUP BY p.id
+       ORDER BY trainings DESC, p.shortname`,
+      [playerId, months],
+    ),
   ])
+  const groupTrainings = await db.query<{ n: number }>(
+    `SELECT COUNT(DISTINCT t.id)::int AS n FROM participantstrainings pt JOIN trainings t ON t.id = pt.training WHERE ${IN_GROUP}`,
+    [playerId, months],
+  )
 
   return {
     trainings: trainings.data,
     matches: matches.data,
     cups: cups.data,
     teammates: teammates.data,
+    groupmates: groupmates.data,
+    /** Träningar där spelaren var med i en träningsgrupp */
+    groupTrainings: groupTrainings.data[0]?.n ?? 0,
   }
 }

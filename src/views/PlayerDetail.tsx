@@ -275,13 +275,13 @@ export default function PlayerDetail() {
                 <div className="text-sm text-muted-foreground">
                   {displayPlayer.firstname} {displayPlayer.lastname}
                 </div>
-                <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex flex-wrap items-center gap-2 mt-1.5">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[displayPlayer.status] ?? 'bg-muted text-muted-foreground'}`}>
                     {displayPlayer.status}
                   </span>
                   {displayPlayer.rank && (
                     <span
-                      className="text-xs font-medium px-2 py-0.5 rounded-full"
+                      className="whitespace-nowrap text-xs font-medium px-2 py-0.5 rounded-full"
                       style={rankStyle(displayPlayer.rank)}
                     >
                       Nivå {displayPlayer.rank}
@@ -289,7 +289,7 @@ export default function PlayerDetail() {
                   )}
                   {canEdit() && !editing && levelMatrix && (
                     <button type="button" onClick={() => setLevelOpen(true)}
-                      className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
+                      className="flex items-center gap-1 whitespace-nowrap rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
                       <Calculator className="h-3 w-3" /> Beräkna nivå
                     </button>
                   )}

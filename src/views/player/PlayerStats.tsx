@@ -161,7 +161,12 @@ export default function PlayerStats({ data, loading }: { data: PlayerStatsData |
           {tab === 'training' && <TrainingTab trainings={data.trainings} />}
           {tab === 'matches' && <MatchesTab matches={data.matches} />}
           {tab === 'cups' && <CupsTab cups={data.cups} />}
-          {tab === 'mates' && <MatesTab mates={data.teammates} total={data.matches.length} />}
+          {tab === 'mates' && (
+            <div className="flex flex-col gap-3">
+              <MatesTab mates={data.teammates} total={data.matches.length} />
+              <GroupMatesTab mates={data.groupmates ?? []} total={data.groupTrainings ?? 0} />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -445,12 +450,18 @@ function CupsTab({ cups }: { cups: PlayerStatsData['cups'] }) {
 
 /* ───────────── Medspelare ───────────── */
 
-function MatesTab({ mates, total }: { mates: PlayerStatsData['teammates']; total: number }) {
+function MateList({ mates, total, title, unit, empty }: {
+  mates: { id: number; shortname: string | null; firstname: string | null; lastname: string | null; img: string | null; rank: string | null; count: number }[]
+  total: number
+  title: string
+  unit: string
+  empty: string
+}) {
   const [showAll, setShowAll] = useState(false)
-  if (mates.length === 0) return <Card><Empty>Inga spelade matcher under perioden.</Empty></Card>
+  if (mates.length === 0) return <Card title={title}><Empty>{empty}</Empty></Card>
   const list = showAll ? mates : mates.slice(0, 15)
   return (
-    <Card title="Matcher tillsammans med" right={<span className="text-xs text-muted-foreground">av {total} spelade</span>}>
+    <Card title={title} right={<span className="text-xs text-muted-foreground">av {total} {unit}</span>}>
       <ul className="divide-y divide-border">
         {list.map((p) => (
           <li key={p.id}>
@@ -466,11 +477,11 @@ function MatesTab({ mates, total }: { mates: PlayerStatsData['teammates']; total
                   {p.rank && <LevelChip level={p.rank} />}
                 </div>
                 <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${pct(p.matches, total)}%` }} />
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${pct(p.count, total)}%` }} />
                 </div>
               </div>
-              <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums">{p.matches}</span>
-              <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{pct(p.matches, total)}%</span>
+              <span className="w-10 shrink-0 text-right text-sm font-semibold tabular-nums">{p.count}</span>
+              <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{pct(p.count, total)}%</span>
             </Link>
           </li>
         ))}
@@ -482,4 +493,15 @@ function MatesTab({ mates, total }: { mates: PlayerStatsData['teammates']; total
       )}
     </Card>
   )
+}
+
+function MatesTab({ mates, total }: { mates: PlayerStatsData['teammates']; total: number }) {
+  return <MateList mates={mates.map((m) => ({ ...m, count: m.matches }))} total={total}
+    title="Matcher tillsammans med" unit="spelade" empty="Inga spelade matcher under perioden." />
+}
+
+/** Hur ofta spelaren varit i samma träningsgrupp som andra. */
+function GroupMatesTab({ mates, total }: { mates: NonNullable<PlayerStatsData['groupmates']>; total: number }) {
+  return <MateList mates={mates.map((m) => ({ ...m, count: m.trainings }))} total={total}
+    title="Träningsgrupp tillsammans med" unit="träningar i grupp" empty="Inga träningar med träningsgrupper under perioden." />
 }
