@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Check, History, Loader2 } from 'lucide-react'
+import { Check, History, Image as ImageIcon, Loader2 } from 'lucide-react'
+import LevelImageDialog from './LevelImageDialog'
+import { getMe } from '../../lib/squad-store'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../lib/shadcn/dialog'
 import { Button } from '../../lib/shadcn/button'
 import { Textarea } from '../../lib/shadcn/textarea'
@@ -30,6 +32,7 @@ export default function LevelDialog({ open, onClose, player, onApplied, matrix }
   const [showHistory, setShowHistory] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  const [imageOpen, setImageOpen] = useState(false)
 
   // Förra bedömningen fylls i som start
   useEffect(() => {
@@ -185,9 +188,22 @@ export default function LevelDialog({ open, onClose, player, onApplied, matrix }
             <Button variant="outline" onClick={() => submit(false)} disabled={!suggestion || save.loading}>
               Spara utan att ändra
             </Button>
+            <Button variant="outline" onClick={() => setImageOpen(true)} disabled={!suggestion} aria-label="Bild av bedömningen">
+              <ImageIcon /> Bild
+            </Button>
           </div>
         </div>
       </DialogContent>
+      <LevelImageDialog open={imageOpen} onClose={() => setImageOpen(false)} data={{
+        player: player.name,
+        matrix,
+        scores,
+        suggested: suggestion?.level ?? null,
+        rank,
+        date: DATE.format(new Date()),
+        by: getMe()?.user.name ?? null,
+        comment,
+      }} />
     </Dialog>
   )
 }
