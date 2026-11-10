@@ -27,7 +27,19 @@ type Params = { kind: 'training' | 'match' | 'cup'; id: number; items: Item[] }
 export default async function applySvenskalagReplies(req: { params: Params; user: User; squad?: SquadAccess }) {
   const kind = parseKind(req.params.kind)
   const id = Number(req.params.id)
-  const items = (req.params.items ?? []).slice(0, 200)
+  // En person kan förekomma flera gånger (t.ex. två Svenskalag-namn kopplade till samma spelare,
+  // eller med i både Kommer och Kallade). Ett svar (Kommer/Kan ej) går före Kallade, annars gäller det sista.
+  const byPerson = new Map<string, Item>()
+  for (const it of (req.params.items ?? []).slice(0, 200)) {
+    const k = `${it.type}:${Number(it.id)}`
+    const prev = byPerson.get(k)
+    if (prev && prev.list !== 'invited' && it.list === 'invited') {
+      if (it.linkName?.trim() && !prev.linkName?.trim()) prev.linkName = it.linkName
+      continue
+    }
+    byPerson.set(k, prev?.linkName?.trim() && !it.linkName?.trim() ? { ...it, linkName: prev.linkName } : it)
+  }
+  const items = [...byPerson.values()]
   await loadEvent(kind, id)
   const current = await currentStatuses(kind, id)
   const { table, fk } = participantTable(kind)
@@ -59,8 +71,12 @@ export default async function applySvenskalagReplies(req: { params: Params; user
              replied_at = COALESCE($7::timestamp, replied_at)
            WHERE ${fk} = $1 AND ${col} = $2`, [...params, noReason ? NO_REASON : null, repliedAt])
       } else {
-        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason, reasontime, replied_at) VALUES ($1, $2, $3, $4, $5, $6::timestamp)`,
+        // Inte om raden hann skapas av ett annat anrop (t.ex. dubbeltryck på Spara)
+        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason, reasontime, replied_at)
+          SELECT $1, $2, $3, $4, $5, $6::timestamp
+          WHERE NOT EXISTS (SELECT 1 FROM ${table} WHERE ${fk} = $1 AND ${col} = $2)`,
           [id, personId, status, comment ?? (noReason ? NO_REASON : null), time, repliedAt])
+        current.set(key, status)
       }
     } else {
       const status = MATCH_STATUS[it.list]
@@ -71,7 +87,11 @@ export default async function applySvenskalagReplies(req: { params: Params; user
           `UPDATE ${table} SET status = $3, reason = COALESCE($4, NULLIF(reason, ''), $5) WHERE ${fk} = $1 AND ${col} = $2`,
           [...params, noReason ? NO_REASON : null])
       } else {
-        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason) VALUES ($1, $2, $3, $4)`, [id, personId, status, reason ?? (noReason ? NO_REASON : null)])
+        await db.query(`INSERT INTO ${table} (${fk}, ${col}, status, reason)
+          SELECT $1, $2, $3, $4
+          WHERE NOT EXISTS (SELECT 1 FROM ${table} WHERE ${fk} = $1 AND ${col} = $2)`,
+          [id, personId, status, reason ?? (noReason ? NO_REASON : null)])
+        current.set(key, status)
       }
     }
     changed++
