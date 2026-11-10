@@ -1,12 +1,13 @@
 'use client'
 
 import InfoButton from '../components/info/InfoButton'
+import { NewPlayerDialog } from '../components/PlayerActions'
 import SyncRepliesButton, { SyncStatusLine, type SyncStatus } from './svar/SyncRepliesButton'
 import { useRouter } from '../lib/nav'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useGetTrainingDetail, useUpdateAttendanceStatus, useDeleteTraining, useUpdateLeaderStatus, useGetAvailableLeaders, useAddLeaders, useRemoveLeader } from '../hooks/backend/trainings'
-import { ArrowLeft, MapPin, Pencil, X, Copy, UserPlus, Search, Trash2, ChevronDown, ChevronsUpDown, MoreVertical, CheckCircle, UserCheck, XCircle, Clock, ClipboardCheck, ClipboardX, MessageSquare, Ban, Users, ExternalLink, ClipboardList, ChevronRight, ArrowUpDown } from 'lucide-react'
+import { ArrowLeft, MapPin, Pencil, X, Copy, UserPlus, Search, Trash2, ChevronDown, ChevronsUpDown, MoreVertical, CheckCircle, UserCheck, XCircle, Clock, ClipboardCheck, ClipboardX, MessageSquare, Ban, Users, ExternalLink, ClipboardList, ChevronRight, ArrowUpDown, Plus } from 'lucide-react'
 import { trainingTypeColor } from '../utils/trainingTypeColor'
 import { Button } from '../lib/shadcn/button'
 import { Checkbox } from '../lib/shadcn/checkbox'
@@ -144,7 +145,8 @@ export default function TrainingDetail() {
   const [addSearch, setAddSearch] = useState('')
   const [addSelected, setAddSelected] = useState<Set<number>>(new Set())
   const [addingBulk, setAddingBulk] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar']))
+  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(['Aktiv', 'Aktiv, ej matchklar', 'Provspelare']))
+  const [newPlayerOpen, setNewPlayerOpen] = useState(false)
   const statusVisible = useSquadStatuses()
   const { data: availableData, trigger: triggerAvailable } = useGetAvailablePlayers()
   const { trigger: triggerAddBulk } = useAddParticipants()
@@ -367,7 +369,7 @@ export default function TrainingDetail() {
 
   function openAddSheet() {
     setAddSearch('')
-    setStatusFilter(new Set(['Aktiv', 'Aktiv, ej matchklar']))
+    setStatusFilter(new Set(['Aktiv', 'Aktiv, ej matchklar', 'Provspelare']))
     setAddSelected(new Set())
     setAddOpen(true)
     if (id) triggerAvailable({ trainingId: Number(id) })
@@ -909,15 +911,28 @@ export default function TrainingDetail() {
         </div>
       )}
 
+      <NewPlayerDialog open={newPlayerOpen} onClose={() => setNewPlayerOpen(false)} defaultStatus="Provspelare"
+        onCreated={({ id: playerId, status }) => {
+          // Den nya spelaren visas och är förvald i listan
+          setStatusFilter(prev => new Set(prev).add(status))
+          setAddSelected(prev => new Set(prev).add(playerId))
+          if (id) triggerAvailable({ trainingId: Number(id) }, { skipCache: true })
+        }} />
+
       {/* Add participant sheet */}
       <Sheet open={addOpen} onOpenChange={setAddOpen}>
         <SheetContent side="bottom" className="h-[80vh] flex flex-col px-0 pb-0">
           <SheetHeader className="px-4 pb-2">
             <SheetTitle>Lägg till deltagare</SheetTitle>
+            {/* Ny spelare (t.ex. provspelare), uppe till höger bredvid stängknappen */}
+            <button type="button" onClick={() => setNewPlayerOpen(true)}
+              className="absolute right-14 top-3.5 flex items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/70">
+              <Plus className="h-3.5 w-3.5" /> Ny spelare
+            </button>
           </SheetHeader>
           <div className="px-4 py-2 border-b border-border">
             <div className="flex gap-2 flex-wrap">
-              {(['Aktiv', 'Aktiv, ej matchklar', 'Gästspelare', 'Vilande', 'Slutat'] as const).filter(statusVisible).map(s => {
+              {(['Aktiv', 'Aktiv, ej matchklar', 'Provspelare', 'Gästspelare', 'Vilande', 'Slutat'] as const).filter(s => s === 'Provspelare' || statusVisible(s)).map(s => {
                 const on = statusFilter.has(s)
                 return (
                   <button

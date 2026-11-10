@@ -8,6 +8,8 @@ type Params = {
   number?: number | null
   birthdate?: string | null
   gender?: string | null
+  /** Aktiv (standard), Provspelare eller Gästspelare */
+  status?: string | null
 }
 
 /** Ny spelare i föreningen, kopplad till valt lag. */
@@ -18,11 +20,12 @@ export default async function createPlayer(req: { params: Params; user: User }) 
   const lastname = p.lastname?.trim() || null
   const shortname = p.shortname?.trim() || `${firstname}${lastname ? ' ' + lastname[0] : ''}`
 
+  const status = ['Aktiv', 'Provspelare', 'Gästspelare'].includes(p.status ?? '') ? p.status! : 'Aktiv'
   const { data } = await db.query<{ id: number }>(
     `INSERT INTO players (firstname, lastname, shortname, number, birthdate, status, active, gender)
-     VALUES ($1, $2, $3, $4, $5::date, 'Aktiv', true, $6)
+     VALUES ($1, $2, $3, $4, $5::date, $7, true, $6)
      RETURNING id`,
-    [firstname, lastname, shortname, p.number ?? 0, p.birthdate || null, p.gender === 'Pojke' || p.gender === 'Flicka' ? p.gender : null],
+    [firstname, lastname, shortname, p.number ?? 0, p.birthdate || null, p.gender === 'Pojke' || p.gender === 'Flicka' ? p.gender : null, status],
   )
   await db.query('INSERT INTO squad_players (squad_id, player_id) VALUES (app.squad_id(), $1)', [data[0].id])
   return { id: data[0].id }
