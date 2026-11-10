@@ -23,13 +23,15 @@ export default async function getSquadSettings(req: { params: Params; user: User
     docsUrl: string | null
     docsName: string | null
     gameFormat: string | null
+    levelMatrix: string | null
   }>(
     `SELECT s.id, s.name, o.name AS "organizationName", s.primary_color AS "primaryColor",
        s.accent_color AS "accentColor", s.logo_url AS "logoUrl", s.planning_url AS "planningUrl",
        s.join_code AS "joinCode",
        s.svenskalag_ical_url AS "svenskalagIcalUrl", s.svenskalag_url AS "siteUrl",
        s.site_name AS "siteName", s.docs_url AS "docsUrl", s.docs_name AS "docsName",
-       s.game_format AS "gameFormat"
+       s.game_format AS "gameFormat",
+       s.level_matrix AS "levelMatrix"
      FROM squads s JOIN organizations o ON o.id = s.organization_id
      WHERE s.id = $1`,
     [req.squad!.squadId],

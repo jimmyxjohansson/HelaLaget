@@ -1,7 +1,7 @@
 /**
- * Nivåmatrisen för spelarna (5–7 år). Fyra områden med delar som bedöms A–D.
- * Fotbollsaktioner väger tyngst, fysik lätt. Mentalt och socialt används för
- * att sätta ihop grupper och flyttar aldrig ner ett barn, så de räknas inte in.
+ * Nivåmatriser för Beräkna nivå. Laget väljer matris under Laginställningar.
+ * Varje matris har områden med delar som bedöms A–D. Områden med vikt 0
+ * (t.ex. mentalt och socialt för de yngsta) sparas men räknas inte in i nivån.
  */
 export type Grade = 'A' | 'B' | 'C' | 'D'
 export const GRADES: Grade[] = ['A', 'B', 'C', 'D']
@@ -9,11 +9,13 @@ export const GRADES: Grade[] = ['A', 'B', 'C', 'D']
 export type Criterion = { key: string; name: string; levels: Record<Grade, string> }
 export type Area = { key: string; name: string; weight: number; note: string; criteria: Criterion[] }
 
-export const LEVEL_AREAS: Area[] = [
+export type Matrix = { key: string; name: string; ages: string; intro: string; areas: Area[] }
+
+const AREAS_5_7: Area[] = [
   {
     key: 'fotboll',
     name: 'Fotbollsaktioner',
-    weight: 0.75,
+    weight: 0.6,
     note: 'Väger tyngst.',
     criteria: [
       {
@@ -37,8 +39,8 @@ export const LEVEL_AREAS: Area[] = [
   {
     key: 'fysik',
     name: 'Fysik',
-    weight: 0.25,
-    note: 'Väger lätt, eftersom födelsemånad och storlek gör stor skillnad.',
+    weight: 0.4,
+    note: 'Väger mindre, eftersom födelsemånad och storlek gör stor skillnad i den här åldern.',
     criteria: [
       {
         key: 'motorik', name: 'Motorik och koordination', levels: {
@@ -116,9 +118,21 @@ export const LEVEL_AREAS: Area[] = [
   },
 ]
 
-export const ALL_CRITERIA = LEVEL_AREAS.flatMap((a) => a.criteria.map((c) => ({ ...c, area: a.key })))
+export const LEVEL_MATRICES: Record<string, Matrix> = {
+  '5-7': {
+    key: '5-7',
+    name: 'Nivåmatris 5–7 år',
+    ages: '5–7 år',
+    intro: 'Fotbollsaktioner väger 60 % och fysik 40 %. Mentalt och socialt räknas inte in i nivån.',
+    areas: AREAS_5_7,
+  },
+}
+export const MATRIX_KEYS = Object.keys(LEVEL_MATRICES)
+export const matrixOf = (key: string | null | undefined) => (key ? LEVEL_MATRICES[key] ?? null : null)
+
+export const allCriteria = (m: Matrix) => m.areas.flatMap((a) => a.criteria.map((c) => ({ ...c, area: a.key })))
 /** Delarna som räknas in i nivån */
-export const RATED_KEYS = LEVEL_AREAS.filter((a) => a.weight > 0).flatMap((a) => a.criteria.map((c) => c.key))
+export const ratedKeys = (m: Matrix) => m.areas.filter((a) => a.weight > 0).flatMap((a) => a.criteria.map((c) => c.key))
 
 const POINTS: Record<Grade, number> = { A: 4, B: 3, C: 2, D: 1 }
 /** 4 = A, 3.5 = AB, 3 = B … 1 = D */
@@ -137,10 +151,10 @@ export function areaScore(area: Area, scores: Scores) {
  * Föreslagen nivå: viktat medel av områdena som räknas, avrundat till närmaste
  * halva steg (A, AB, B, BC, C, CD, D). null tills alla delar som räknas är ifyllda.
  */
-export function suggestLevel(scores: Scores): { level: string; score: number } | null {
+export function suggestLevel(m: Matrix, scores: Scores): { level: string; score: number } | null {
   let sum = 0
   let weight = 0
-  for (const a of LEVEL_AREAS) {
+  for (const a of m.areas) {
     if (!a.weight) continue
     const s = areaScore(a, scores)
     if (s == null) return null

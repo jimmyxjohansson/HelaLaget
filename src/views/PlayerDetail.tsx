@@ -13,7 +13,8 @@ import { Label } from '../lib/shadcn/label'
 import { Textarea } from '../lib/shadcn/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../lib/shadcn/select'
 import DatePicker from '../components/DatePicker'
-import { canEdit, linkedPlayerIds } from '../lib/squad-store'
+import { canEdit, currentSquad, linkedPlayerIds } from '../lib/squad-store'
+import { matrixOf } from '../utils/levelMatrix'
 import PlayerStats, { StatsSummary } from './player/PlayerStats'
 import { cn } from '../lib/shadcn/utils'
 
@@ -90,6 +91,8 @@ export default function PlayerDetail() {
   })
   const { data, loading, trigger } = useGetPlayer()
   const [levelOpen, setLevelOpen] = useState(false)
+  // Beräkna nivå finns bara om laget har valt en nivåmatris
+  const levelMatrix = matrixOf(currentSquad()?.levelMatrix)
   const stats = useGetPlayerStats()
   const infoRef = useRef<HTMLDivElement>(null)
   const { trigger: updateTrigger, loading: saving } = useUpdatePlayer()
@@ -284,7 +287,7 @@ export default function PlayerDetail() {
                       Nivå {displayPlayer.rank}
                     </span>
                   )}
-                  {canEdit() && !editing && (
+                  {canEdit() && !editing && levelMatrix && (
                     <button type="button" onClick={() => setLevelOpen(true)}
                       className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
                       <Calculator className="h-3 w-3" /> Beräkna nivå
@@ -304,8 +307,8 @@ export default function PlayerDetail() {
             </div>
           </div>
 
-          {canEdit() && player && (
-            <LevelDialog open={levelOpen} onClose={() => setLevelOpen(false)}
+          {canEdit() && player && levelMatrix && (
+            <LevelDialog matrix={levelMatrix} open={levelOpen} onClose={() => setLevelOpen(false)}
               player={{ id: player.id, name: `${player.firstname ?? ''} ${player.lastname ?? ''}`.trim() || (player.shortname ?? ''), rank: player.rank ?? null }}
               onApplied={() => trigger({ id: Number(id), months })} />
           )}

@@ -27,6 +27,7 @@ import { Input } from '../../lib/shadcn/input'
 import { Label } from '../../lib/shadcn/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../lib/shadcn/select'
 import { GAME_FORMATS } from '../../utils/gameFormats'
+import { LEVEL_MATRICES } from '../../utils/levelMatrix'
 import GameFormats, { formatText } from './GameFormats'
 import { ErrorText, PageHeader, ROLE_HELP, ROLE_LABEL, Section } from './shared'
 import SquadInfos from './SquadInfos'
@@ -142,6 +143,7 @@ export default function SquadSettings() {
     docsUrl: '',
     docsName: '',
     gameFormat: '',
+    levelMatrix: '',
   })
   const [savedSettings, setSavedSettings] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -196,6 +198,7 @@ export default function SquadSettings() {
             docsUrl: s.docsUrl ?? '',
             docsName: s.docsName ?? '',
             gameFormat: s.gameFormat ?? '',
+            levelMatrix: s.levelMatrix ?? '',
           })
       })
       .catch(() => {})
@@ -551,6 +554,19 @@ export default function SquadSettings() {
                 ? `Nya matcher och cuper får ${form.gameFormat}${formatText(settings.data.formats[form.gameFormat]) ? `, ${formatText(settings.data.formats[form.gameFormat])}` : ''}. `
                 : 'Används när matcher och cuper läggs till eller hämtas från Svenskalag. '}
               Går att ändra på varje match och cup.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Nivåmatris</Label>
+            <Select value={form.levelMatrix || '__none__'} onValueChange={(v) => setForm({ ...form, levelMatrix: v === '__none__' ? '' : v })}>
+              <SelectTrigger aria-label="Nivåmatris" className="w-56"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Ingen</SelectItem>
+                {Object.values(LEVEL_MATRICES).map((m) => <SelectItem key={m.key} value={m.key}>{m.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Med en nivåmatris får ledarna knappen Beräkna nivå på spelarna. Välj den som passar lagets ålder.
             </p>
           </div>
           <div className="flex flex-col gap-1.5">

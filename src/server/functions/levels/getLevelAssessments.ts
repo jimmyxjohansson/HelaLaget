@@ -16,8 +16,9 @@ export default async function getLevelAssessments(req: { params: Params; user: U
     comment: string | null
     created_by: string | null
     created_at: string
+    matrix: string | null
   }>(
-    `SELECT id, scores, suggested, applied_rank, comment, created_by, created_at
+    `SELECT id, scores, suggested, applied_rank, comment, created_by, created_at, matrix
      FROM player_level_assessments WHERE player_id = $1 AND squad_id = app.squad_id()
      ORDER BY created_at DESC LIMIT 20`,
     [Number(req.params.playerId)],

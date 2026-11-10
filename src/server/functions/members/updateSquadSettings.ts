@@ -2,6 +2,7 @@ import { adminDb } from '@/server/db'
 import { AccessError } from '@/server/access'
 import { normalizeFeedUrl } from '@/server/svenskalag/sync'
 import { GAME_FORMATS } from '@/utils/gameFormats'
+import { MATRIX_KEYS } from '@/utils/levelMatrix'
 import type { SquadAccess, User } from '@/server/types'
 
 export const access = 'admin'
@@ -22,6 +23,8 @@ type Params = {
   docsName?: string | null
   /** Lagets spelform, används när matcher och cuper läggs till */
   gameFormat?: string | null
+  /** Nivåmatris för Beräkna nivå */
+  levelMatrix?: string | null
 }
 
 /** "svenskalag.se/..." utan https:// fungerar också; http blir https. */
@@ -59,10 +62,12 @@ export default async function updateSquadSettings(req: { params: Params; user: U
   }
   const gameFormat = p.gameFormat || null
   if (gameFormat && !(GAME_FORMATS as readonly string[]).includes(gameFormat)) throw new AccessError('Okänd spelform.', 400)
+  const levelMatrix = p.levelMatrix || null
+  if (levelMatrix && !MATRIX_KEYS.includes(levelMatrix)) throw new AccessError('Okänd nivåmatris.', 400)
   await adminDb.query(
     `UPDATE squads SET name = $2, primary_color = $3, accent_color = $4,
        logo_url = $5, planning_url = $6, svenskalag_ical_url = $7,
-       svenskalag_url = $8, site_name = $9, docs_url = $10, docs_name = $11, game_format = $12
+       svenskalag_url = $8, site_name = $9, docs_url = $10, docs_name = $11, game_format = $12, level_matrix = $13
      WHERE id = $1`,
     [
       req.squad!.squadId,
@@ -77,6 +82,7 @@ export default async function updateSquadSettings(req: { params: Params; user: U
       docsUrl,
       docsUrl ? linkName(p.docsName) : null,
       gameFormat,
+      levelMatrix,
     ],
   )
   return { ok: true }

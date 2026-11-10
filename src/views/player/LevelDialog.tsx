@@ -8,14 +8,15 @@ import { Textarea } from '../../lib/shadcn/textarea'
 import { cn } from '../../lib/shadcn/utils'
 import { useGetLevelAssessments, useSaveLevelAssessment } from '../../hooks/backend/levels'
 import { rankStyle } from '../../utils/rankColors'
-import { GRADES, LEVEL_AREAS, RATED_KEYS, areaScore, gradeOf, suggestLevel, type Grade, type Scores } from '../../utils/levelMatrix'
+import { GRADES, areaScore, gradeOf, ratedKeys, suggestLevel, type Grade, type Matrix, type Scores } from '../../utils/levelMatrix'
 
 const RANKS = ['A', 'AB', 'B', 'BC', 'C', 'CD', 'D']
 const DATE = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Stockholm' })
 
 /** Beräkna nivå: bedöm spelaren enligt nivåmatrisen och få en föreslagen nivå att sätta. */
-export default function LevelDialog({ open, onClose, player, onApplied }: {
+export default function LevelDialog({ open, onClose, player, onApplied, matrix }: {
   open: boolean
+  matrix: Matrix
   onClose: () => void
   player: { id: number; name: string; rank: string | null }
   onApplied: () => void
@@ -39,18 +40,18 @@ export default function LevelDialog({ open, onClose, player, onApplied }: {
     setRankTouched(false)
     setShowHistory(false)
     history.trigger({ playerId: player.id }, { skipCache: true })
-      .then((list) => setScores((list?.[0]?.scores ?? {}) as Scores))
+      .then((list) => setScores((list?.find((h) => !h.matrix || h.matrix === matrix.key)?.scores ?? {}) as Scores))
       .catch((e: Error) => setError(e.message))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, player.id])
 
-  const suggestion = useMemo(() => suggestLevel(scores), [scores])
+  const suggestion = useMemo(() => suggestLevel(matrix, scores), [matrix, scores])
   useEffect(() => {
     if (!rankTouched) setRank(suggestion?.level ?? null)
   }, [suggestion?.level, rankTouched])
 
-  const missing = RATED_KEYS.filter((k) => !scores[k]).length
-  const last = history.data?.[0]
+  const missing = ratedKeys(matrix).filter((k) => !scores[k]).length
+  const last = history.data?.find((h) => !h.matrix || h.matrix === matrix.key)
 
   async function submit(apply: boolean) {
     setError(null)
@@ -70,9 +71,12 @@ export default function LevelDialog({ open, onClose, player, onApplied }: {
         <DialogHeader>
           <DialogTitle className="pr-6">Beräkna nivå: {player.name}</DialogTitle>
         </DialogHeader>
-        <p className="-mt-2 text-sm text-muted-foreground">
-          Välj den beskrivning som stämmer bäst för varje del. Fotbollsaktioner väger tyngst och fysik lätt.
-          Mentalt och socialt räknas inte in i nivån. Nuvarande nivå: <b>{player.rank ?? 'ingen'}</b>.
+        <p className="-mt-2 flex flex-wrap items-center gap-2 text-sm">
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold">{matrix.name}</span>
+          <span className="text-muted-foreground">Nuvarande nivå: <b className="text-foreground">{player.rank ?? 'ingen'}</b></span>
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Matrisen är gjord för barn {matrix.ages}. Välj den beskrivning som stämmer bäst för varje del. {matrix.intro}
         </p>
         {last && (
           <p className="text-xs text-muted-foreground">
@@ -81,7 +85,7 @@ export default function LevelDialog({ open, onClose, player, onApplied }: {
         )}
 
         <div className="flex flex-col gap-5">
-          {LEVEL_AREAS.map((area) => {
+          {matrix.areas.map((area) => {
             const s = areaScore(area, scores)
             return (
               <section key={area.key} className="flex flex-col gap-3">
@@ -136,6 +140,7 @@ export default function LevelDialog({ open, onClose, player, onApplied }: {
                     <li key={h.id} className="flex flex-col gap-0.5 px-3 py-2">
                       <span>
                         {DATE.format(new Date(h.created_at))}{h.by ? ` · ${h.by}` : ''} · förslag <b>{h.suggested}</b>
+                        {h.matrix && h.matrix !== matrix.key && <> · annan matris</>}
                         {h.applied_rank && <> · satte <b>{h.applied_rank}</b></>}
                       </span>
                       {h.comment && <span className="text-muted-foreground">{h.comment}</span>}
@@ -155,7 +160,7 @@ export default function LevelDialog({ open, onClose, player, onApplied }: {
                 <span>Föreslagen nivå</span>
                 <span className="rounded-full px-2.5 py-0.5 text-sm font-bold" style={rankStyle(suggestion.level)}>{suggestion.level}</span>
                 <span className="text-xs text-muted-foreground">
-                  {LEVEL_AREAS.filter((a) => a.weight).map((a) => {
+                  {matrix.areas.filter((a) => a.weight).map((a) => {
                     const s = areaScore(a, scores)
                     return `${a.name} ${s != null ? gradeOf(s) : '–'}`
                   }).join(' · ')}
