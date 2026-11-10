@@ -37,6 +37,8 @@ import leagues_getLeagueMatches from './functions/leagues/getLeagueMatches'
 import leagues_getLeagues from './functions/leagues/getLeagues'
 import leagues_updateLeague from './functions/leagues/updateLeague'
 import leagues_upsertStanding from './functions/leagues/upsertStanding'
+import levels_getLevelAssessments from './functions/levels/getLevelAssessments'
+import levels_saveLevelAssessment from './functions/levels/saveLevelAssessment'
 import matches_addMatchParticipants from './functions/matches/addMatchParticipants'
 import matches_addParticipant from './functions/matches/addParticipant'
 import matches_createMatch from './functions/matches/createMatch'
@@ -201,6 +203,8 @@ export const functions: Record<string, { handler: BackendFunction; access: Acces
   'leagues/getLeagues': { handler: leagues_getLeagues, access: 'viewer' },
   'leagues/updateLeague': { handler: leagues_updateLeague, access: 'leader' },
   'leagues/upsertStanding': { handler: leagues_upsertStanding, access: 'leader' },
+  'levels/getLevelAssessments': { handler: levels_getLevelAssessments, access: 'leader' },
+  'levels/saveLevelAssessment': { handler: levels_saveLevelAssessment, access: 'leader' },
   'matches/addMatchParticipants': { handler: matches_addMatchParticipants, access: 'leader' },
   'matches/addParticipant': { handler: matches_addParticipant, access: 'leader' },
   'matches/createMatch': { handler: matches_createMatch, access: 'leader' },

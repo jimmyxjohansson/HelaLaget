@@ -4,7 +4,8 @@ import { useRouter } from '../lib/nav'
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useGetPlayer, useGetPlayerStats, useUpdatePlayer, useUploadPlayerImage } from '../hooks/backend/players'
-import { ArrowLeft, Edit2, Check, X, User, Upload, Loader2 } from 'lucide-react'
+import { ArrowLeft, Edit2, Check, X, User, Upload, Loader2, Calculator } from 'lucide-react'
+import LevelDialog from './player/LevelDialog'
 import { rankStyle } from '../utils/rankColors'
 import { Button } from '../lib/shadcn/button'
 import { Input } from '../lib/shadcn/input'
@@ -88,6 +89,7 @@ export default function PlayerDetail() {
     return Number.isFinite(n) ? n : 2
   })
   const { data, loading, trigger } = useGetPlayer()
+  const [levelOpen, setLevelOpen] = useState(false)
   const stats = useGetPlayerStats()
   const infoRef = useRef<HTMLDivElement>(null)
   const { trigger: updateTrigger, loading: saving } = useUpdatePlayer()
@@ -282,6 +284,12 @@ export default function PlayerDetail() {
                       Nivå {displayPlayer.rank}
                     </span>
                   )}
+                  {canEdit() && !editing && (
+                    <button type="button" onClick={() => setLevelOpen(true)}
+                      className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
+                      <Calculator className="h-3 w-3" /> Beräkna nivå
+                    </button>
+                  )}
                 </div>
               </div>
               {!editing && canEdit() && (
@@ -295,6 +303,12 @@ export default function PlayerDetail() {
               )}
             </div>
           </div>
+
+          {canEdit() && player && (
+            <LevelDialog open={levelOpen} onClose={() => setLevelOpen(false)}
+              player={{ id: player.id, name: `${player.firstname ?? ''} ${player.lastname ?? ''}`.trim() || (player.shortname ?? ''), rank: player.rank ?? null }}
+              onApplied={() => trigger({ id: Number(id), months })} />
+          )}
 
           {/* Statistik */}
           <div className="flex min-w-0 flex-col gap-3 md:col-start-2 md:row-span-2 md:row-start-1">
