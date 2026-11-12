@@ -3,6 +3,7 @@ import { AccessError } from '@/server/access'
 import { normalizeFeedUrl } from '@/server/svenskalag/sync'
 import { GAME_FORMATS } from '@/utils/gameFormats'
 import { MATRIX_KEYS } from '@/utils/levelMatrix'
+import { cleanKit, type TacticsKit } from '@/utils/tacticsKit'
 import type { SquadAccess, User } from '@/server/types'
 
 export const access = 'admin'
@@ -27,6 +28,8 @@ type Params = {
   levelMatrix?: string | null
   /** Visa Taktiktavlan i lagets meny */
   tacticsBoard?: boolean
+  /** Taktiktavlans färger; null = standard */
+  tacticsKit?: Partial<TacticsKit> | null
 }
 
 /** "svenskalag.se/..." utan https:// fungerar också; http blir https. */
@@ -69,7 +72,7 @@ export default async function updateSquadSettings(req: { params: Params; user: U
   await adminDb.query(
     `UPDATE squads SET name = $2, primary_color = $3, accent_color = $4,
        logo_url = $5, planning_url = $6, svenskalag_ical_url = $7,
-       svenskalag_url = $8, site_name = $9, docs_url = $10, docs_name = $11, game_format = $12, level_matrix = $13, tactics_board = $14
+       svenskalag_url = $8, site_name = $9, docs_url = $10, docs_name = $11, game_format = $12, level_matrix = $13, tactics_board = $14, tactics_kit = $15::jsonb
      WHERE id = $1`,
     [
       req.squad!.squadId,
@@ -86,6 +89,7 @@ export default async function updateSquadSettings(req: { params: Params; user: U
       gameFormat,
       levelMatrix,
       !!p.tacticsBoard,
+      (() => { const k = cleanKit(p.tacticsKit); return k ? JSON.stringify(k) : null })(),
     ],
   )
   return { ok: true }

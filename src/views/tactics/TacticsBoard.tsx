@@ -7,6 +7,7 @@ import SquadLogo from '../../components/SquadLogo'
 import { canEdit, currentSquad } from '../../lib/squad-store'
 import LeadersOnly from '../../components/LeadersOnly'
 import { BOARD_HTML } from './boardHtml'
+import { contrastText, resolveKit } from '../../utils/tacticsKit'
 
 /** Ljust läge för tavlan; planen är grön i båda lägena. Växlas med data-theme på <html>. */
 const LIGHT_CSS = `<style>
@@ -18,14 +19,6 @@ html[data-theme=light] .presets button:not(.on):hover{border-color:#a8bcae}
 
 const appTheme = () => (typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light')
 
-/** Mörkare variant av en färg, för tröjnumren. */
-function darker(hex: string, f = 0.55) {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex)
-  if (!m) return '#14532d'
-  const n = parseInt(m[1], 16)
-  const c = (s: number) => Math.round(((n >> s) & 255) * f).toString(16).padStart(2, '0')
-  return `#${c(16)}${c(8)}${c(0)}`
-}
 
 /** Taktiktavlan: zonförsvar och anfall i 9 mot 9 och 11 mot 11, i lagets färger. */
 export default function TacticsBoard() {
@@ -72,16 +65,20 @@ function Board() {
     return () => observer.disconnect()
   }, [])
   const srcDoc = useMemo(() => {
-    // Vårt lag spelar i lagets färger: tröja i textfärgen, byxor i huvudfärgen
-    const shirt = squad?.accentColor || '#ffd21f'
-    const shorts = squad?.primaryColor || '#1e7a3c'
+    // Färgerna från Laginställningar; standard är vårt lag i lagets färger
+    const kit = resolveKit(squad?.tacticsKit, squad?.primaryColor, squad?.accentColor)
+    const withNum = Object.fromEntries(Object.entries(kit).map(([k, v]) => [k, { ...v, num: contrastText(v.shirt) }]))
     return BOARD_HTML
-      .replaceAll('__US_SHIRT__', shirt)
-      .replaceAll('__US_SHORTS__', shorts)
-      .replaceAll('__US_NUM__', darker(shorts))
+      .replace('__KIT__', JSON.stringify(withNum))
+      .replaceAll('__US_SHIRT__', kit.us.shirt)
+      .replaceAll('__US_SHORTS__', kit.us.shorts)
+      .replaceAll('__US_NUM__', contrastText(kit.us.shirt))
+      .replaceAll('__OPP_SHIRT__', kit.opp.shirt)
+      .replaceAll('__OPP_SHORTS__', kit.opp.shorts)
+      .replaceAll('__OPP_NUM__', contrastText(kit.opp.shirt))
       .replace('<html lang="sv">', `<html lang="sv" data-theme="${appTheme()}">`)
       .replace('</head>', `${LIGHT_CSS}</head>`)
-  }, [squad?.accentColor, squad?.primaryColor])
+  }, [squad?.accentColor, squad?.primaryColor, squad?.tacticsKit])
 
   const iframe = <iframe ref={frame} title="Taktiktavla" srcDoc={srcDoc} sandbox="allow-scripts" className="min-h-0 w-full flex-1 border-0 bg-background" />
 

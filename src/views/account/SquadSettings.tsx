@@ -28,6 +28,7 @@ import { Label } from '../../lib/shadcn/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../lib/shadcn/select'
 import { GAME_FORMATS } from '../../utils/gameFormats'
 import { LEVEL_MATRICES } from '../../utils/levelMatrix'
+import { KIT_PARTS, defaultKit, resolveKit, type TacticsKit } from '../../utils/tacticsKit'
 import GameFormats, { formatText } from './GameFormats'
 import { ErrorText, PageHeader, ROLE_HELP, ROLE_LABEL, Section } from './shared'
 import SquadInfos from './SquadInfos'
@@ -145,6 +146,7 @@ export default function SquadSettings() {
     gameFormat: '',
     levelMatrix: '',
     tacticsBoard: false,
+    tacticsKit: defaultKit() as TacticsKit,
   })
   const [savedSettings, setSavedSettings] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -201,6 +203,7 @@ export default function SquadSettings() {
             gameFormat: s.gameFormat ?? '',
             levelMatrix: s.levelMatrix ?? '',
             tacticsBoard: !!s.tacticsBoard,
+            tacticsKit: resolveKit(s.tacticsKit, s.primaryColor, s.accentColor),
           })
       })
       .catch(() => {})
@@ -423,7 +426,12 @@ export default function SquadSettings() {
             e.preventDefault()
             setSavedSettings(false)
             run(
-              () => saveSettings.trigger(form),
+              () => {
+                // Samma som standard (lagets färger) sparas inte, så att färgerna följer om lagets färger ändras
+                const def = defaultKit(form.primaryColor, form.accentColor)
+                const changed = JSON.stringify(form.tacticsKit) !== JSON.stringify(def)
+                return saveSettings.trigger({ ...form, tacticsKit: changed ? form.tacticsKit : null })
+              },
               async () => {
                 setSavedSettings(true)
                 // Ladda om så att namn och färger slår igenom i hela appen
@@ -567,6 +575,40 @@ export default function SquadSettings() {
             <p className="text-xs text-muted-foreground">
               Taktiktavlan (zonförsvar och anfall i 9 mot 9 och 11 mot 11) visas för lagets ledare under Laget i menyn.
             </p>
+            {form.tacticsBoard && (
+              <div className="mt-1 flex flex-col gap-2 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">Färger i Taktiktavlan</span>
+                  <button type="button" className="text-xs text-primary underline-offset-4 hover:underline"
+                    onClick={() => setForm({ ...form, tacticsKit: defaultKit(form.primaryColor, form.accentColor) })}>
+                    Återställ
+                  </button>
+                </div>
+                <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-2 text-sm">
+                  <span />
+                  <span className="text-xs text-muted-foreground">Tröja</span>
+                  <span className="text-xs text-muted-foreground">Shorts</span>
+                  {KIT_PARTS.map(({ key, label }) => (
+                    <div key={key} className="contents">
+                      <span className="flex items-center gap-2">
+                        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden>
+                          <path d="M6 2 L2 5 L4 8 L6 7 L6 13 L14 13 L14 7 L16 8 L18 5 L14 2 Q10 4 6 2 Z" fill={form.tacticsKit[key].shirt} stroke="#0003" />
+                          <rect x="6" y="13" width="8" height="5" fill={form.tacticsKit[key].shorts} stroke="#0003" />
+                        </svg>
+                        {label}
+                      </span>
+                      {(['shirt', 'shorts'] as const).map((part) => (
+                        <input key={part} type="color" value={form.tacticsKit[key][part]}
+                          aria-label={`${label}: ${part === 'shirt' ? 'tröja' : 'shorts'}`}
+                          onChange={(e) => setForm({ ...form, tacticsKit: { ...form.tacticsKit, [key]: { ...form.tacticsKit[key], [part]: e.target.value } } })}
+                          className="h-8 w-12 rounded-md border border-input bg-transparent" />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Tröjnumren får automatiskt svart eller vit färg, det som syns bäst.</p>
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Nivåmatris</Label>
