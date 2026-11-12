@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react'
 import SquadLogo from '../../components/SquadLogo'
-import { currentSquad } from '../../lib/squad-store'
+import { canEdit, currentSquad } from '../../lib/squad-store'
+import LeadersOnly from '../../components/LeadersOnly'
 import { BOARD_HTML } from './boardHtml'
 
 /** Mörkare variant av en färg, för tröjnumren. */
@@ -16,6 +17,12 @@ function darker(hex: string, f = 0.55) {
 
 /** Taktiktavlan: zonförsvar och anfall i 9 mot 9 och 11 mot 11, i lagets färger. */
 export default function TacticsBoard() {
+  // Bara för ledare, som Övningsbanken
+  if (!canEdit()) return <LeadersOnly what="Taktiktavlan" />
+  return <Board />
+}
+
+function Board() {
   const squad = currentSquad()
   const srcDoc = useMemo(() => {
     // Vårt lag spelar i lagets färger: tröja i textfärgen, byxor i huvudfärgen
