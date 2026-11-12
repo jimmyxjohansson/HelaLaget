@@ -2,7 +2,7 @@
 
 import {
   BarChart3, Bell, BellRing, BookOpen, Building2, CalendarDays, CalendarRange, ExternalLink, FileText, Home, ListOrdered,
-  LayoutTemplate, Medal, RefreshCw, Repeat, Shield, Trophy, UserCog, Users, UsersRound as Users2,
+  LayoutTemplate, Medal, Presentation, RefreshCw, Repeat, Shield, Trophy, UserCog, Users, UsersRound as Users2,
 } from 'lucide-react'
 import { getMe } from '../lib/squad-store'
 import { isActivePath } from '../lib/navigation'
@@ -45,6 +45,7 @@ export function navGroups(): NavGroup[] {
     laget.push({ to: '/ovningar', icon: BookOpen, label: 'Övningsbank' })
     if (leader) laget.push({ to: '/ovningar/mallar', icon: LayoutTemplate, label: 'Träningsplansmallar' })
   }
+  laget.push({ to: '/taktiktavla', icon: Presentation, label: 'Taktiktavla' })
 
   const tavling: NavItem[] = [
     { to: '/serier', icon: ListOrdered, label: 'Serier' },

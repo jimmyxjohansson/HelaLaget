@@ -1,0 +1,42 @@
+'use client'
+
+import { useMemo } from 'react'
+import SquadLogo from '../../components/SquadLogo'
+import { currentSquad } from '../../lib/squad-store'
+import { BOARD_HTML } from './boardHtml'
+
+/** Mörkare variant av en färg, för tröjnumren. */
+function darker(hex: string, f = 0.55) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex)
+  if (!m) return '#14532d'
+  const n = parseInt(m[1], 16)
+  const c = (s: number) => Math.round(((n >> s) & 255) * f).toString(16).padStart(2, '0')
+  return `#${c(16)}${c(8)}${c(0)}`
+}
+
+/** Taktiktavlan: zonförsvar och anfall i 9 mot 9 och 11 mot 11, i lagets färger. */
+export default function TacticsBoard() {
+  const squad = currentSquad()
+  const srcDoc = useMemo(() => {
+    // Vårt lag spelar i lagets färger: tröja i textfärgen, byxor i huvudfärgen
+    const shirt = squad?.accentColor || '#ffd21f'
+    const shorts = squad?.primaryColor || '#1e7a3c'
+    return BOARD_HTML
+      .replaceAll('__US_SHIRT__', shirt)
+      .replaceAll('__US_SHORTS__', shorts)
+      .replaceAll('__US_NUM__', darker(shorts))
+  }, [squad?.accentColor, squad?.primaryColor])
+
+  return (
+    <div className="flex h-[calc(100dvh-4rem)] flex-col md:h-dvh">
+      <div className="flex items-center gap-3 px-4 pb-3 pt-6 text-team-accent" style={{ backgroundColor: 'rgb(var(--team-primary))' }}>
+        <SquadLogo />
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold">Taktiktavla</h1>
+          <p className="text-sm text-team-accent/70">Försvar och anfall i 9 mot 9 och 11 mot 11</p>
+        </div>
+      </div>
+      <iframe title="Taktiktavla" srcDoc={srcDoc} sandbox="allow-scripts" className="min-h-0 w-full flex-1 border-0 bg-[#0f1712]" />
+    </div>
+  )
+}
