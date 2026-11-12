@@ -29,6 +29,13 @@ function darker(hex: string, f = 0.55) {
 export default function TacticsBoard() {
   // Bara för ledare, som Övningsbanken
   if (!canEdit()) return <LeadersOnly what="Taktiktavlan" />
+  if (!currentSquad()?.tacticsBoard) {
+    return (
+      <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
+        <p className="text-sm text-muted-foreground">Taktiktavlan är inte påslagen för laget. Lagets admin slår på den under Laginställningar.</p>
+      </div>
+    )
+  }
   return <Board />
 }
 

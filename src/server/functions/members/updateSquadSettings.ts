@@ -25,6 +25,8 @@ type Params = {
   gameFormat?: string | null
   /** Nivåmatris för Beräkna nivå */
   levelMatrix?: string | null
+  /** Visa Taktiktavlan i lagets meny */
+  tacticsBoard?: boolean
 }
 
 /** "svenskalag.se/..." utan https:// fungerar också; http blir https. */
@@ -67,7 +69,7 @@ export default async function updateSquadSettings(req: { params: Params; user: U
   await adminDb.query(
     `UPDATE squads SET name = $2, primary_color = $3, accent_color = $4,
        logo_url = $5, planning_url = $6, svenskalag_ical_url = $7,
-       svenskalag_url = $8, site_name = $9, docs_url = $10, docs_name = $11, game_format = $12, level_matrix = $13
+       svenskalag_url = $8, site_name = $9, docs_url = $10, docs_name = $11, game_format = $12, level_matrix = $13, tactics_board = $14
      WHERE id = $1`,
     [
       req.squad!.squadId,
@@ -83,6 +85,7 @@ export default async function updateSquadSettings(req: { params: Params; user: U
       docsUrl ? linkName(p.docsName) : null,
       gameFormat,
       levelMatrix,
+      !!p.tacticsBoard,
     ],
   )
   return { ok: true }

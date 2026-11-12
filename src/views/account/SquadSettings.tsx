@@ -144,6 +144,7 @@ export default function SquadSettings() {
     docsName: '',
     gameFormat: '',
     levelMatrix: '',
+    tacticsBoard: false,
   })
   const [savedSettings, setSavedSettings] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -199,6 +200,7 @@ export default function SquadSettings() {
             docsName: s.docsName ?? '',
             gameFormat: s.gameFormat ?? '',
             levelMatrix: s.levelMatrix ?? '',
+            tacticsBoard: !!s.tacticsBoard,
           })
       })
       .catch(() => {})
@@ -554,6 +556,16 @@ export default function SquadSettings() {
                 ? `Nya matcher och cuper får ${form.gameFormat}${formatText(settings.data.formats[form.gameFormat]) ? `, ${formatText(settings.data.formats[form.gameFormat])}` : ''}. `
                 : 'Används när matcher och cuper läggs till eller hämtas från Svenskalag. '}
               Går att ändra på varje match och cup.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={form.tacticsBoard} onChange={(e) => setForm({ ...form, tacticsBoard: e.target.checked })}
+                className="h-4 w-4" />
+              Visa Taktiktavlan
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Taktiktavlan (zonförsvar och anfall i 9 mot 9 och 11 mot 11) visas för lagets ledare under Laget i menyn.
             </p>
           </div>
           <div className="flex flex-col gap-1.5">

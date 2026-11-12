@@ -45,7 +45,7 @@ export function navGroups(): NavGroup[] {
     laget.push({ to: '/ovningar', icon: BookOpen, label: 'Övningsbank' })
     if (leader) laget.push({ to: '/ovningar/mallar', icon: LayoutTemplate, label: 'Träningsplansmallar' })
   }
-  if (leader) laget.push({ to: '/taktiktavla', icon: Presentation, label: 'Taktiktavla' })
+  if (leader && me?.current?.tacticsBoard) laget.push({ to: '/taktiktavla', icon: Presentation, label: 'Taktiktavla' })
 
   const tavling: NavItem[] = [
     { to: '/serier', icon: ListOrdered, label: 'Serier' },

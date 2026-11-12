@@ -27,6 +27,8 @@ export type Membership = {
   docsName: string | null
   /** Nivåmatris för Beräkna nivå, eller null */
   levelMatrix: string | null
+  /** Taktiktavlan visas i menyn */
+  tacticsBoard: boolean
   /** För läsbehörighet: Spelare eller Anhörig */
   memberKind: 'player' | 'relative' | null
   /** För läsbehörighet: spelarna som personen är kopplad till */
@@ -52,7 +54,7 @@ export default async function getMe(req: { params: Params; user: User }) {
          s.primary_color AS "primaryColor", s.accent_color AS "accentColor", s.logo_url AS "logoUrl",
          s.planning_url AS "planningUrl",
          s.svenskalag_url AS "siteUrl", s.site_name AS "siteName",
-         s.docs_url AS "docsUrl", s.docs_name AS "docsName", s.level_matrix AS "levelMatrix",
+         s.docs_url AS "docsUrl", s.docs_name AS "docsName", s.level_matrix AS "levelMatrix", s.tactics_board AS "tacticsBoard",
          CASE WHEN sa.is_super OR oa.user_id IS NOT NULL OR m.role <> 'viewer' THEN NULL
               ELSE COALESCE(m.member_kind, 'relative') END AS "memberKind",
          COALESCE((SELECT array_agg(smp.player_id ORDER BY smp.player_id) FROM squad_member_players smp
